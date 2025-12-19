@@ -1,5 +1,5 @@
 import { AppHeader } from "@/components/layout/header";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { UserDataProvider } from "@/context/user-data-provider";
 import { AdminAuthGuard } from "@/components/admin/admin-auth-guard";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
@@ -13,15 +13,13 @@ export default function AdminLayout({
     <SidebarProvider>
       <UserDataProvider>
         <AdminAuthGuard>
-          <div className="flex min-h-screen bg-background">
-            <AdminSidebar />
-            <div className="flex-1 flex flex-col">
-              <AppHeader />
-              <main className="flex-1 overflow-y-auto">
-                {children}
-              </main>
-            </div>
-          </div>
+          <AdminSidebar />
+          <SidebarInset>
+            <AppHeader />
+            <main className="flex-1 overflow-y-auto">
+              {children}
+            </main>
+          </SidebarInset>
         </AdminAuthGuard>
       </UserDataProvider>
     </SidebarProvider>
