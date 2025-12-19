@@ -70,9 +70,7 @@ export function AppSidebar() {
     <Sidebar className="border-r" collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2">
-          <svg className="h-8 w-auto" viewBox="0 0 100 20">
-            <XavefLogoText />
-          </svg>
+          <XavefLogoText />
           <div className="flex-1" />
           <SidebarTrigger />
         </div>
