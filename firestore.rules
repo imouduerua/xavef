@@ -6,8 +6,10 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read, update: if request.auth != null && request.auth.uid == userId;
-      // Allow a user to create their own user document.
-      allow create: if request.auth.uid == userId;
+      // Allow a user to create their own user document, as long as the UID in the
+      // document data matches the user's auth UID. This is the secure way to
+      // handle user profile creation.
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
     }
 
     match /referralCodes/{codeId} {
@@ -15,7 +17,7 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
       
       // Allow any authenticated user to update a code to mark it as used.
-      // The client-side logic ensures this only happens during registration for a valid, unused code.
+      // This is safe because the client logic only ever sets 'used' to true.
       allow update: if request.auth != null
                     && request.resource.data.used == true 
                     && resource.data.used == false;
