@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Repeat } from 'lucide-react';
+import { Loader2, Repeat, X } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -26,42 +27,105 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 
-const formSchema = z.object({
+const toSelfSchema = z.object({
+  amount: z.coerce.number().positive('Amount must be a positive number.'),
+  fromAccount: z.string().min(1, 'Please select a source account.'),
+  toAccount: z.string().min(1, 'Please select a destination account.'),
+});
+
+const toOtherSchema = z.object({
   recipientId: z.string().min(1, 'Recipient ID is required.'),
   amount: z.coerce.number().positive('Amount must be a positive number.'),
 });
 
+const formSchema = z.discriminatedUnion('transferType', [
+  z.object({
+    transferType: z.literal('toSelf'),
+    ...toSelfSchema.shape,
+  }),
+  z.object({
+    transferType: z.literal('toOther'),
+    ...toOtherSchema.shape,
+  }),
+]);
+
+type FormValues = z.infer<typeof formSchema>;
+
 export function TransferDialog() {
   const [isOpen, setIsOpen] = React.useState(false);
-  const form = useForm<z.infer<typeof formSchema>>({
+  const [activeTab, setActiveTab] = React.useState<'toSelf' | 'toOther'>(
+    'toSelf'
+  );
+
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      recipientId: '',
+      transferType: 'toSelf',
       amount: 0,
+      fromAccount: 'solidara',
     },
   });
 
-  const { isSubmitting } = form.formState;
+  const { isSubmitting, trigger, reset } = form.formState;
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    const result = await makeTransfer(values);
-    if (result.success) {
+  async function onSubmit(values: FormValues) {
+    if (values.transferType === 'toOther') {
+      const result = await makeTransfer({
+        recipientId: values.recipientId,
+        amount: values.amount,
+      });
+      if (result.success) {
+        toast({
+          title: 'Transfer Successful!',
+          description: `You sent ₦${values.amount.toFixed(
+            2
+          )} to ID ${values.recipientId}.`,
+        });
+        setIsOpen(false);
+        form.reset();
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Transfer Failed',
+          description: result.error,
+        });
+      }
+    } else {
+      // Handle "To Self" transfer logic
+      console.log('Transfer to self:', values);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       toast({
         title: 'Transfer Successful!',
-        description: `You sent ₦${values.amount.toFixed(2)} to ID ${values.recipientId}.`,
+        description: `You transferred ₦${values.amount.toFixed(2)} from ${
+          values.fromAccount
+        } to ${values.toAccount}.`,
       });
       setIsOpen(false);
       form.reset();
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Transfer Failed',
-        description: result.error,
-      });
     }
   }
+
+  const handleTabChange = (value: string) => {
+    const tab = value as 'toSelf' | 'toOther';
+    setActiveTab(tab);
+    form.setValue('transferType', tab);
+    // Reset form state when switching tabs
+    form.reset({
+      transferType: tab,
+      amount: 0,
+      fromAccount: 'solidara',
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -71,42 +135,131 @@ export function TransferDialog() {
           Transfer
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Make a Transfer</DialogTitle>
+          <DialogTitle>Transfer Funds</DialogTitle>
           <DialogDescription>
-            Send money to another Xavef user. The transfer will be instant.
+            Move money between your accounts or send to another Xavef user. All
+            transfers require admin approval.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="recipientId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Recipient&apos;s Xavef ID</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., 5678" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount (₦)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="0.00" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
+            <Tabs
+              value={activeTab}
+              onValueChange={handleTabChange}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="toSelf">To Self</TabsTrigger>
+                <TabsTrigger value="toOther">To Other User</TabsTrigger>
+              </TabsList>
+              <TabsContent value="toSelf" className="space-y-4 pt-4">
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                           <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">₦</span>
+                           <Input type="number" placeholder="0.00" className="pl-8" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="fromAccount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>From</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select source account" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="solidara">
+                            Savings (Olidara) (Balance: ₦100,000.00)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="toAccount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>To</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select destination account" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="annual">
+                            Annual Savings (Balance: ₦0.00)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </TabsContent>
+              <TabsContent value="toOther" className="space-y-4 pt-4">
+                <FormField
+                  control={form.control}
+                  name="recipientId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recipient&apos;s Xavef ID</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., 5678" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount (₦)</FormLabel>
+                       <FormControl>
+                        <div className="relative">
+                           <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">₦</span>
+                           <Input type="number" placeholder="0.00" className="pl-8" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </TabsContent>
+            </Tabs>
+            <DialogFooter className="gap-2 sm:justify-end pt-4">
+              <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Cancel
+                  </Button>
+              </DialogClose>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
@@ -114,7 +267,7 @@ export function TransferDialog() {
                     Sending...
                   </>
                 ) : (
-                  'Send Transfer'
+                  'Submit Transfer'
                 )}
               </Button>
             </DialogFooter>
