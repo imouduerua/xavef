@@ -1,5 +1,5 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
-import { AppHeader }s from "@/components/layout/header";
+import { AppHeader } from "@/components/layout/header";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { UserDataProvider } from "@/context/user-data-provider";
 
@@ -15,7 +15,7 @@ export default function AppLayout({
           <AppSidebar />
           <div className="flex flex-1 flex-col">
             <AppHeader />
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
               {children}
             </main>
           </div>
