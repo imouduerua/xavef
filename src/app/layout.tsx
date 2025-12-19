@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Share_Tech } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const shareTech = Share_Tech({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-share-tech",
+});
 
 export const metadata: Metadata = {
   title: "XAVEF Financials",
@@ -17,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-body antialiased`}>
+      <body className={`${shareTech.variable} font-body antialiased`}>
         {children}
         <Toaster />
       </body>
