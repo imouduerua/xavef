@@ -56,14 +56,24 @@ const formSchema = z.discriminatedUnion('transferType', [
   z.object({
     transferType: z.literal('toSelf'),
     amount: z.coerce.number().positive('Amount must be a positive number.'),
-    ...toSelfSchema.shape,
+    fromAccount: z.enum(['solidara', 'annual']),
+    toAccount: z.enum(['solidara', 'annual']),
   }),
   z.object({
     transferType: z.literal('toOther'),
     amount: z.coerce.number().positive('Amount must be a positive number.'),
-    ...toOtherSchema.shape,
+    recipientId: z.string().min(1, 'Recipient ID is required.'),
   }),
-]);
+]).refine((data) => {
+    if (data.transferType === 'toSelf') {
+        return data.fromAccount !== data.toAccount;
+    }
+    return true;
+}, {
+    message: 'Source and destination accounts cannot be the same.',
+    path: ['toAccount'],
+});
+
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -92,7 +102,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
     },
   });
 
-  const { isSubmitting, reset } = form.formState;
+  const { formState: { isSubmitting }, reset } = form;
 
   async function onSubmit(values: FormValues) {
     if (values.transferType === 'toSelf') {
