@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { XavefLogo } from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -37,12 +38,13 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="border-r">
+    <Sidebar className="border-r" collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <XavefLogo className="h-8 w-8 text-sidebar-foreground" />
           <span className="text-lg font-semibold">XAVEF</span>
         </div>
+        <SidebarTrigger className="hidden md:flex" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
@@ -52,10 +54,9 @@ export function AppSidebar() {
                 asChild
                 isActive={pathname === item.href}
                 icon={<item.icon />}
+                tooltip={item.label}
               >
-                <Link href={item.href}>
-                  {item.label}
-                </Link>
+                <Link href={item.href}>{item.label}</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
@@ -71,7 +72,7 @@ export function AppSidebar() {
                 <p className="font-semibold truncate">{mockUser.name}</p>
                 <p className="text-xs text-muted-foreground truncate">{mockUser.email}</p>
             </div>
-            <SidebarMenuButton variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogout}>
+            <SidebarMenuButton variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogout} tooltip="Logout">
                 <LogOut size={16} />
             </SidebarMenuButton>
         </div>
