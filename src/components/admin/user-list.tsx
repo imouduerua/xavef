@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection, useFirestore } from '@/firebase';
-import { UserData } from '@/lib/types';
+import type { UserData } from '@/lib/types';
 import { collection, orderBy, query } from 'firebase/firestore';
 import React from 'react';
 import {
@@ -17,13 +17,15 @@ import { Button } from '../ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
+type UserDataWithId = UserData & { id: string };
+
 export function UserList() {
   const firestore = useFirestore();
   const usersQuery = React.useMemo(
     () => query(collection(firestore, 'users'), orderBy('email')),
     [firestore]
   );
-  const { data: users, loading } = useCollection<UserData>(usersQuery);
+  const { data: users, loading } = useCollection<UserDataWithId>(usersQuery);
 
   if (loading) {
     return (
@@ -51,7 +53,7 @@ export function UserList() {
       </TableHeader>
       <TableBody>
         {users.map((user) => (
-          <TableRow key={user.uid}>
+          <TableRow key={user.id}>
             <TableCell className="font-medium">{user.email}</TableCell>
             <TableCell>{user.xavefId}</TableCell>
             <TableCell>

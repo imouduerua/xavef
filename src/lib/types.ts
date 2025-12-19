@@ -18,6 +18,7 @@ export interface UserData {
   xavefId: string;
   referredBy: string | null;
   createdAt: string;
+  id?: string;
 }
 
 export interface SavingsAccount {
