@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -18,6 +18,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import * as SheetPrimitive from "@radix-ui/react-dialog";
+
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -206,6 +208,7 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
+            <SheetPrimitive.Title className="sr-only">Sidebar Navigation</SheetPrimitive.Title>
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
         </Sheet>
@@ -225,12 +228,12 @@ const Sidebar = React.forwardRef<
         <div
           className={cn(
             "duration-200 relative h-svh bg-transparent transition-[width] ease-linear",
-            "w-0",
-            // "group-data-[collapsible=offcanvas]:w-0",
-            // "group-data-[side=right]:rotate-180",
-            // variant === "floating" || variant === "inset"
-            //   ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-            //   : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
+            "w-[var(--sidebar-width)]",
+            "group-data-[collapsible=offcanvas]:w-0",
+            "group-data-[side=right]:rotate-180",
+            variant === "floating" || variant === "inset"
+              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
+              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
           )}
         />
         <div
