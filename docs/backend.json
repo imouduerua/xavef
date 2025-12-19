@@ -16,7 +16,7 @@
         },
         "displayName": {
           "type": "string",
-          "description": "The user's display name."
+          "description": "The user's display name, derived from their email."
         },
         "xavefId": {
           "type": "string",

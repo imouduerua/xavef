@@ -23,16 +23,13 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth, useFirestore } from "@/firebase";
 
 const formSchema = z.object({
-  fullName: z.string().min(2, {
-    message: "Full name must be at least 2 characters.",
-  }),
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
-  invitationCode: z.string().optional(),
+  referralCode: z.string().optional(),
 });
 
 // Function to generate a unique 4-digit ID
@@ -61,10 +58,9 @@ export function RegisterForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fullName: "",
       email: "",
       password: "",
-      invitationCode: "",
+      referralCode: "",
     },
   });
 
@@ -74,15 +70,15 @@ export function RegisterForm() {
       // Validate invitation code if provided
       let referredBy = null;
       let referralCodeDoc = null;
-      if (values.invitationCode) {
+      if (values.referralCode) {
         const referralCodesRef = collection(firestore, 'referralCodes');
-        const q = query(referralCodesRef, where('code', '==', values.invitationCode), where('used', '==', false));
+        const q = query(referralCodesRef, where('code', '==', values.referralCode), where('used', '==', false));
         const snapshot = await getDocs(q);
         if (snapshot.empty) {
           toast({
             variant: "destructive",
             title: "Registration Failed",
-            description: "Invalid or already used invitation code.",
+            description: "Invalid or already used referral code.",
           });
           setIsLoading(false);
           return;
@@ -94,8 +90,10 @@ export function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
       
+      const displayName = values.email.split('@')[0];
+
       await updateProfile(user, {
-        displayName: values.fullName,
+        displayName: displayName,
       });
 
       const xavefId = await generateUniqueXavefId(firestore);
@@ -107,7 +105,7 @@ export function RegisterForm() {
       batch.set(userDocRef, {
         uid: user.uid,
         email: user.email,
-        displayName: values.fullName,
+        displayName: displayName,
         xavefId,
         referredBy,
         createdAt: new Date().toISOString(),
@@ -141,19 +139,6 @@ export function RegisterForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
-          name="fullName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Full Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Alex Johnson" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
@@ -180,10 +165,10 @@ export function RegisterForm() {
         />
         <FormField
           control={form.control}
-          name="invitationCode"
+          name="referralCode"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Invitation Code (Optional)</FormLabel>
+              <FormLabel>Referral Code (Optional)</FormLabel>
               <FormControl>
                 <Input placeholder="Enter code from a friend" {...field} />
               </FormControl>
