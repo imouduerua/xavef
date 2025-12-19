@@ -1,28 +1,28 @@
 import Link from "next/link";
-import { LoginForm } from "@/components/auth/login-form";
+import { RegisterForm } from "@/components/auth/register-form";
 import { XavefLogo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
       <div className="w-full max-w-md space-y-8 px-4">
         <div className="flex flex-col items-center text-center">
-            <XavefLogo className="mb-4 h-16 w-16" />
+          <XavefLogo className="mb-4 h-16 w-16" />
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Welcome to XAVEF Financials
+            Create an Account
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Securely access your financial dashboard.
+            Join XAVEF and take control of your finances.
           </p>
         </div>
 
-        <LoginForm />
+        <RegisterForm />
 
         <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
+          Already have an account?{" "}
           <Button variant="link" asChild className="p-0">
-            <Link href="/register">Sign up</Link>
+            <Link href="/">Log in</Link>
           </Button>
         </p>
       </div>
