@@ -1,6 +1,15 @@
 "use server";
 
-import { firestore } from "@/firebase/admin";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { firebaseConfig } from "@/firebase/config";
+
+function getFirebaseApp() {
+    if (getApps().length > 0) {
+        return getApp();
+    }
+    return initializeApp(firebaseConfig);
+}
 
 function generateReferralCode(length = 8) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -17,15 +26,17 @@ export async function createReferralCode(userId: string): Promise<{ success: boo
     }
 
     try {
+        const app = getFirebaseApp();
+        const firestore = getFirestore(app);
+
         const code = generateReferralCode();
-        const referralCodesRef = firestore.collection('referralCodes');
+        const referralCodesRef = collection(firestore, 'referralCodes');
         
-        // In a real app, you might want to check for code collisions, but for now we'll assume it's unique enough.
-        await referralCodesRef.add({
+        await addDoc(referralCodesRef, {
             code,
             creatorUid: userId,
             used: false,
-            createdAt: new Date().toISOString(), // Corrected to ISO string to match schema
+            createdAt: new Date().toISOString(),
         });
 
         return { success: true, code };
