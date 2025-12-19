@@ -35,9 +35,9 @@ async function generateUniqueXavefId(): Promise<string> {
   let xavefId;
   let isUnique = false;
   const usersRef = firestoreAdmin.collection('users');
-  const length = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
-
+  
   while (!isUnique) {
+    const length = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
     xavefId = Math.floor(Math.pow(10, length - 1) + Math.random() * 9 * Math.pow(10, length - 1)).toString();
     const snapshot = await usersRef.where('xavefId', '==', xavefId).get();
     if (snapshot.empty) {
@@ -75,18 +75,21 @@ export async function createUserProfile(uid: string, email: string, displayName:
                     transaction.update(referralDocRef, { used: true });
                 } else {
                     console.log("[createUserProfile] Referral code not found, is invalid, or has already been used.");
+                    // We don't throw an error here, just proceed without the referral
                 }
             }
             
-            console.log(`[createUserProfile] Creating user document for ${uid}.`);
-            transaction.set(userDocRef, {
+            const newUser = {
                 uid,
                 email,
                 displayName,
                 xavefId,
                 createdAt: FieldValue.serverTimestamp(),
                 referredBy,
-            });
+            };
+
+            console.log(`[createUserProfile] Creating user document for ${uid} with data:`, newUser);
+            transaction.set(userDocRef, newUser);
         });
 
         console.log(`[createUserProfile] Transaction successful for user ${uid}.`);
