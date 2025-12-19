@@ -48,11 +48,16 @@ export function ReferralCodeDialog({
       }
     } catch (error: any) {
       console.error('Error generating referral code:', error);
+      
+      let description = 'An unexpected error occurred. Please try again.';
+      if (error.message && error.message.includes('Could not refresh access token')) {
+          description = "The server couldn't connect to Firebase due to an authentication issue. This is often temporary. Please try again in a moment, or restart the development environment if the issue persists."
+      }
+
       toast({
         variant: 'destructive',
         title: 'Failed to Generate Code',
-        description:
-          error.message || 'An unexpected error occurred. Please try again.',
+        description: description,
       });
     } finally {
       setIsLoading(false);
