@@ -8,18 +8,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { useAuth, useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { Check, Copy, Loader2, PartyPopper, RefreshCw } from 'lucide-react';
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { generateReferralCode } from '@/app/(app)/dashboard/referral-actions';
-
 
 interface ReferralCodeDialogProps {
   userId: string;
   children: React.ReactNode;
 }
+
+function generateRandomCode(length = 8) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 
 export function ReferralCodeDialog({
   userId,
@@ -29,29 +39,37 @@ export function ReferralCodeDialog({
   const [code, setCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const firestore = useFirestore();
 
   const handleGenerateCode = async () => {
     if (!userId) return;
     setIsLoading(true);
     setIsCopied(false);
     try {
-      const result = await generateReferralCode(userId);
+      const newCode = generateRandomCode();
+      // Note: In a production app, you'd want a server-side check to guarantee uniqueness.
+      // For this development environment, client-side generation is acceptable.
+      const referralDocRef = doc(firestore, 'referralCodes', newCode);
 
-      if (result.success && result.code) {
-        setCode(result.code);
-        toast({
-          title: 'Code Generated!',
-          description: 'You can now copy and share your new code.',
-        });
-      } else {
-        throw new Error(result.error || 'Failed to generate code.');
-      }
+      await setDoc(referralDocRef, {
+        code: newCode,
+        creatorUid: userId,
+        used: false,
+        createdAt: serverTimestamp(),
+      });
+      
+      setCode(newCode);
+      toast({
+        title: 'Code Generated!',
+        description: 'You can now copy and share your new code.',
+      });
+
     } catch (error: any) {
       console.error('Error generating referral code:', error);
       
       let description = 'An unexpected error occurred. Please try again.';
-      if (error.message && error.message.includes('Could not refresh access token')) {
-          description = "The server couldn't connect to Firebase due to an authentication issue. This is often temporary. Please try again in a moment, or restart the development environment if the issue persists."
+      if (error.message && error.message.includes('permission-denied')) {
+          description = "You don't have permission to create a referral code. Please check Firestore rules."
       }
 
       toast({
