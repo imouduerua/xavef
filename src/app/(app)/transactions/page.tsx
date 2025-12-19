@@ -91,7 +91,7 @@ export default function TransactionsPage() {
   const payments = all.filter((tx) => tx.type === "Loan Payment");
 
   return (
-    <div>
+    <div className="p-4 sm:p-6 lg:p-8">
       <Tabs defaultValue="all">
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
