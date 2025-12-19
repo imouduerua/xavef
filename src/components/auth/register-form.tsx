@@ -168,7 +168,7 @@ export function RegisterForm() {
           name="referralCode"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Referral Code (Optional)</FormLabel>
+              <FormLabel>Referral Code</FormLabel>
               <FormControl>
                 <Input placeholder="Enter code from a friend" {...field} />
               </FormControl>
