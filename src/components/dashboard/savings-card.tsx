@@ -28,11 +28,11 @@ export function SavingsCard() {
       </CardHeader>
       <CardContent className="space-y-2">
         <p className="text-4xl font-bold tracking-tight">
-          ${balance.toLocaleString()}
+          ₦{balance.toLocaleString()}
         </p>
         <div className="flex space-x-4 text-sm text-muted-foreground">
           <span>APY: {apy}%</span>
-          <span>Interest Earned: ${interestEarned.toLocaleString()}</span>
+          <span>Interest Earned: ₦{interestEarned.toLocaleString()}</span>
         </div>
       </CardContent>
       <CardFooter>

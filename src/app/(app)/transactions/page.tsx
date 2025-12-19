@@ -42,7 +42,7 @@ function TransactionsTable({ transactions }: { transactions: Transaction[] }) {
                 </TableCell>
                 <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
                 <TableCell className={`text-right font-semibold ${tx.amount > 0 ? 'text-green-600' : ''}`}>
-                  {tx.amount > 0 ? `+$${tx.amount.toFixed(2)}` : `-$${Math.abs(tx.amount).toFixed(2)}`}
+                  {tx.amount > 0 ? `+₦${tx.amount.toFixed(2)}` : `-₦${Math.abs(tx.amount).toFixed(2)}`}
                 </TableCell>
               </TableRow>
             ))}

@@ -28,7 +28,7 @@ export function LoanCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-4xl font-bold tracking-tight">
-          ${balance.toLocaleString()}
+          ₦{balance.toLocaleString()}
         </p>
         <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
@@ -41,7 +41,7 @@ export function LoanCard() {
           </div>
           <div className="flex items-center gap-2">
              <DollarSign className="h-4 w-4" />
-             <span>Next Payment: ${nextPayment.toLocaleString()}</span>
+             <span>Next Payment: ₦{nextPayment.toLocaleString()}</span>
           </div>
         </div>
       </CardContent>
