@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import React from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, getDocs, collection, query, where, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDocs, collection, query, where, writeBatch } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,14 +32,15 @@ const formSchema = z.object({
   referralCode: z.string().optional(),
 });
 
-// Function to generate a unique 4-digit ID
+// Function to generate a unique 4 to 6 digit ID
 async function generateUniqueXavefId(firestore: any): Promise<string> {
   let xavefId;
   let isUnique = false;
   const usersRef = collection(firestore, 'users');
+  const length = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
 
   while (!isUnique) {
-    xavefId = Math.floor(1000 + Math.random() * 9000).toString();
+    xavefId = Math.floor(Math.pow(10, length - 1) + Math.random() * 9 * Math.pow(10, length - 1)).toString();
     const q = query(usersRef, where('xavefId', '==', xavefId));
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
@@ -68,34 +69,69 @@ export function RegisterForm() {
     setIsLoading(true);
     try {
       
+      // 1. Check referral code if provided
+      let referrerUid: string | null = null;
+      let referralCodeDocId: string | null = null;
+      if (values.referralCode) {
+        const referralCodesRef = collection(firestore, 'referralCodes');
+        const q = query(referralCodesRef, where("code", "==", values.referralCode), where("used", "==", false));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            throw new Error("Invalid or already used referral code.");
+        }
+        
+        const referralDoc = querySnapshot.docs[0];
+        referrerUid = referralDoc.data().creatorUid;
+        referralCodeDocId = referralDoc.id;
+      }
+
+      // 2. Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
       
       const displayName = values.email.split('@')[0];
 
+      // 3. Update user profile
       await updateProfile(user, {
         displayName: displayName,
       });
 
+      // 4. Generate unique Xavef ID
       const xavefId = await generateUniqueXavefId(firestore);
       
+      // 5. Create a batched write for Firestore
+      const batch = writeBatch(firestore);
+
+      // Add user document to the batch
       const userDocRef = doc(firestore, "users", user.uid);
-      await setDoc(userDocRef, {
+      batch.set(userDocRef, {
         uid: user.uid,
         email: user.email,
         displayName: displayName,
         xavefId,
-        referredBy: null, // Temporarily disabled
+        referredBy: referrerUid,
         createdAt: new Date().toISOString(),
       });
+
+      // If a referral code was used, update it in the batch
+      if (referralCodeDocId) {
+          const referralCodeRef = doc(firestore, "referralCodes", referralCodeDocId);
+          batch.update(referralCodeRef, { used: true });
+      }
+
+      // 6. Commit the batch
+      await batch.commit();
+
 
       toast({
         title: "Account Created",
         description: "Welcome! Redirecting to your dashboard...",
       });
       router.push("/dashboard");
+
     } catch (error: any) {
-      console.error(error);
+      console.error("Registration Error:", error);
       toast({
         variant: "destructive",
         title: "Registration Failed",

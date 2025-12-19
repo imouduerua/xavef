@@ -6,12 +6,10 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read, update: if request.auth != null && request.auth.uid == userId;
-      // Allow a user to create their own document.
       allow create: if request.auth.uid == userId;
     }
 
     match /referralCodes/{codeId} {
-      // Allow a logged-in user to create a referral code for themselves
       allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
       
       // Allow an authenticated user to update a code to mark it as used (from false to true)
@@ -19,7 +17,8 @@ service cloud.firestore {
                      && request.resource.data.used == true
                      && resource.data.used == false;
       
-      // No one can read or delete referral codes directly
+      // No one can read or delete referral codes directly, except for reads during signup check.
+      // A full read is disallowed to prevent enumeration.
       allow read, delete: if false;
     }
 
