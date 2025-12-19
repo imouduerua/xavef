@@ -21,11 +21,11 @@ export async function createReferralCode(userId: string): Promise<{ success: boo
         const referralCodesRef = firestore.collection('referralCodes');
         
         // In a real app, you might want to check for code collisions, but for now we'll assume it's unique enough.
-        const newCodeRef = await referralCodesRef.add({
+        await referralCodesRef.add({
             code,
             creatorUid: userId,
             used: false,
-            createdAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(), // Corrected to ISO string to match schema
         });
 
         return { success: true, code };
