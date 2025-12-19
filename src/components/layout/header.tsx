@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bell, LogOut, Moon, User as UserIcon } from 'lucide-react';
+import { Bell, LogOut, Moon, User as UserIcon, Gift } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -112,6 +112,7 @@ export function AppHeader() {
                 </DropdownMenuItem>
                 <ReferralCodeDialog userId={user.uid}>
                     <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
+                        <Gift className="mr-2" />
                         Generate Referral Code
                     </button>
                 </ReferralCodeDialog>
@@ -133,4 +134,3 @@ export function AppHeader() {
       </header>
     </>
   );
-}

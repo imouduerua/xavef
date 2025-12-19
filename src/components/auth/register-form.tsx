@@ -7,7 +7,6 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import React from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, getDocs, collection, query, where } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useAuth, useFirestore } from "@/firebase";
+import { useAuth } from "@/firebase";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -31,28 +30,9 @@ const formSchema = z.object({
   }),
 });
 
-// Function to generate a unique 4 to 6 digit ID
-async function generateUniqueXavefId(firestore: any): Promise<string> {
-  let xavefId;
-  let isUnique = false;
-  const usersRef = collection(firestore, 'users');
-  const length = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
-
-  while (!isUnique) {
-    xavefId = Math.floor(Math.pow(10, length - 1) + Math.random() * 9 * Math.pow(10, length - 1)).toString();
-    const q = query(usersRef, where('xavefId', '==', xavefId));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-      isUnique = true;
-    }
-  }
-  return xavefId!;
-}
-
 export function RegisterForm() {
   const router = useRouter();
   const auth = useAuth();
-  const firestore = useFirestore();
   const [isLoading, setIsLoading] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -66,41 +46,11 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-        // 1. Create user with email and password
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         const user = userCredential.user;
         const displayName = values.email.split('@')[0];
 
-        // 2. Update user profile
         await updateProfile(user, { displayName });
-
-        // Isolate Firestore operations
-        try {
-            // 3. Generate unique Xavef ID
-            const xavefId = await generateUniqueXavefId(firestore);
-
-            // 4. Create the user document in Firestore
-            const userDocRef = doc(firestore, "users", user.uid);
-            await setDoc(userDocRef, {
-                uid: user.uid,
-                email: user.email,
-                displayName: displayName,
-                xavefId,
-                referredBy: null, // No referral for now
-                createdAt: new Date().toISOString(),
-            });
-
-        } catch (firestoreError: any) {
-            console.error("Firestore Error:", firestoreError);
-            // This toast will now show the specific Firestore error
-            toast({
-                variant: "destructive",
-                title: "Profile Save Failed",
-                description: firestoreError.message || "Could not save your user profile. Please contact support.",
-            });
-            // We still want to stop execution if the profile fails to save
-            return;
-        }
 
         toast({
             title: "Account Created",

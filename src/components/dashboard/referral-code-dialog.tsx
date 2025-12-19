@@ -1,6 +1,6 @@
 'use client';
 
-import { useFirestore } from '@/firebase';
+import { useFirestore, useAuth } from '@/firebase';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import { Check, Copy, Loader2, PartyPopper, RefreshCw } from 'lucide-react';
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { firestoreAdmin } from '@/firebase/admin';
 
 interface ReferralCodeDialogProps {
   userId: string;

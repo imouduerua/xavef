@@ -2,7 +2,7 @@
 
 import { Copy } from 'lucide-react';
 import Link from 'next/link';
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
 import { SolidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
@@ -12,11 +12,50 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useUserData } from '@/hooks/use-user-data';
+import { useUser } from '@/firebase';
+import { createUserProfile } from './actions';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 
 export type AccountType = 'solidara' | 'annual';
 
 export default function DashboardPage() {
-  const { userData } = useUserData();
+  const { user, loading: userLoading } = useUser();
+  const { userData, loading: userDataLoading } = useUserData();
+  const [isCreatingProfile, setIsCreatingProfile] = React.useState(true);
+
+
+  useEffect(() => {
+    const handleProfileCreation = async () => {
+        // If user is loaded, not loading user data, and the data is null (doesn't exist)
+        if (user && !userDataLoading && !userData) {
+            setIsCreatingProfile(true);
+            toast({
+              title: "Finalizing Account Setup",
+              description: "Please wait while we create your user profile...",
+            });
+            const result = await createUserProfile(user.uid, user.email!, user.displayName!);
+            if (!result.success) {
+                toast({
+                    variant: "destructive",
+                    title: "Profile Creation Failed",
+                    description: result.error || "Could not save your profile. Please contact support.",
+                });
+            } else {
+                 toast({
+                    title: "Account Ready!",
+                    description: "Your profile has been created successfully.",
+                });
+            }
+            // Setting to false will cause useUserData to refetch
+            setIsCreatingProfile(false);
+        } else if (user && userData) {
+           setIsCreatingProfile(false);
+        }
+    };
+
+    handleProfileCreation();
+  }, [user, userData, userDataLoading]);
 
 
   const [balances, setBalances] = React.useState({
@@ -50,7 +89,7 @@ export default function DashboardPage() {
   };
 
 
-  const copyToClipboard = (text: string, type: 'ID' | 'Code') => {
+  const copyToClipboard = (text: string, type: 'ID') => {
     if (!text) return;
     navigator.clipboard.writeText(text);
     toast({
@@ -58,6 +97,29 @@ export default function DashboardPage() {
       description: `Your Xavef ${type} has been copied to your clipboard.`,
     });
   };
+  
+  if (userLoading || userDataLoading || isCreatingProfile) {
+    return (
+        <div className="space-y-8">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+               <div className="flex items-center gap-4 text-sm">
+                 <Skeleton className="h-6 w-48" />
+                 <Skeleton className="h-6 w-8" />
+               </div>
+               <div className="flex items-center gap-2">
+                 <Skeleton className="h-10 w-24" />
+                 <Skeleton className="h-10 w-40" />
+               </div>
+            </div>
+             <div className="grid gap-6 md:grid-cols-3">
+                <CardSkeleton />
+                <CardSkeleton />
+                <CardSkeleton />
+            </div>
+        </div>
+    )
+  }
+
 
   return (
     <div className="space-y-8">
@@ -67,14 +129,6 @@ export default function DashboardPage() {
             <span className="text-muted-foreground">Your Xavef ID:</span>
             <span className="font-semibold">{userData?.xavefId}</span>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData?.xavefId ?? '', 'ID')}>
-              <Copy size={14} />
-            </Button>
-          </div>
-          <Separator orientation="vertical" className="h-6" />
-           <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Your Referral Code:</span>
-            <span className="font-semibold">{userData?.referralCode}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData?.referralCode ?? '', 'Code')}>
               <Copy size={14} />
             </Button>
           </div>
@@ -94,4 +148,20 @@ export default function DashboardPage() {
       <div></div>
     </div>
   );
+}
+
+function CardSkeleton() {
+    return (
+        <Card className="flex flex-col justify-between p-6">
+            <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-5 w-5" />
+                </div>
+                <Skeleton className="h-8 w-40" />
+                <Skeleton className="h-4 w-48" />
+            </div>
+            <Skeleton className="h-10 w-full mt-6" />
+        </Card>
+    )
 }
