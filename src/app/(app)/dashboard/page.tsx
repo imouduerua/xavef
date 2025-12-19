@@ -14,7 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { useUserData } from '@/hooks/use-user-data';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProfileInitializer } from '@/components/dashboard/profile-initializer';
 
 export type AccountType = 'solidara' | 'annual';
@@ -65,6 +65,12 @@ function DashboardContent() {
   
   const PageSkeleton = () => (
      <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-4 w-full" />
+                </CardHeader>
+            </Card>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                <div className="flex items-center gap-4 text-sm">
                  <Skeleton className="h-6 w-48" />
@@ -102,6 +108,14 @@ function DashboardContent() {
   return (
     <div className="space-y-6">
       <ProfileInitializer />
+       <Card>
+            <CardHeader>
+                <CardTitle>Welcome, {userData?.firstName || userData?.displayName || 'User'}</CardTitle>
+                <CardDescription>
+                    Here is a summary of your accounts and recent activity.
+                </CardDescription>
+            </CardHeader>
+        </Card>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Your Xavef ID:</span>
