@@ -1,6 +1,6 @@
 'use client';
 
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import {
   Dialog,
   DialogContent,
