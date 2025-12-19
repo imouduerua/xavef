@@ -1,6 +1,6 @@
 'use client';
 
-import { createReferralCode } from '@/app/(app)/actions';
+import { useFirestore } from '@/firebase';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
+import { addDoc, collection } from 'firebase/firestore';
 import { Check, Copy, Loader2, PartyPopper } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
@@ -19,15 +20,53 @@ interface ReferralCodeDialogProps {
   setIsOpen: (open: boolean) => void;
 }
 
+function generateReferralCode(length = 8) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
 export function ReferralCodeDialog({
   userId,
   isOpen,
   setIsOpen,
 }: ReferralCodeDialogProps) {
+  const firestore = useFirestore();
   const [code, setCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
+  const handleGenerateCode = async () => {
+    if (!userId || !firestore) return;
+    setIsLoading(true);
+    try {
+        const newCode = generateReferralCode();
+        const referralCodesRef = collection(firestore, 'referralCodes');
+        
+        await addDoc(referralCodesRef, {
+            code: newCode,
+            creatorUid: userId,
+            used: false,
+            createdAt: new Date().toISOString(),
+        });
+
+      setCode(newCode);
+    } catch (error: any) {
+      console.error("Error generating referral code:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to Generate Code',
+        description: error.message || 'An unexpected error occurred. Please try again.',
+      });
+      setIsOpen(false);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+  
   useEffect(() => {
     if (isOpen) {
       handleGenerateCode();
@@ -37,25 +76,7 @@ export function ReferralCodeDialog({
       setIsLoading(false);
       setIsCopied(false);
     }
-  }, [isOpen, userId]);
-
-  const handleGenerateCode = async () => {
-    if (!userId) return;
-    setIsLoading(true);
-    const result = await createReferralCode(userId);
-    if (result.success && result.code) {
-      setCode(result.code);
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to Generate Code',
-        description:
-          result.error || 'An unexpected error occurred. Please try again.',
-      });
-      setIsOpen(false);
-    }
-    setIsLoading(false);
-  };
+  }, [isOpen]);
 
   const handleCopy = () => {
     if (code) {
@@ -82,7 +103,7 @@ export function ReferralCodeDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center space-x-2 pt-4">
-          {isLoading ? (
+          {isLoading || !code ? (
             <div className="flex h-10 w-full items-center justify-center rounded-md border border-dashed">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
