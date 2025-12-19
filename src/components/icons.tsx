@@ -8,3 +8,10 @@ export const XavefLogo = (props: React.SVGProps<SVGSVGElement>) => (
         </g>
     </svg>
 );
+
+
+export const XavefLogoText = (props: React.SVGProps<SVGTextElement>) => (
+    <text x="0" y="15" fontFamily="serif" fontSize="24" fontWeight="bold" fill="currentColor" {...props}>
+        Xavef
+    </text>
+);
