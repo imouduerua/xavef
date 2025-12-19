@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Table,
   TableBody,
@@ -9,8 +11,11 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockTransactions } from "@/lib/mock-data";
 import type { Transaction, TransactionStatus, TransactionType } from "@/lib/types";
+import { useUser, useCollection, useFirestore } from "@/firebase";
+import { collection, query, where, orderBy } from "firebase/firestore";
+import { useMemo } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destructive"> = {
   Completed: "default",
@@ -18,7 +23,20 @@ const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destru
   Failed: "destructive",
 };
 
-function TransactionsTable({ transactions }: { transactions: Transaction[] }) {
+function TransactionsTable({ transactions, isLoading }: { transactions: Transaction[], isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card>
       <CardContent className="pt-6">
@@ -54,10 +72,23 @@ function TransactionsTable({ transactions }: { transactions: Transaction[] }) {
 }
 
 export default function TransactionsPage() {
-  const all = mockTransactions;
-  const deposits = mockTransactions.filter((tx) => tx.type === "Deposit" || tx.type === "Interest");
-  const withdrawals = mockTransactions.filter((tx) => tx.type === "Withdrawal");
-  const payments = mockTransactions.filter((tx) => tx.type === "Loan Payment");
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const transactionsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(
+      collection(firestore, "users", user.uid, "transactions"),
+      orderBy("date", "desc")
+    );
+  }, [user, firestore]);
+
+  const { data: transactions, loading } = useCollection<Transaction>(transactionsQuery);
+
+  const all = transactions || [];
+  const deposits = all.filter((tx) => tx.type === "Deposit" || tx.type === "Interest");
+  const withdrawals = all.filter((tx) => tx.type === "Withdrawal");
+  const payments = all.filter((tx) => tx.type === "Loan Payment");
 
   return (
     <Tabs defaultValue="all">
@@ -68,16 +99,16 @@ export default function TransactionsPage() {
         <TabsTrigger value="payments">Payments</TabsTrigger>
       </TabsList>
       <TabsContent value="all">
-        <TransactionsTable transactions={all} />
+        <TransactionsTable transactions={all} isLoading={loading} />
       </TabsContent>
       <TabsContent value="deposits">
-        <TransactionsTable transactions={deposits} />
+        <TransactionsTable transactions={deposits} isLoading={loading} />
       </TabsContent>
       <TabsContent value="withdrawals">
-        <TransactionsTable transactions={withdrawals} />
+        <TransactionsTable transactions={withdrawals} isLoading={loading} />
       </TabsContent>
       <TabsContent value="payments">
-        <TransactionsTable transactions={payments} />
+        <TransactionsTable transactions={payments} isLoading={loading} />
       </TabsContent>
     </Tabs>
   );

@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { mockNotifications } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { mockUser } from '@/lib/mock-data';
+import { useUser } from '@/firebase';
 
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -31,6 +31,7 @@ const pathToTitle: { [key: string]: string } = {
 
 export function AppHeader() {
   const pathname = usePathname();
+  const { user } = useUser();
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
   const [isClient, setIsClient] = useState(false);
 
@@ -73,8 +74,8 @@ export function AppHeader() {
           </DropdownMenu>
         )}
         <Avatar className="h-9 w-9">
-          <AvatarImage src={mockUser.avatarUrl} alt={mockUser.name} />
-          <AvatarFallback>{mockUser.name.charAt(0)}</AvatarFallback>
+          <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? ''} />
+          <AvatarFallback>{user?.displayName?.charAt(0) ?? user?.email?.charAt(0)}</AvatarFallback>
         </Avatar>
       </div>
     </header>

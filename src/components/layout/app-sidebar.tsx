@@ -12,6 +12,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
+import { signOut } from 'firebase/auth';
 
 import {
   Sidebar,
@@ -25,10 +26,12 @@ import {
 } from '@/components/ui/sidebar';
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { mockUser } from '@/lib/mock-data';
+import { useAuth, useUser } from '@/firebase';
+import { toast } from '@/hooks/use-toast';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/transactions', icon: ArrowLeftRight, label: 'Transactions' },
   { href: '/savings', icon: PiggyBank, label: 'Savings' },
   { href: '/groups', icon: Users, label: 'Groups' },
   { href: '/loans', icon: Landmark, label: 'Loans' },
@@ -42,9 +45,24 @@ const bottomNavItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const auth = useAuth();
+  const { user } = useUser();
 
-  const handleLogout = () => {
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'There was an error logging you out. Please try again.',
+      });
+    }
   };
 
   return (
@@ -94,12 +112,12 @@ export function AppSidebar() {
 
         <div className="mt-4 flex items-center gap-3 p-2">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={mockUser.avatarUrl} alt={mockUser.name} />
-            <AvatarFallback>{mockUser.name.charAt(0)}</AvatarFallback>
+            <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? ''} />
+            <AvatarFallback>{user?.displayName?.charAt(0) ?? user?.email?.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="flex-1 overflow-hidden">
-            <p className="truncate font-semibold">{mockUser.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{mockUser.email}</p>
+            <p className="truncate font-semibold">{user?.displayName}</p>
+            <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
           </div>
           <SidebarMenuButton variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogout} tooltip="Logout">
             <LogOut size={16} />
