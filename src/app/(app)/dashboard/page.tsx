@@ -39,20 +39,29 @@ function DashboardContent() {
         });
 
         const handleProfileCreation = async () => {
-            const result = await createUserProfile(user.uid, user.email!, user.displayName!, referralCode);
-            if (result.success) {
-                toast({
-                    title: "Account Ready!",
-                    description: "Your profile has been created successfully.",
-                });
-            } else {
-                toast({
+            try {
+                const result = await createUserProfile(user.uid, user.email!, user.displayName!, referralCode);
+                if (result.success) {
+                    toast({
+                        title: "Account Ready!",
+                        description: "Your profile has been created successfully.",
+                    });
+                } else {
+                     toast({
+                        variant: "destructive",
+                        title: "Profile Creation Failed",
+                        description: result.error || "An unknown error occurred on the server.",
+                    });
+                }
+            } catch (e: any) {
+                 toast({
                     variant: "destructive",
                     title: "Profile Creation Failed",
-                    description: result.error || "Could not save your profile. Please contact support.",
+                    description: "The server could not connect to the database. This might be due to an authentication token issue. Please try again later.",
                 });
+            } finally {
+                setIsCreatingProfile(false);
             }
-            setIsCreatingProfile(false);
         };
 
         handleProfileCreation();
