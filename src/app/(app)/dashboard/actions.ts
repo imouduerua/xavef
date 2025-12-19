@@ -48,47 +48,51 @@ async function generateUniqueXavefId(): Promise<string> {
 }
 
 export async function createUserProfile(uid: string, email: string, displayName: string, referralCode?: string | null): Promise<{ success: boolean, error?: string }> {
+    const userDocRef = firestoreAdmin.collection("users").doc(uid);
+
     try {
-        const userDocRef = firestoreAdmin.collection("users").doc(uid);
-        const docSnap = await userDocRef.get();
+        console.log(`[createUserProfile] Starting transaction for user: ${uid}`);
+        await firestoreAdmin.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userDocRef);
 
-        if (docSnap.exists) {
-            console.log(`Profile for user ${uid} already exists.`);
-            return { success: true }; 
-        }
-
-        console.log(`Creating profile for new user ${uid}...`);
-
-        const xavefId = await generateUniqueXavefId();
-        let referredBy: string | null = null;
-
-        if (referralCode) {
-            console.log(`Attempting to process referral code: ${referralCode}`);
-            const referralDocRef = firestoreAdmin.collection('referralCodes').doc(referralCode);
-            const referralDoc = await referralDocRef.get();
-
-            if (referralDoc.exists && !referralDoc.data()?.used) {
-                referredBy = referralDoc.data()?.creatorUid;
-                console.log(`Referral code is valid. Referred by: ${referredBy}. Marking code as used.`);
-                await referralDocRef.update({ used: true });
-            } else {
-                console.log("Referral code not found, is invalid, or has already been used.");
+            if (userDoc.exists) {
+                console.log(`[createUserProfile] Profile for user ${uid} already exists. Aborting.`);
+                return;
             }
-        }
 
-        await userDocRef.set({
-            uid,
-            email,
-            displayName,
-            xavefId,
-            createdAt: FieldValue.serverTimestamp(),
-            referredBy,
+            console.log(`[createUserProfile] Generating Xavef ID for user ${uid}.`);
+            const xavefId = await generateUniqueXavefId();
+            let referredBy: string | null = null;
+
+            if (referralCode) {
+                console.log(`[createUserProfile] Processing referral code: ${referralCode}`);
+                const referralDocRef = firestoreAdmin.collection('referralCodes').doc(referralCode);
+                const referralDoc = await transaction.get(referralDocRef);
+
+                if (referralDoc.exists && !referralDoc.data()?.used) {
+                    referredBy = referralDoc.data()?.creatorUid;
+                    console.log(`[createUserProfile] Referral code is valid. Referred by: ${referredBy}. Marking code as used.`);
+                    transaction.update(referralDocRef, { used: true });
+                } else {
+                    console.log("[createUserProfile] Referral code not found, is invalid, or has already been used.");
+                }
+            }
+            
+            console.log(`[createUserProfile] Creating user document for ${uid}.`);
+            transaction.set(userDocRef, {
+                uid,
+                email,
+                displayName,
+                xavefId,
+                createdAt: FieldValue.serverTimestamp(),
+                referredBy,
+            });
         });
 
-        console.log(`Successfully created profile for user ${uid}.`);
+        console.log(`[createUserProfile] Transaction successful for user ${uid}.`);
         return { success: true };
     } catch (error: any) {
-        console.error("Error creating user profile with Admin SDK:", error);
-        return { success: false, error: "An unexpected error occurred while creating your profile. Please contact support." };
+        console.error("[createUserProfile] Error in transaction:", error);
+        return { success: false, error: `An unexpected error occurred: ${error.message}` };
     }
 }

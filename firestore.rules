@@ -7,7 +7,9 @@ service cloud.firestore {
     match /users/{userId} {
       // A user can only read or update their own document.
       allow read, update: if request.auth != null && request.auth.uid == userId;
+      
       // Creation is handled by a trusted server-side environment (Admin SDK), not by clients.
+      // No client-side creation is allowed.
       allow create: if false; 
     }
 
