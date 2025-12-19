@@ -125,8 +125,13 @@ export function RegisterForm() {
     } catch (error: any) {
         console.error("Registration Error:", error);
         
-        // If user was created in Auth but Firestore failed, show specific message
-        if (userCredential && error.code?.includes('permission-denied')) {
+        if (error.code === 'auth/email-already-in-use') {
+            toast({
+                variant: "destructive",
+                title: "Registration Failed",
+                description: "This email address is already in use. Please log in instead.",
+            });
+        } else if (userCredential && error.code?.includes('permission-denied')) {
              toast({
                 variant: "destructive",
                 title: "Registration Incomplete",
