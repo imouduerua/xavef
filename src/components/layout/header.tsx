@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bell, Copy, LogOut, Moon, Sun, User as UserIcon } from 'lucide-react';
+import { Bell, Copy, LogOut, Moon, User as UserIcon } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -21,6 +21,7 @@ import { signOut } from 'firebase/auth';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useUserData } from '@/hooks/use-user-data';
+import { createReferralCode } from '@/app/(app)/actions';
 
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -63,14 +64,23 @@ export function AppHeader() {
     }
   };
   
-  const copyToClipboard = (text: string | undefined, type: 'ID' | 'Code') => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    toast({
-      title: 'Copied!',
-      description: `Your Xavef ${type} has been copied to your clipboard.`,
-    });
+  const handleGenerateCode = async () => {
+    const result = await createReferralCode();
+    if (result.success && result.code) {
+      navigator.clipboard.writeText(result.code);
+      toast({
+        title: "Referral Code Generated & Copied!",
+        description: `Your new one-time code is: ${result.code}`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Failed to Generate Code",
+        description: result.error,
+      });
+    }
   };
+
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -129,9 +139,9 @@ export function AppHeader() {
                 Profile
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => copyToClipboard(userData?.referralCode, 'Code')}>
+            <DropdownMenuItem onClick={handleGenerateCode}>
                 <Copy className="mr-2" />
-                Copy Referral Code
+                Generate Referral Code
             </DropdownMenuItem>
              <DropdownMenuItem asChild>
               <Link href="/settings">

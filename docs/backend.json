@@ -22,13 +22,9 @@
           "type": "string",
           "description": "A unique 4 to 6 digit user ID, like an account number."
         },
-        "referralCode": {
-          "type": "string",
-          "description": "A unique code the user can share to invite others."
-        },
         "referredBy": {
           "type": "string",
-          "description": "The user ID of the user who referred them."
+          "description": "The UID of the user who referred them."
         },
         "createdAt": {
           "type": "string",
@@ -36,7 +32,7 @@
           "description": "The timestamp when the user account was created."
         }
       },
-      "required": ["uid", "email", "displayName", "xavefId", "referralCode", "createdAt"]
+      "required": ["uid", "email", "displayName", "xavefId", "createdAt"]
     },
     "transaction": {
       "title": "Transaction",
@@ -63,6 +59,27 @@
         }
       },
       "required": ["date", "description", "type", "status", "amount"]
+    },
+    "referralCode": {
+      "title": "Referral Code",
+      "description": "A one-time use referral code.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "creatorUid": {
+          "type": "string"
+        },
+        "used": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["code", "creatorUid", "used", "createdAt"]
     }
   },
   "auth": {
@@ -80,6 +97,12 @@
         "$ref": "#/entities/transaction"
       },
       "description": "Stores a user's transactions."
+    },
+    "/referralCodes/{codeId}": {
+      "schema": {
+        "$ref": "#/entities/referralCode"
+      },
+      "description": "Stores one-time use referral codes."
     }
   }
 }

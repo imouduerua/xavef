@@ -6,7 +6,7 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import React from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, getDocs, collection, query, where } from "firebase/firestore";
+import { doc, setDoc, getDocs, collection, query, where, writeBatch } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -51,17 +51,6 @@ async function generateUniqueXavefId(firestore: any): Promise<string> {
   return xavefId!;
 }
 
-
-// Function to generate a random referral code
-function generateReferralCode(length = 8) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-}
-
 export function RegisterForm() {
   const router = useRouter();
   const auth = useAuth();
@@ -83,20 +72,22 @@ export function RegisterForm() {
     try {
       // Validate invitation code if provided
       let referredBy = null;
+      let referralCodeDoc = null;
       if (values.invitationCode) {
-        const usersRef = collection(firestore, 'users');
-        const q = query(usersRef, where('referralCode', '==', values.invitationCode));
+        const referralCodesRef = collection(firestore, 'referralCodes');
+        const q = query(referralCodesRef, where('code', '==', values.invitationCode), where('used', '==', false));
         const snapshot = await getDocs(q);
         if (snapshot.empty) {
           toast({
             variant: "destructive",
             title: "Registration Failed",
-            description: "Invalid invitation code.",
+            description: "Invalid or already used invitation code.",
           });
           setIsLoading(false);
           return;
         }
-        referredBy = snapshot.docs[0].id;
+        referralCodeDoc = snapshot.docs[0];
+        referredBy = referralCodeDoc.data().creatorUid;
       }
 
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
@@ -107,17 +98,26 @@ export function RegisterForm() {
       });
 
       const xavefId = await generateUniqueXavefId(firestore);
-      const referralCode = generateReferralCode();
+      
+      const batch = writeBatch(firestore);
 
-      await setDoc(doc(firestore, "users", user.uid), {
+      // Create user document
+      const userDocRef = doc(firestore, "users", user.uid);
+      batch.set(userDocRef, {
         uid: user.uid,
         email: user.email,
         displayName: values.fullName,
         xavefId,
-        referralCode,
         referredBy,
         createdAt: new Date().toISOString(),
       });
+      
+      // Mark referral code as used
+      if (referralCodeDoc) {
+        batch.update(referralCodeDoc.ref, { used: true });
+      }
+
+      await batch.commit();
 
       toast({
         title: "Account Created",

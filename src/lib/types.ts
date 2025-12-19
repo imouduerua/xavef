@@ -9,7 +9,6 @@ export interface UserData {
   email: string;
   displayName: string;
   xavefId: string;
-  referralCode: string;
   referredBy: string | null;
   createdAt: string;
 }
@@ -45,4 +44,12 @@ export interface Notification {
   description: string;
   date: string;
   read: boolean;
+}
+
+export interface ReferralCode {
+    id: string;
+    code: string;
+    creatorUid: string;
+    used: boolean;
+    createdAt: string;
 }
