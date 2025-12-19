@@ -16,7 +16,7 @@ export function AnnualSavingsCard() {
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle>Annual Savings</CardTitle>
+            <CardTitle className="text-xl">Annual Savings</CardTitle>
             <CardDescription>Total saved this year</CardDescription>
           </div>
           <div className="rounded-md bg-primary p-2 text-primary-foreground">
@@ -25,7 +25,7 @@ export function AnnualSavingsCard() {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-4xl font-bold tracking-tight">
+        <p className="text-5xl font-bold tracking-tight">
           ${balance.toLocaleString()}
         </p>
       </CardContent>
