@@ -4,7 +4,6 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  ArrowLeftRight,
   Landmark,
   LayoutDashboard,
   LogOut,
@@ -12,7 +11,6 @@ import {
   Settings,
   Users,
   Wallet,
-  BrainCircuit,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
@@ -32,12 +30,10 @@ import { toast } from '@/hooks/use-toast';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/transactions', icon: ArrowLeftRight, label: 'Transactions' },
   { href: '/savings', icon: PiggyBank, label: 'Savings' },
   { href: '/groups', icon: Users, label: 'Groups' },
   { href: '/loans', icon: Landmark, label: 'Loans' },
   { href: '/withdrawal', icon: Wallet, label: 'Withdrawal' },
-  { href: '/advice', icon: BrainCircuit, label: 'Advice' },
 ];
 
 const bottomNavItems = [
@@ -49,7 +45,7 @@ export function AppSidebar() {
   const { user } = useUser();
 
   return (
-    <Sidebar className="border-r" collapsible="icon">
+    <Sidebar className="border-r" collapsible="offcanvas">
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <svg
