@@ -1,6 +1,6 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/header";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { UserDataProvider } from "@/context/user-data-provider";
 
 export default function AppLayout({
@@ -13,7 +13,7 @@ export default function AppLayout({
       <UserDataProvider>
         <div className="min-h-screen bg-background flex">
           <AppSidebar />
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col w-full overflow-x-hidden">
             <AppHeader />
             <main className="flex-1 overflow-y-auto">
                 <div className="w-full">
