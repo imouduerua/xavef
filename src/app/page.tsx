@@ -19,12 +19,20 @@ export default function LoginPage() {
 
         <LoginForm />
 
-        <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Button variant="link" asChild className="p-0">
-            <Link href="/register">Sign up</Link>
-          </Button>
-        </p>
+        <div className="text-center text-sm text-muted-foreground">
+            <p>
+                Don&apos;t have an account?{" "}
+                <Button variant="link" asChild className="p-0">
+                    <Link href="/register">Sign up</Link>
+                </Button>
+            </p>
+            <p className="mt-2">
+                Are you an administrator?{" "}
+                <Button variant="link" asChild className="p-0">
+                    <Link href="/admin-login">Admin Login</Link>
+                </Button>
+            </p>
+        </div>
       </div>
     </div>
   );

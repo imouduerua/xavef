@@ -12,7 +12,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !isAdmin) {
-      router.replace('/dashboard');
+      router.replace('/admin-login');
     }
   }, [isAdmin, loading, router]);
 

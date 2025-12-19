@@ -9,16 +9,9 @@ type AdminData = {
   isAdmin: boolean;
 };
 
-const SUPER_ADMIN_EMAIL = "admin@xavef.com";
-
 export function useAdminStatus() {
   const { user } = useUser();
   const firestore = useFirestore();
-
-  // Special check for the super admin email
-  if (user && user.email === SUPER_ADMIN_EMAIL) {
-    return { isAdmin: true, loading: false };
-  }
 
   const adminDocRef = React.useMemo(() => {
     if (!user) return null;
@@ -27,5 +20,10 @@ export function useAdminStatus() {
 
   const { data: adminData, loading } = useDoc<AdminData>(adminDocRef);
 
-  return { isAdmin: adminData?.isAdmin === true, loading };
+  const isAdmin = adminData?.isAdmin === true;
+
+  // Combine user loading and admin data loading
+  const combinedLoading = useUser().loading || loading;
+
+  return { isAdmin, loading: combinedLoading };
 }
