@@ -1,11 +1,12 @@
 'use client';
 
-import { ArrowUpRight, Copy, Repeat } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import Link from 'next/link';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
 import { SolidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
 import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
+import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 
@@ -29,10 +30,7 @@ export default function DashboardPage() {
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline">
-            <Repeat className="mr-2 h-4 w-4" />
-            Transfer
-          </Button>
+          <TransferDialog />
           <Button asChild>
             <Link href="/transactions">Transaction History</Link>
           </Button>
