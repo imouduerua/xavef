@@ -12,9 +12,14 @@ let app: App;
 const serviceAccount = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
 if (!getApps().length) {
-  app = initializeApp({
-    credential: serviceAccount ? cert(JSON.parse(serviceAccount)) : undefined,
-  });
+  if (serviceAccount) {
+    app = initializeApp({
+      credential: cert(JSON.parse(serviceAccount)),
+    });
+  } else {
+    // In App Hosting, the SDK discovers credentials automatically.
+    app = initializeApp();
+  }
 } else {
   app = getApps()[0];
 }
