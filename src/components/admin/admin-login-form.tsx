@@ -69,6 +69,7 @@ export function AdminLoginForm() {
           title: "Admin Login Successful",
           description: "Redirecting to the admin dashboard...",
         });
+        // Use window.location.assign for a reliable redirect.
         window.location.assign("/admin");
       } else {
         await auth.signOut(); // Not an admin, sign them out immediately.
