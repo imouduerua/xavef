@@ -4,6 +4,7 @@
 import { z } from 'zod';
 import { firestoreAdmin } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { revalidatePath } from 'next/cache';
 
 const transferSchema = z.object({
   recipientId: z.string(),
@@ -113,5 +114,48 @@ export async function createUserProfile(uid: string, email: string, referralCode
     } catch (error: any) {
         console.error("[createUserProfile] CRITICAL ERROR during profile creation transaction:", error);
         return { success: false, error: error.message || `An unexpected error occurred during profile creation.` };
+    }
+}
+
+
+const depositSchema = z.object({
+    userId: z.string().min(1, "User ID is required."),
+    amount: z.number().positive("Amount must be positive."),
+    description: z.string().min(1, "Description is required."),
+});
+
+export async function createDepositTransaction(values: z.infer<typeof depositSchema>): Promise<{
+    success: boolean;
+    error?: string;
+}> {
+    const validation = depositSchema.safeParse(values);
+    if (!validation.success) {
+        return { success: false, error: "Invalid input." };
+    }
+
+    const { userId, amount, description } = validation.data;
+    const transactionRef = firestoreAdmin.collection(`users/${userId}/transactions`).doc();
+
+    try {
+        const newTransaction = {
+            date: FieldValue.serverTimestamp(),
+            amount,
+            description,
+            status: 'Pending',
+            type: 'Deposit',
+        };
+
+        await transactionRef.set(newTransaction);
+        
+        // Revalidate admin path to show new pending transaction
+        revalidatePath('/admin/pending-transactions', 'page');
+        // Revalidate user's transactions page
+        revalidatePath('/transactions', 'page');
+        
+        return { success: true };
+
+    } catch (error: any) {
+        console.error("Error creating deposit transaction:", error);
+        return { success: false, error: "An unexpected server error occurred." };
     }
 }

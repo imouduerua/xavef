@@ -1,6 +1,7 @@
 import { Calendar } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '../ui/button';
+import { DepositDialog } from './deposit-dialog';
 
 interface AnnualSavingsCardProps {
     balance: number;
@@ -27,7 +28,9 @@ export function AnnualSavingsCard({ balance }: AnnualSavingsCardProps) {
         <CardDescription>End of year savings goal</CardDescription>
       </CardContent>
       <CardFooter>
-        <Button className="w-full">Deposit</Button>
+         <DepositDialog accountName="Annual Savings">
+            <Button className="w-full">Deposit</Button>
+        </DepositDialog>
       </CardFooter>
     </Card>
   );

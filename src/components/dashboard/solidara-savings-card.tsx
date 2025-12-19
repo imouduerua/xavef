@@ -1,6 +1,7 @@
 import { PiggyBank } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '../ui/button';
+import { DepositDialog } from './deposit-dialog';
 
 interface SolidaraSavingsCardProps {
   balance: number;
@@ -27,7 +28,9 @@ export function SolidaraSavingsCard({ balance }: SolidaraSavingsCardProps) {
         <CardDescription>Daily savings contributions</CardDescription>
       </CardContent>
       <CardFooter>
-        <Button className="w-full">Deposit</Button>
+        <DepositDialog accountName="Savings (Olidara)">
+            <Button className="w-full">Deposit</Button>
+        </DepositDialog>
       </CardFooter>
     </Card>
   );
