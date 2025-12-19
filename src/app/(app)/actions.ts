@@ -23,7 +23,7 @@ export async function createReferralCode(userId: string): Promise<{ success: boo
         const code = generateReferralCode();
         const referralCodesRef = collection(firestore, 'referralCodes');
         
-        await addDoc(referralCodesRef, {
+        const docRef = await addDoc(referralCodesRef, {
             code,
             creatorUid: userId,
             used: false,
@@ -32,7 +32,6 @@ export async function createReferralCode(userId: string): Promise<{ success: boo
 
         return { success: true, code };
     } catch (error) {
-        console.error("Error generating referral code:", error);
         return { success: false, error: "Failed to generate referral code. Please try again." };
     }
 }
