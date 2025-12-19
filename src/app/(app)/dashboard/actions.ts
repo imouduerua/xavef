@@ -87,7 +87,6 @@ export async function createUserProfile(uid: string, email: string, firstName: s
                 email,
                 firstName,
                 lastName,
-                displayName: `${firstName} ${lastName}`,
                 dateOfBirth: null,
                 phoneNumber: null,
                 address: null,
