@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import React from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +20,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -33,7 +32,7 @@ const formSchema = z.object({
 
 export function AdminLoginForm() {
   const auth = useAuth();
-  const firestore = useFirestore();
+  const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -47,38 +46,14 @@ export function AdminLoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      const user = userCredential.user;
-
-      let isAdmin = false;
-
-      // Special case for the super admin email
-      if (user.email === 'admin@xavef.com') {
-        isAdmin = true;
-      } else {
-        // Standard check for other admins
-        const adminDocRef = doc(firestore, 'admins', user.uid);
-        const adminDoc = await getDoc(adminDocRef);
-        if (adminDoc.exists() && adminDoc.data()?.isAdmin) {
-          isAdmin = true;
-        }
-      }
+      await signInWithEmailAndPassword(auth, values.email, values.password);
       
-      if (isAdmin) {
-        toast({
-          title: "Admin Login Successful",
-          description: "Redirecting to the admin dashboard...",
-        });
-        // Use window.location.assign for a reliable redirect.
-        window.location.assign("/admin");
-      } else {
-        await auth.signOut(); // Not an admin, sign them out immediately.
-        toast({
-          variant: "destructive",
-          title: "Access Denied",
-          description: "This account does not have administrator privileges.",
-        });
-      }
+      toast({
+        title: "Login Successful",
+        description: "Redirecting to the admin dashboard...",
+      });
+      // The AdminAuthGuard will now handle the role check correctly.
+      router.push("/admin");
 
     } catch (error: any) {
       toast({

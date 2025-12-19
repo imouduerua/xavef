@@ -10,20 +10,26 @@ type AdminData = {
 };
 
 export function useAdminStatus() {
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
+  // Super admin check
+  const isSuperAdmin = user?.email === 'admin@xavef.com';
+
   const adminDocRef = React.useMemo(() => {
-    if (!user) return null;
+    // If the user is the super admin, we don't need to check Firestore.
+    if (!user || isSuperAdmin) return null;
     return doc(firestore, 'admins', user.uid);
-  }, [user, firestore]);
+  }, [user, firestore, isSuperAdmin]);
 
-  const { data: adminData, loading } = useDoc<AdminData>(adminDocRef);
+  const { data: adminData, loading: docLoading } = useDoc<AdminData>(adminDocRef);
 
-  const isAdmin = adminData?.isAdmin === true;
+  // An admin is either the super admin or is marked as an admin in the database.
+  const isAdmin = isSuperAdmin || adminData?.isAdmin === true;
 
-  // Combine user loading and admin data loading
-  const combinedLoading = useUser().loading || loading;
+  // Loading is complete when user loading is done, AND if we need to check the doc, doc loading is also done.
+  const loading = userLoading || (user && !isSuperAdmin ? docLoading : false);
 
-  return { isAdmin, loading: combinedLoading };
+
+  return { isAdmin, loading };
 }
