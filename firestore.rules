@@ -4,18 +4,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // A user can read and create their own user profile.
     match /users/{userId} {
+      // Allow a user to read their own profile
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // Allow a user to create their own profile, checking the UID in the resource data
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
     }
 
-    // A user can create a referral code for themselves.
-    // A new user can update a referral code to mark it as used during signup.
-    // No one can read or delete referral codes directly.
     match /referralCodes/{codeId} {
+      // Allow a logged-in user to create a referral code for themselves
       allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
-      allow update: if request.auth != null && request.resource.data.used == true && resource.data.used == false;
+      // Allow a newly-signing-up user to mark a code as used
+      allow update: if request.resource.data.used == true && resource.data.used == false;
       allow read, delete: if false;
     }
 
