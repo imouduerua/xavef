@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/header";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { UserDataProvider } from "@/context/user-data-provider";
 
 export default function AppLayout({
@@ -8,16 +9,18 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <UserDataProvider>
-      <div className="min-h-screen bg-background flex">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col">
-          <AppHeader />
-          <main className="flex-1 overflow-y-auto">
-              {children}
-          </main>
+    <SidebarProvider>
+      <UserDataProvider>
+        <div className="flex min-h-screen bg-background">
+          <AppSidebar />
+          <div className="flex-1 flex flex-col w-full">
+            <AppHeader />
+            <main className="flex-1 overflow-y-auto">
+                {children}
+            </main>
+          </div>
         </div>
-      </div>
-    </UserDataProvider>
+      </UserDataProvider>
+    </SidebarProvider>
   );
 }
