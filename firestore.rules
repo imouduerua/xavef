@@ -11,10 +11,12 @@ service cloud.firestore {
     }
 
     // A user can create a referral code for themselves.
-    // No one can read, update or delete referral codes directly.
+    // A new user can update a referral code to mark it as used during signup.
+    // No one can read or delete referral codes directly.
     match /referralCodes/{codeId} {
       allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
-      allow read, update, delete: if false;
+      allow update: if request.auth != null && request.resource.data.used == true && resource.data.used == false;
+      allow read, delete: if false;
     }
     
     // Default deny all other collections
