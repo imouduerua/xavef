@@ -25,11 +25,13 @@ function DashboardContent() {
   const [isCreatingProfile, setIsCreatingProfile] = React.useState(false);
   const searchParams = useSearchParams();
   const referralCode = searchParams.get('referralCode');
+  const firstName = searchParams.get('firstName');
+  const lastName = searchParams.get('lastName');
   const profileCreationAttempted = useRef(false);
 
   useEffect(() => {
     // Ensure this effect runs only once and under the right conditions
-    if (user && !userData && !userDataLoading && !isCreatingProfile && !profileCreationAttempted.current) {
+    if (user && !userData && !userDataLoading && !isCreatingProfile && !profileCreationAttempted.current && firstName && lastName) {
         profileCreationAttempted.current = true; // Mark that we are attempting to create a profile
         setIsCreatingProfile(true);
         
@@ -40,7 +42,7 @@ function DashboardContent() {
 
         const handleProfileCreation = async () => {
             try {
-                const result = await createUserProfile(user.uid, user.email!, user.displayName!, referralCode);
+                const result = await createUserProfile(user.uid, user.email!, firstName, lastName, referralCode);
                 if (result.success) {
                     toast({
                         title: "Account Ready!",
@@ -56,8 +58,8 @@ function DashboardContent() {
             } catch (e: any) {
                  toast({
                     variant: "destructive",
-                    title: "Profile Creation Failed",
-                    description: "The server could not connect to the database. This might be due to an authentication token issue. Please try again later.",
+                    title: "Profile Creation Error",
+                    description: "A client-side error occurred. This might be due to an authentication token issue. Please try again later.",
                 });
             } finally {
                 setIsCreatingProfile(false);
@@ -66,7 +68,7 @@ function DashboardContent() {
 
         handleProfileCreation();
     }
-  }, [user, userData, userDataLoading, isCreatingProfile, referralCode]);
+  }, [user, userData, userDataLoading, isCreatingProfile, referralCode, firstName, lastName]);
 
 
   const [balances, setBalances] = React.useState({

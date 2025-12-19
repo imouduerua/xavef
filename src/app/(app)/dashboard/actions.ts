@@ -48,7 +48,7 @@ async function generateUniqueXavefId(): Promise<string> {
   return xavefId!;
 }
 
-export async function createUserProfile(uid: string, email: string, displayName: string, referralCode?: string | null): Promise<{ success: boolean, error?: string }> {
+export async function createUserProfile(uid: string, email: string, firstName: string, lastName: string, referralCode?: string | null): Promise<{ success: boolean, error?: string }> {
     console.log(`[createUserProfile] Starting profile creation for uid: ${uid}`);
     const userDocRef = firestoreAdmin.collection("users").doc(uid);
 
@@ -74,14 +74,20 @@ export async function createUserProfile(uid: string, email: string, displayName:
                 console.log(`[createUserProfile] Referral code is valid. Referred by: ${referredBy}.`);
             } else {
                 console.log("[createUserProfile] Referral code not found, is invalid, or has already been used.");
-                // We don't throw an error here, just proceed without the referral
             }
         }
         
         const newUser = {
             uid,
             email,
-            displayName,
+            firstName,
+            lastName,
+            displayName: `${firstName} ${lastName}`,
+            dateOfBirth: null,
+            phoneNumber: null,
+            address: null,
+            state: null,
+            country: null,
             xavefId,
             createdAt: FieldValue.serverTimestamp(),
             referredBy,
@@ -91,7 +97,6 @@ export async function createUserProfile(uid: string, email: string, displayName:
         await userDocRef.set(newUser);
         console.log(`[createUserProfile] User document created for ${uid}.`);
 
-        // If a valid referral code was used, update it now.
         if (referralDocRef && referredBy) {
             console.log(`[createUserProfile] Marking referral code ${referralCode} as used.`);
             await referralDocRef.update({ used: true });

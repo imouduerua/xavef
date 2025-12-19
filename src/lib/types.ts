@@ -7,7 +7,14 @@ export interface User {
 export interface UserData {
   uid: string;
   email: string;
-  displayName: string;
+  displayName: string; // This might become redundant, but let's keep for now
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string | null;
+  phoneNumber: string | null;
+  address: string | null;
+  state: string | null;
+  country: string | null;
   xavefId: string;
   referredBy: string | null;
   createdAt: string;

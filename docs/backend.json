@@ -14,9 +14,34 @@
           "description": "The user's email address.",
           "format": "email"
         },
-        "displayName": {
-          "type": "string",
-          "description": "The user's display name, derived from their email."
+        "firstName": {
+            "type": "string",
+            "description": "The user's first name."
+        },
+        "lastName": {
+            "type": "string",
+            "description": "The user's last name."
+        },
+        "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "description": "The user's date of birth."
+        },
+        "phoneNumber": {
+            "type": "string",
+            "description": "The user's phone number."
+        },
+        "address": {
+            "type": "string",
+            "description": "The user's street address."
+        },
+        "state": {
+            "type": "string",
+            "description": "The user's state or province."
+        },
+        "country": {
+            "type": "string",
+            "description": "The user's country."
         },
         "xavefId": {
           "type": "string",
@@ -32,7 +57,7 @@
           "description": "The timestamp when the user account was created."
         }
       },
-      "required": ["uid", "email", "displayName", "xavefId", "createdAt"]
+      "required": ["uid", "email", "firstName", "lastName", "xavefId", "createdAt"]
     },
     "transaction": {
       "title": "Transaction",
