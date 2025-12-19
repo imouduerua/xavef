@@ -31,6 +31,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useAuth, useUser } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useAdminStatus } from '@/hooks/use-admin-status';
+import { useMemo } from 'react';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -49,6 +50,22 @@ export function AppSidebar() {
   const { user } = useUser();
   const { isAdmin } = useAdminStatus();
 
+  const currentNavItems = useMemo(() => {
+    if (pathname.startsWith('/admin')) {
+      return [
+        { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+        { href: '/admin/users', icon: Users, label: 'User Management' },
+      ];
+    }
+    return navItems;
+  }, [pathname]);
+
+  const isActive = (href: string, exact = false) => {
+    return exact ? pathname === href : pathname.startsWith(href);
+  };
+  
+  const isInsideAdmin = pathname.startsWith('/admin');
+
   return (
     <Sidebar className="border-r" collapsible="icon">
       <SidebarHeader>
@@ -62,11 +79,11 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {navItems.map((item) => (
+          {currentNavItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname.startsWith(item.href)}
+                isActive={isActive(item.href, (item as any).exact)}
                 icon={<item.icon />}
                 tooltip={item.label}
               >
@@ -74,15 +91,15 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
-          {isAdmin && (
+           {!isInsideAdmin && isAdmin && (
              <SidebarMenuItem>
                 <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/admin')}
                     icon={<Shield />}
-                    tooltip="Admin"
+                    tooltip="Admin Panel"
                 >
-                    <Link href="/admin">Admin</Link>
+                    <Link href="/admin">Admin Panel</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
           )}
