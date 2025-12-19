@@ -69,11 +69,9 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r" collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2">
-          <XavefLogoText />
-          <div className="flex-1" />
-          <SidebarTrigger />
-        </div>
+        <XavefLogoText />
+        <div className="flex-1" />
+        <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
