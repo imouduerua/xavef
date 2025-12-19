@@ -1,18 +1,20 @@
 'use client';
 
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { addDoc, collection } from 'firebase/firestore';
-import { Check, Copy, Loader2, PartyPopper } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import { Check, Copy, Loader2, PartyPopper, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 
 interface ReferralCodeDialogProps {
   userId: string;
@@ -21,12 +23,12 @@ interface ReferralCodeDialogProps {
 }
 
 function generateReferralCode(length = 8) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
 
 export function ReferralCodeDialog({
@@ -42,41 +44,35 @@ export function ReferralCodeDialog({
   const handleGenerateCode = async () => {
     if (!userId || !firestore) return;
     setIsLoading(true);
+    setIsCopied(false);
     try {
-        const newCode = generateReferralCode();
-        const referralCodesRef = collection(firestore, 'referralCodes');
-        
-        await addDoc(referralCodesRef, {
-            code: newCode,
-            creatorUid: userId,
-            used: false,
-            createdAt: new Date().toISOString(),
-        });
+      const newCode = generateReferralCode();
+      const referralCodesRef = collection(firestore, 'referralCodes');
+
+      await addDoc(referralCodesRef, {
+        code: newCode,
+        creatorUid: userId,
+        used: false,
+        createdAt: new Date().toISOString(),
+      });
 
       setCode(newCode);
+      toast({
+        title: 'Code Generated!',
+        description: 'You can now copy and share your new code.',
+      });
     } catch (error: any) {
-      console.error("Error generating referral code:", error);
+      console.error('Error generating referral code:', error);
       toast({
         variant: 'destructive',
         title: 'Failed to Generate Code',
-        description: error.message || 'An unexpected error occurred. Please try again.',
+        description:
+          error.message || 'An unexpected error occurred. Please try again.',
       });
-      setIsOpen(false);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
-  
-  useEffect(() => {
-    if (isOpen) {
-      handleGenerateCode();
-    } else {
-      // Reset state when dialog is closed
-      setCode(null);
-      setIsLoading(false);
-      setIsCopied(false);
-    }
-  }, [isOpen]);
 
   const handleCopy = () => {
     if (code) {
@@ -86,38 +82,64 @@ export function ReferralCodeDialog({
         title: 'Copied!',
         description: 'The referral code has been copied to your clipboard.',
       });
-      setTimeout(() => setIsCopied(false), 2000); // Reset icon after 2 seconds
+      setTimeout(() => setIsCopied(false), 3000); // Reset icon after 3 seconds
     }
   };
 
+  // Reset state when the dialog is closed
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setCode(null);
+      setIsLoading(false);
+      setIsCopied(false);
+    }
+    setIsOpen(open);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-             <PartyPopper className="h-6 w-6" />
+            <PartyPopper className="h-6 w-6" />
             Your One-Time Referral Code
           </DialogTitle>
           <DialogDescription>
-            Share this code with a friend. It can only be used once.
+            Generate a new code to share with a friend. Each code can only be used once.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex items-center space-x-2 pt-4">
-          {isLoading || !code ? (
-            <div className="flex h-10 w-full items-center justify-center rounded-md border border-dashed">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="space-y-4 pt-4">
+            <div className="flex items-center space-x-2">
+                <Input
+                    id="link"
+                    value={code || 'Click the button to generate a code'}
+                    readOnly
+                    className="h-12 text-center font-mono text-lg tracking-widest"
+                />
+                 <Button
+                    type="button"
+                    size="icon"
+                    className="h-12 w-12 shrink-0"
+                    onClick={handleCopy}
+                    disabled={!code || isLoading}
+                >
+                    {isCopied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+                    <span className="sr-only">Copy</span>
+                </Button>
             </div>
-          ) : (
-            <div className="grid flex-1 gap-2">
-              <pre className="flex h-10 w-full items-center justify-center rounded-md bg-muted px-4 font-mono text-lg font-semibold text-muted-foreground">
-                {code}
-              </pre>
-            </div>
-          )}
-          <Button type="button" size="icon" onClick={handleCopy} disabled={!code || isLoading}>
-            {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            <span className="sr-only">Copy</span>
-          </Button>
+             <Button onClick={handleGenerateCode} disabled={isLoading} className="w-full">
+                {isLoading ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                    </>
+                ) : (
+                    <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Generate New Code
+                    </>
+                )}
+            </Button>
         </div>
       </DialogContent>
     </Dialog>
