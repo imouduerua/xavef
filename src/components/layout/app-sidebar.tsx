@@ -11,6 +11,7 @@ import {
   Settings,
   Users,
   Wallet,
+  BrainCircuit,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
@@ -36,6 +37,7 @@ const navItems = [
   { href: '/groups', icon: Users, label: 'Groups' },
   { href: '/loans', icon: Landmark, label: 'Loans' },
   { href: '/withdrawal', icon: Wallet, label: 'Withdrawal' },
+  { href: '/advice', icon: BrainCircuit, label: 'Advice' },
 ];
 
 const bottomNavItems = [
