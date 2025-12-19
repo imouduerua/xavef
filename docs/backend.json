@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "user": {
@@ -57,7 +58,7 @@
           "description": "The timestamp when the user account was created."
         }
       },
-      "required": ["uid", "email", "firstName", "lastName", "xavefId", "createdAt", "referredBy"]
+      "required": ["uid", "email", "xavefId", "createdAt", "referredBy"]
     },
     "transaction": {
       "title": "Transaction",

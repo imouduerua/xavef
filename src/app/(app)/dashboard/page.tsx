@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Copy } from 'lucide-react';
@@ -25,13 +26,11 @@ function DashboardContent() {
   const [isCreatingProfile, setIsCreatingProfile] = React.useState(false);
   const searchParams = useSearchParams();
   const referralCode = searchParams.get('referralCode');
-  const firstName = searchParams.get('firstName');
-  const lastName = searchParams.get('lastName');
   const profileCreationAttempted = useRef(false);
 
   useEffect(() => {
     // Ensure this effect runs only once and under the right conditions
-    if (user && !userData && !userDataLoading && !isCreatingProfile && !profileCreationAttempted.current && firstName && lastName) {
+    if (user && !userData && !userDataLoading && !isCreatingProfile && !profileCreationAttempted.current) {
         profileCreationAttempted.current = true; // Mark that we are attempting to create a profile
         setIsCreatingProfile(true);
         
@@ -42,7 +41,7 @@ function DashboardContent() {
 
         const handleProfileCreation = async () => {
             try {
-                const result = await createUserProfile(user.uid, user.email!, firstName, lastName, referralCode);
+                const result = await createUserProfile(user.uid, user.email!, referralCode);
                 if (result.success) {
                     toast({
                         title: "Account Ready!",
@@ -68,7 +67,7 @@ function DashboardContent() {
 
         handleProfileCreation();
     }
-  }, [user, userData, userDataLoading, isCreatingProfile, referralCode, firstName, lastName]);
+  }, [user, userData, userDataLoading, isCreatingProfile, referralCode]);
 
 
   const [balances, setBalances] = React.useState({

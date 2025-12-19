@@ -48,7 +48,7 @@ async function generateUniqueXavefId(): Promise<string> {
   return xavefId!;
 }
 
-export async function createUserProfile(uid: string, email: string, firstName: string, lastName: string, referralCode: string | null): Promise<{ success: boolean, error?: string }> {
+export async function createUserProfile(uid: string, email: string, referralCode: string | null): Promise<{ success: boolean, error?: string }> {
     console.log(`[createUserProfile] Starting profile creation for uid: ${uid}`);
     
     if (!referralCode) {
@@ -61,10 +61,11 @@ export async function createUserProfile(uid: string, email: string, firstName: s
 
     try {
         const result = await firestoreAdmin.runTransaction(async (transaction) => {
+            console.log("[createUserProfile] Running transaction...");
+
             const userDoc = await transaction.get(userDocRef);
             if (userDoc.exists) {
                 console.log(`[createUserProfile] Profile for user ${uid} already exists. Aborting transaction.`);
-                // Not an error, just means we don't need to do anything.
                 return { success: true }; 
             }
 
@@ -73,7 +74,6 @@ export async function createUserProfile(uid: string, email: string, firstName: s
 
             if (!referralDoc.exists || referralDoc.data()?.used) {
                 console.log("[createUserProfile] Referral code not found, is invalid, or has already been used.");
-                // We throw an error to abort the transaction.
                 throw new Error("The provided referral code is either invalid or has already been used.");
             }
             
@@ -85,8 +85,8 @@ export async function createUserProfile(uid: string, email: string, firstName: s
             const newUser = {
                 uid,
                 email,
-                firstName,
-                lastName,
+                firstName: "",
+                lastName: "",
                 dateOfBirth: null,
                 phoneNumber: null,
                 address: null,
@@ -103,6 +103,7 @@ export async function createUserProfile(uid: string, email: string, firstName: s
             console.log(`[createUserProfile] Marking referral code ${referralCode} as used within transaction.`);
             transaction.update(referralDocRef, { used: true });
 
+            console.log("[createUserProfile] Transaction operations queued.");
             return { success: true };
         });
 

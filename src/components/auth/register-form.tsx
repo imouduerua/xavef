@@ -22,8 +22,6 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase";
 
 const formSchema = z.object({
-  firstName: z.string().min(1, { message: "First name is required." }),
-  lastName: z.string().min(1, { message: "Last name is required." }),
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
@@ -41,8 +39,6 @@ export function RegisterForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
       email: "",
       password: "",
       referralCode: "",
@@ -53,23 +49,14 @@ export function RegisterForm() {
     setIsLoading(true);
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-        const user = userCredential.user;
-        const displayName = `${values.firstName} ${values.lastName}`;
-
-        await updateProfile(user, { displayName });
-
+        
         toast({
             title: "Account Created",
             description: "Welcome! Redirecting to your dashboard...",
         });
 
         const queryParams = new URLSearchParams();
-        if (values.referralCode) {
-            queryParams.append('referralCode', values.referralCode);
-        }
-        // Pass user info for profile creation
-        queryParams.append('firstName', values.firstName);
-        queryParams.append('lastName', values.lastName);
+        queryParams.append('referralCode', values.referralCode);
 
         const redirectUrl = `/dashboard?${queryParams.toString()}`;
         router.push(redirectUrl);
@@ -98,34 +85,6 @@ export function RegisterForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-        </div>
         <FormField
           control={form.control}
           name="email"
