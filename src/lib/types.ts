@@ -4,6 +4,16 @@ export interface User {
   avatarUrl: string;
 }
 
+export interface UserData {
+  uid: string;
+  email: string;
+  displayName: string;
+  xavefId: string;
+  referralCode: string;
+  referredBy: string | null;
+  createdAt: string;
+}
+
 export interface SavingsAccount {
   balance: number;
   apy: number;

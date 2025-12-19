@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bell, LogOut, Moon, Sun, User as UserIcon } from 'lucide-react';
+import { Bell, Copy, LogOut, Moon, Sun, User as UserIcon } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useUserData } from '@/hooks/use-user-data';
 
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -37,6 +38,7 @@ export function AppHeader() {
   const router = useRouter();
   const auth = useAuth();
   const { user } = useUser();
+  const { userData } = useUserData();
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
   const [isClient, setIsClient] = useState(false);
 
@@ -59,6 +61,15 @@ export function AppHeader() {
         description: 'There was an error logging you out. Please try again.',
       });
     }
+  };
+  
+  const copyToClipboard = (text: string | undefined, type: 'ID' | 'Code') => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    toast({
+      title: 'Copied!',
+      description: `Your Xavef ${type} has been copied to your clipboard.`,
+    });
   };
 
   return (
@@ -117,6 +128,10 @@ export function AppHeader() {
                 <UserIcon className="mr-2" />
                 Profile
               </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => copyToClipboard(userData?.referralCode, 'Code')}>
+                <Copy className="mr-2" />
+                Copy Referral Code
             </DropdownMenuItem>
              <DropdownMenuItem asChild>
               <Link href="/settings">

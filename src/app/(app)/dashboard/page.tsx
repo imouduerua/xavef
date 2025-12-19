@@ -10,22 +10,13 @@ import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
 import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { useDoc, useFirestore, useUser } from '@/firebase';
-import { doc } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
+import { useUserData } from '@/hooks/use-user-data';
 
 export type AccountType = 'solidara' | 'annual';
 
 export default function DashboardPage() {
-  const { user } = useUser();
-  const firestore = useFirestore();
-
-  const userDocRef = React.useMemo(() => {
-    if (!user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
-
-  const { data: userData } = useDoc(userDocRef);
+  const { userData } = useUserData();
 
 
   const [balances, setBalances] = React.useState({
@@ -75,7 +66,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">Your Xavef ID:</span>
             <span className="font-semibold">{userData?.xavefId}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData?.xavefId, 'ID')}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData?.xavefId ?? '', 'ID')}>
               <Copy size={14} />
             </Button>
           </div>
@@ -83,7 +74,7 @@ export default function DashboardPage() {
            <div className="flex items-center gap-2">
             <span className="text-muted-foreground">Your Referral Code:</span>
             <span className="font-semibold">{userData?.referralCode}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData?.referralCode, 'Code')}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData?.referralCode ?? '', 'Code')}>
               <Copy size={14} />
             </Button>
           </div>
