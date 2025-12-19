@@ -26,15 +26,21 @@ export async function generateReferralCode(creatorUid: string): Promise<{
         const referralCodesRef = firestoreAdmin.collection('referralCodes');
         let newCode: string;
         let isUnique = false;
+        let attempts = 0;
 
-        // Ensure the generated code is unique
-        while (!isUnique) {
+        // Ensure the generated code is unique, with a limit on attempts
+        while (!isUnique && attempts < 10) {
             newCode = generateRandomCode();
             const docRef = referralCodesRef.doc(newCode);
             const doc = await docRef.get();
             if (!doc.exists) {
                 isUnique = true;
             }
+            attempts++;
+        }
+
+        if (!isUnique) {
+            throw new Error('Could not generate a unique referral code. Please try again.');
         }
 
         const referralDocRef = referralCodesRef.doc(newCode!);
@@ -50,6 +56,6 @@ export async function generateReferralCode(creatorUid: string): Promise<{
 
     } catch (error: any) {
         console.error('Error generating referral code:', error);
-        return { success: false, error: 'An unexpected server error occurred.' };
+        return { success: false, error: error.message || 'An unexpected server error occurred.' };
     }
 }
