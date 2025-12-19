@@ -1,9 +1,9 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useRouter } from "next/navigation";
 import React from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
@@ -32,7 +32,6 @@ const formSchema = z.object({
 });
 
 export function AdminLoginForm() {
-  const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -70,7 +69,7 @@ export function AdminLoginForm() {
           title: "Admin Login Successful",
           description: "Redirecting to the admin dashboard...",
         });
-        router.push("/admin");
+        window.location.assign("/admin");
       } else {
         await auth.signOut(); // Not an admin, sign them out immediately.
         toast({
