@@ -5,9 +5,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     match /users/{userId} {
-      // A user can read or update their own document.
+      // A user can only read or update their own document.
       allow read, update: if request.auth != null && request.auth.uid == userId;
-      // Creation is handled by a trusted server-side (Admin) environment, not by clients.
+      // Creation is handled by a trusted server-side environment (Admin SDK), not by clients.
       allow create: if false; 
     }
 
@@ -15,7 +15,7 @@ service cloud.firestore {
       // Allow an authenticated user to create a referral code for themselves.
       allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
       
-      // Do not allow client-side updates. This should be handled by a trusted server environment.
+      // Do not allow client-side updates. This is handled by a trusted server environment.
       allow update: if false;
       
       // Do not allow reading or deleting referral codes directly to prevent enumeration.

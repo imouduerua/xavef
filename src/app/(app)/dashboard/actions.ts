@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { firestoreAdmin } from '@/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const transferSchema = z.object({
   recipientId: z.string(),
@@ -50,26 +51,30 @@ export async function createUserProfile(uid: string, email: string, displayName:
     try {
         const userDocRef = firestoreAdmin.collection("users").doc(uid);
         const docSnap = await userDocRef.get();
+
         if (docSnap.exists) {
-            return { success: true }; // Profile already exists
+            console.log(`Profile for user ${uid} already exists.`);
+            return { success: true }; 
         }
+
+        console.log(`Creating profile for new user ${uid}...`);
 
         const xavefId = await generateUniqueXavefId();
         let referredBy: string | null = null;
 
-        // Handle referral code
         if (referralCode) {
-            const referralRef = firestoreAdmin.collection('referralCodes');
-            const query = referralRef.where('code', '==', referralCode).where('used', '==', false);
-            const snapshot = await query.limit(1).get();
+            console.log(`Attempting to process referral code: ${referralCode}`);
+            const referralRef = firestoreAdmin.collection('referralCodes').where('code', '==', referralCode).where('used', '==', false);
+            const snapshot = await referralRef.limit(1).get();
 
             if (!snapshot.empty) {
                 const referralDoc = snapshot.docs[0];
                 referredBy = referralDoc.data().creatorUid;
-                // Mark code as used in a transaction
-                await firestoreAdmin.runTransaction(async (transaction) => {
-                    transaction.update(referralDoc.ref, { used: true });
-                });
+                console.log(`Referral code is valid. Referred by: ${referredBy}. Marking code as used.`);
+                // Use Admin SDK to update the referral code, bypassing security rules
+                await referralDoc.ref.update({ used: true });
+            } else {
+                console.log("Referral code not found or already used.");
             }
         }
 
@@ -78,13 +83,14 @@ export async function createUserProfile(uid: string, email: string, displayName:
             email,
             displayName,
             xavefId,
-            createdAt: new Date().toISOString(),
-            referredBy, // Add referredBy to the user document
+            createdAt: FieldValue.serverTimestamp(), // Use server timestamp for accuracy
+            referredBy,
         });
 
+        console.log(`Successfully created profile for user ${uid}.`);
         return { success: true };
     } catch (error: any) {
         console.error("Error creating user profile with Admin SDK:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: "An unexpected error occurred while creating your profile. Please contact support." };
     }
 }

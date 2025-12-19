@@ -2,7 +2,7 @@
 
 import { Copy } from 'lucide-react';
 import Link from 'next/link';
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
@@ -22,39 +22,42 @@ export type AccountType = 'solidara' | 'annual';
 function DashboardContent() {
   const { user, loading: userLoading } = useUser();
   const { userData, loading: userDataLoading } = useUserData();
-  const [isCreatingProfile, setIsCreatingProfile] = React.useState(true);
+  const [isCreatingProfile, setIsCreatingProfile] = React.useState(false);
   const searchParams = useSearchParams();
   const referralCode = searchParams.get('referralCode');
+  const profileCreationAttempted = useRef(false);
 
   useEffect(() => {
-    const handleProfileCreation = async () => {
-        if (user && !userDataLoading && !userData) {
-            setIsCreatingProfile(true);
-            toast({
-              title: "Finalizing Account Setup",
-              description: "Please wait while we create your user profile...",
-            });
+    // Ensure this effect runs only once and under the right conditions
+    if (user && !userData && !userDataLoading && !isCreatingProfile && !profileCreationAttempted.current) {
+        profileCreationAttempted.current = true; // Mark that we are attempting to create a profile
+        setIsCreatingProfile(true);
+        
+        toast({
+            title: "Finalizing Account Setup",
+            description: "Please wait while we create your user profile...",
+        });
+
+        const handleProfileCreation = async () => {
             const result = await createUserProfile(user.uid, user.email!, user.displayName!, referralCode);
-            if (!result.success) {
+            if (result.success) {
+                toast({
+                    title: "Account Ready!",
+                    description: "Your profile has been created successfully.",
+                });
+            } else {
                 toast({
                     variant: "destructive",
                     title: "Profile Creation Failed",
                     description: result.error || "Could not save your profile. Please contact support.",
                 });
-            } else {
-                 toast({
-                    title: "Account Ready!",
-                    description: "Your profile has been created successfully.",
-                });
             }
             setIsCreatingProfile(false);
-        } else if (user && userData) {
-           setIsCreatingProfile(false);
-        }
-    };
+        };
 
-    handleProfileCreation();
-  }, [user, userData, userDataLoading, referralCode]);
+        handleProfileCreation();
+    }
+  }, [user, userData, userDataLoading, isCreatingProfile, referralCode]);
 
 
   const [balances, setBalances] = React.useState({
