@@ -5,9 +5,9 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { addDoc, collection } from 'firebase/firestore';
@@ -18,8 +18,7 @@ import { Input } from '../ui/input';
 
 interface ReferralCodeDialogProps {
   userId: string;
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
+  children: React.ReactNode;
 }
 
 function generateReferralCode(length = 8) {
@@ -33,10 +32,10 @@ function generateReferralCode(length = 8) {
 
 export function ReferralCodeDialog({
   userId,
-  isOpen,
-  setIsOpen,
+  children,
 }: ReferralCodeDialogProps) {
   const firestore = useFirestore();
+  const [isOpen, setIsOpen] = useState(false);
   const [code, setCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -86,18 +85,19 @@ export function ReferralCodeDialog({
     }
   };
 
-  // Reset state when the dialog is closed
   const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
     if (!open) {
+      // Reset state when the dialog is closed
       setCode(null);
       setIsLoading(false);
       setIsCopied(false);
     }
-    setIsOpen(open);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

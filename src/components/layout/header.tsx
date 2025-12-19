@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Bell, LogOut, Moon, User as UserIcon } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,13 +23,11 @@ import Link from 'next/link';
 import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
 
 export function AppHeader() {
-  const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
   const { user } = useUser();
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
   const [isClient, setIsClient] = useState(false);
-  const [isReferralDialogOpen, setIsReferralDialogOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -87,7 +85,7 @@ export function AppHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          {isClient && (
+          {isClient && user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                  <Avatar className="h-9 w-9 cursor-pointer">
@@ -111,9 +109,11 @@ export function AppHeader() {
                     Profile
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setIsReferralDialogOpen(true)}>
-                    Generate Referral Code
-                </DropdownMenuItem>
+                <ReferralCodeDialog userId={user.uid}>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        Generate Referral Code
+                    </DropdownMenuItem>
+                </ReferralCodeDialog>
                  <DropdownMenuItem asChild>
                   <Link href="/settings">
                     <Moon className="mr-2" />
@@ -130,13 +130,6 @@ export function AppHeader() {
           )}
         </div>
       </header>
-      {user && (
-        <ReferralCodeDialog 
-          userId={user.uid}
-          isOpen={isReferralDialogOpen}
-          setIsOpen={setIsReferralDialogOpen}
-        />
-      )}
     </>
   );
 }
