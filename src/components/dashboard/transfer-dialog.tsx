@@ -38,25 +38,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 
-const toSelfSchema = z
-  .object({
-    fromAccount: z.enum(['solidara', 'annual']),
-    toAccount: z.enum(['solidara', 'annual']),
-  })
-  .refine((data) => data.fromAccount !== data.toAccount, {
-    message: 'Source and destination accounts cannot be the same.',
-    path: ['toAccount'],
-  });
-
-const toOtherSchema = z.object({
-  recipientId: z.string().min(1, 'Recipient ID is required.'),
-});
-
 const formSchema = z.discriminatedUnion('transferType', [
   z.object({
     transferType: z.literal('toSelf'),
     amount: z.coerce.number().positive('Amount must be a positive number.'),
-    fromAccount: z.enum(['solidara', 'annual']),
+    fromAccount: z.literal('solidara'),
     toAccount: z.enum(['solidara', 'annual']),
   }),
   z.object({
@@ -108,7 +94,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
     if (values.transferType === 'toSelf') {
       const success = onSelfTransfer(
         values.amount,
-        values.fromAccount as AccountType,
+        values.fromAccount,
         values.toAccount as AccountType
       );
       if (success) {
@@ -200,34 +186,21 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="fromAccount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>From</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                 <FormItem>
+                    <FormLabel>From</FormLabel>
+                    <Select defaultValue="solidara" disabled>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select source account" />
-                          </SelectTrigger>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select source account" />
+                            </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="solidara">
-                            Savings (Olidara) (Balance: ₦{balances.solidara.toFixed(2)})
-                          </SelectItem>
-                          <SelectItem value="annual">
-                            Annual Savings (Balance: ₦{balances.annual.toFixed(2)})
-                          </SelectItem>
+                            <SelectItem value="solidara">
+                                Savings (Olidara) (Balance: ₦{balances.solidara.toFixed(2)})
+                            </SelectItem>
                         </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </Select>
+                </FormItem>
                 <FormField
                   control={form.control}
                   name="toAccount"
@@ -244,7 +217,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                           <SelectItem value="solidara">
+                           <SelectItem value="solidara" disabled>
                             Savings (Olidara) (Balance: ₦{balances.solidara.toFixed(2)})
                           </SelectItem>
                           <SelectItem value="annual">
