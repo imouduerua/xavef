@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -54,9 +55,7 @@ export function AppHeader() {
   return (
     <>
       <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-        <div className="md:hidden">
-          <SidebarTrigger />
-        </div>
+        <SidebarTrigger />
         <div className="flex-1" />
 
         <div className="flex items-center gap-4">
@@ -134,3 +133,4 @@ export function AppHeader() {
       </header>
     </>
   );
+}
