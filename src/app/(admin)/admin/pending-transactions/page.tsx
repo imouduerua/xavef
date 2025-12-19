@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -11,7 +12,7 @@ import {
 import { PendingTransactionsTable } from '@/components/admin/pending-transactions-table';
 import { useFirestore } from '@/firebase';
 import type { Transaction } from '@/lib/types';
-import { collectionGroup, getDocs, query } from 'firebase/firestore';
+import { collectionGroup, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,34 +32,31 @@ export default function AdminPendingTransactionsPage() {
 
   useEffect(() => {
     async function getPendingTransactions() {
+      if (!firestore) return;
+      
+      setLoading(true);
       try {
-        const transactionsQuery = query(collectionGroup(firestore, 'transactions'));
-        const querySnapshot = await getDocs(transactionsQuery);
-        const allTransactions: TransactionWithUserDetails[] = [];
-
-        const userPromises = querySnapshot.docs.map((doc) =>
-          getDocs(collectionGroup(firestore, 'users')).then(userCollection => {
-            const userDoc = userCollection.docs.find(u => u.id === doc.ref.parent.parent!.id);
-            return userDoc;
-          })
-        );
-        
-        const userSnapshots = await Promise.all(
-          querySnapshot.docs.map(doc => getDocs(query(collectionGroup(firestore, 'users'), where('uid', '==', doc.ref.parent.parent!.id))))
-        );
-
+        // 1. Fetch all users and create a map for quick lookup.
+        const usersQuery = query(collectionGroup(firestore, 'users'));
+        const usersSnapshot = await getDocs(usersQuery);
         const usersMap = new Map();
-        const allUserDocsQuery = query(collectionGroup(firestore, 'users'));
-        const allUserDocsSnapshot = await getDocs(allUserDocsQuery);
-        allUserDocsSnapshot.forEach(doc => usersMap.set(doc.id, doc.data()));
+        usersSnapshot.forEach(doc => {
+            usersMap.set(doc.id, doc.data());
+        });
 
-        querySnapshot.docs.forEach((txDoc) => {
+        // 2. Fetch all transactions.
+        const transactionsQuery = query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Pending'));
+        const transactionsSnapshot = await getDocs(transactionsQuery);
+        
+        const pendingTransactions: TransactionWithUserDetails[] = [];
+        
+        transactionsSnapshot.docs.forEach((txDoc) => {
           const data = txDoc.data() as Transaction;
           const userId = txDoc.ref.parent.parent!.id;
           const userData = usersMap.get(userId);
 
           if (userData) {
-            allTransactions.push({
+            pendingTransactions.push({
               ...data,
               id: txDoc.id,
               userId: userId,
@@ -67,10 +65,6 @@ export default function AdminPendingTransactionsPage() {
             });
           }
         });
-        
-        const pendingTransactions = allTransactions.filter(
-          (tx) => tx.status === 'Pending'
-        );
 
         setData({ transactions: pendingTransactions });
       } catch (error: any) {
