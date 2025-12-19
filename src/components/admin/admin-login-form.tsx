@@ -51,11 +51,21 @@ export function AdminLoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      // After successful login, check if the user is an admin
-      const adminDocRef = doc(firestore, 'admins', user.uid);
-      const adminDoc = await getDoc(adminDocRef);
+      let isAdmin = false;
 
-      if (adminDoc.exists() && adminDoc.data()?.isAdmin) {
+      // Special case for the super admin email
+      if (user.email === 'admin@xavef.com') {
+        isAdmin = true;
+      } else {
+        // Standard check for other admins
+        const adminDocRef = doc(firestore, 'admins', user.uid);
+        const adminDoc = await getDoc(adminDocRef);
+        if (adminDoc.exists() && adminDoc.data()?.isAdmin) {
+          isAdmin = true;
+        }
+      }
+      
+      if (isAdmin) {
         toast({
           title: "Admin Login Successful",
           description: "Redirecting to the admin dashboard...",
