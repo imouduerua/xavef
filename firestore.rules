@@ -6,8 +6,9 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read, update: if request.auth != null && request.auth.uid == userId;
-      // Allow a user to create their own user document. This is secure because
-      // the `userId` in the path must match the `uid` in the document data.
+      // Allow an authenticated user to create their own user document.
+      // This is secure because the `userId` in the path must match the `uid` in the document data,
+      // and the client-side code ensures this.
       allow create: if request.auth != null && request.resource.data.uid == userId;
     }
 
