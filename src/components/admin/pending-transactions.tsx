@@ -1,157 +1,49 @@
-'use client';
-
-import { useCollection, useFirestore } from '@/firebase';
+import 'server-only';
+import { firestoreAdmin } from '@/firebase/admin';
 import type { Transaction } from '@/lib/types';
-import { collectionGroup, query, where, getDocs, doc } from 'firebase/firestore';
-import React, { startTransition } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../ui/table';
-import { Skeleton } from '../ui/skeleton';
-import { Button } from '../ui/button';
-import { Check, Loader2, X } from 'lucide-react';
-import { updateTransactionStatus } from '@/app/(admin)/admin/actions';
-import { toast } from '@/hooks/use-toast';
+import { PendingTransactionsTable } from './pending-transactions-table';
 
 type TransactionWithUserDetails = Transaction & { userId: string, userEmail: string };
 
-export function PendingTransactions() {
-  const firestore = useFirestore();
-  const [transactions, setTransactions] = React.useState<TransactionWithUserDetails[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [updatingIds, setUpdatingIds] = React.useState<string[]>([]);
+async function getPendingTransactions() {
+  const transactionsQuery = firestoreAdmin.collectionGroup('transactions').where('status', '==', 'Pending');
+  
+  try {
+    const querySnapshot = await transactionsQuery.get();
+    const transactionsData: TransactionWithUserDetails[] = [];
 
-  const fetchPendingTransactions = React.useCallback(async () => {
-    setLoading(true);
-    // This query no longer needs a composite index. We will filter client-side.
-    const transactionsQuery = query(collectionGroup(firestore, 'transactions'));
+    const userPromises = querySnapshot.docs.map(doc => doc.ref.parent.parent!.get());
+    const userSnapshots = await Promise.all(userPromises);
     
-    try {
-      const querySnapshot = await getDocs(transactionsQuery);
-      const transactionsData: TransactionWithUserDetails[] = [];
+    querySnapshot.docs.forEach((txDoc, index) => {
+      const data = txDoc.data() as Transaction;
+      const userDoc = userSnapshots[index];
 
-      for (const txDoc of querySnapshot.docs) {
-        const data = txDoc.data() as Transaction;
-        
-        // Filter for pending transactions on the client
-        if (data.status === 'Pending') {
-            const userId = txDoc.ref.parent.parent?.id;
-            if (userId) {
-                // In a real app, you might fetch user data or have the email on the doc.
-                // For now, we'll just add the ID.
-                transactionsData.push({ ...data, id: txDoc.id, userId, userEmail: `user-${userId.substring(0,5)}...` });
-            }
-        }
-      }
-      
-      setTransactions(transactionsData);
-    } catch (error) {
-        console.error("Error fetching transactions:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Failed to Load Transactions',
-            description: 'Could not fetch pending transactions. Please check console for errors.',
-        });
-    } finally {
-        setLoading(false);
-    }
-  }, [firestore]);
-
-
-  React.useEffect(() => {
-    fetchPendingTransactions();
-  }, [fetchPendingTransactions]);
-
-  const handleUpdateStatus = async (userId: string, transactionId: string, newStatus: 'Completed' | 'Failed') => {
-    setUpdatingIds(prev => [...prev, transactionId]);
-    
-    startTransition(async () => {
-      const result = await updateTransactionStatus({ userId, transactionId, newStatus });
-      if (result.success) {
-        toast({
-          title: `Transaction ${newStatus === 'Completed' ? 'Approved' : 'Declined'}`,
-        });
-        // Refetch or optimistically update UI
-        setTransactions(prev => prev.filter(tx => tx.id !== transactionId));
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Update Failed',
-          description: result.error,
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        transactionsData.push({ 
+          ...data, 
+          id: txDoc.id, 
+          userId: userDoc.id, 
+          userEmail: userData?.email || `user-${userDoc.id.substring(0,5)}...`
         });
       }
-      setUpdatingIds(prev => prev.filter(id => id !== transactionId));
     });
-  };
-
-
-  if (loading) {
-    return (
-      <div className="space-y-2">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-      </div>
-    );
+    
+    return transactionsData;
+  } catch (error) {
+      console.error("Error fetching transactions:", error);
+      // Re-throw or handle as appropriate for your server-side component
+      throw new Error("Could not fetch pending transactions.");
   }
+}
+
+export async function PendingTransactions() {
+  const transactions = await getPendingTransactions();
 
   if (!transactions || transactions.length === 0) {
     return <p>No pending transactions found.</p>;
   }
 
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>User ID</TableHead>
-          <TableHead>Date</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead className="text-right">Amount</TableHead>
-          <TableHead className="text-center">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {transactions.map((tx) => {
-          const isUpdating = updatingIds.includes(tx.id);
-          return (
-            <TableRow key={tx.id}>
-              <TableCell className="font-medium truncate max-w-[100px]">{tx.userId}</TableCell>
-              <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
-              <TableCell>{tx.description}</TableCell>
-              <TableCell>{tx.type}</TableCell>
-              <TableCell
-                className={`text-right font-semibold ${
-                  tx.amount > 0 ? 'text-green-600' : ''
-                }`}
-              >
-                {tx.amount > 0
-                  ? `+₦${tx.amount.toFixed(2)}`
-                  : `-₦${Math.abs(tx.amount).toFixed(2)}`}
-              </TableCell>
-              <TableCell className="text-center space-x-2">
-                {isUpdating ? (
-                    <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                ) : (
-                    <>
-                        <Button variant="outline" size="icon" className="h-8 w-8 bg-green-50 hover:bg-green-100 text-green-700" onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Completed')}>
-                            <Check className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8 bg-red-50 hover:bg-red-100 text-red-700" onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Failed')}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </>
-                )}
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
-  );
+  return <PendingTransactionsTable initialTransactions={transactions} />;
 }

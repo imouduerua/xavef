@@ -14,7 +14,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      allow read, update: if isAdmin(); // Admin can read and update user docs
+      allow read, update, get: if isAdmin(); // Admin can read and update user docs
     }
 
     match /referralCodes/{codeId} {
@@ -28,7 +28,7 @@ service cloud.firestore {
     }
 
     match /admins/{userId} {
-      allow read: if request.auth != null;
+      allow read, get: if request.auth != null;
     }
   }
 }
