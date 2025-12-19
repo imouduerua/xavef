@@ -1,0 +1,95 @@
+'use client';
+
+import { useCollection, useFirestore } from '@/firebase';
+import {
+  Transaction,
+  TransactionStatus,
+} from '@/lib/types';
+import { collection, orderBy, query } from 'firebase/firestore';
+import React from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table';
+import { Skeleton } from '../ui/skeleton';
+import { Badge } from '../ui/badge';
+
+const statusVariant: Record<
+  TransactionStatus,
+  'default' | 'secondary' | 'destructive'
+> = {
+  Completed: 'default',
+  Pending: 'secondary',
+  Failed: 'destructive',
+};
+
+interface UserTransactionsProps {
+  userId: string;
+}
+
+export function UserTransactions({ userId }: UserTransactionsProps) {
+  const firestore = useFirestore();
+  const transactionsQuery = React.useMemo(() => {
+    if (!userId) return null;
+    return query(
+      collection(firestore, 'users', userId, 'transactions'),
+      orderBy('date', 'desc')
+    );
+  }, [firestore, userId]);
+
+  const { data: transactions, loading } =
+    useCollection<Transaction>(transactionsQuery);
+
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
+  }
+
+  if (!transactions || transactions.length === 0) {
+    return <p>This user has no transactions.</p>;
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Description</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Date</TableHead>
+          <TableHead className="text-right">Amount</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {transactions.map((tx) => (
+          <TableRow key={tx.id}>
+            <TableCell className="font-medium">{tx.description}</TableCell>
+            <TableCell>{tx.type}</TableCell>
+            <TableCell>
+              <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
+            </TableCell>
+            <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
+            <TableCell
+              className={`text-right font-semibold ${
+                tx.amount > 0 ? 'text-green-600' : ''
+              }`}
+            >
+              {tx.amount > 0
+                ? `+₦${tx.amount.toFixed(2)}`
+                : `-₦${Math.abs(tx.amount).toFixed(2)}`}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}

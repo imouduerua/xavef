@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "user": {
@@ -16,33 +15,33 @@
           "format": "email"
         },
         "firstName": {
-            "type": "string",
-            "description": "The user's first name."
+          "type": "string",
+          "description": "The user's first name."
         },
         "lastName": {
-            "type": "string",
-            "description": "The user's last name."
+          "type": "string",
+          "description": "The user's last name."
         },
         "dateOfBirth": {
-            "type": "string",
-            "format": "date",
-            "description": "The user's date of birth."
+          "type": "string",
+          "format": "date",
+          "description": "The user's date of birth."
         },
         "phoneNumber": {
-            "type": "string",
-            "description": "The user's phone number."
+          "type": "string",
+          "description": "The user's phone number."
         },
         "address": {
-            "type": "string",
-            "description": "The user's street address."
+          "type": "string",
+          "description": "The user's street address."
         },
         "state": {
-            "type": "string",
-            "description": "The user's state or province."
+          "type": "string",
+          "description": "The user's state or province."
         },
         "country": {
-            "type": "string",
-            "description": "The user's country."
+          "type": "string",
+          "description": "The user's country."
         },
         "xavefId": {
           "type": "string",
@@ -58,7 +57,13 @@
           "description": "The timestamp when the user account was created."
         }
       },
-      "required": ["uid", "email", "xavefId", "createdAt", "referredBy"]
+      "required": [
+        "uid",
+        "email",
+        "xavefId",
+        "createdAt",
+        "referredBy"
+      ]
     },
     "transaction": {
       "title": "Transaction",
@@ -74,17 +79,32 @@
         },
         "type": {
           "type": "string",
-          "enum": ["Deposit", "Withdrawal", "Loan Payment", "Interest"]
+          "enum": [
+            "Deposit",
+            "Withdrawal",
+            "Loan Payment",
+            "Interest"
+          ]
         },
         "status": {
           "type": "string",
-          "enum": ["Completed", "Pending", "Failed"]
+          "enum": [
+            "Completed",
+            "Pending",
+            "Failed"
+          ]
         },
         "amount": {
           "type": "number"
         }
       },
-      "required": ["date", "description", "type", "status", "amount"]
+      "required": [
+        "date",
+        "description",
+        "type",
+        "status",
+        "amount"
+      ]
     },
     "referralCode": {
       "title": "Referral Code",
@@ -105,11 +125,31 @@
           "format": "date-time"
         }
       },
-      "required": ["code", "creatorUid", "used", "createdAt"]
+      "required": [
+        "code",
+        "creatorUid",
+        "used",
+        "createdAt"
+      ]
+    },
+    "admin": {
+      "title": "Admin",
+      "description": "A user with administrative privileges.",
+      "type": "object",
+      "properties": {
+        "isAdmin": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "isAdmin"
+      ]
     }
   },
   "auth": {
-    "providers": ["email"]
+    "providers": [
+      "email"
+    ]
   },
   "firestore": {
     "/users/{userId}": {
@@ -129,6 +169,12 @@
         "$ref": "#/entities/referralCode"
       },
       "description": "Stores one-time use referral codes."
+    },
+    "/admins/{userId}": {
+      "schema": {
+        "$ref": "#/entities/admin"
+      },
+      "description": "Stores a list of admin users."
     }
   }
 }

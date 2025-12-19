@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -12,7 +11,8 @@ import {
   Users,
   Wallet,
   BookOpen,
-  BrainCircuit
+  BrainCircuit,
+  Shield,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
@@ -30,6 +30,7 @@ import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useAuth, useUser } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
+import { useAdminStatus } from '@/hooks/use-admin-status';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -41,25 +42,24 @@ const navItems = [
   { href: '/advice', icon: BrainCircuit, label: 'Advice' },
 ];
 
-const bottomNavItems = [
-    { href: '/settings', icon: Settings, label: 'Settings' },
-]
+const bottomNavItems = [{ href: '/settings', icon: Settings, label: 'Settings' }];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
+  const { isAdmin } = useAdminStatus();
 
   return (
     <Sidebar className="border-r" collapsible="icon">
-        <SidebarHeader>
-            <div className="flex items-center gap-2">
-                <svg className="h-8 w-auto" viewBox="0 0 100 20">
-                    <XavefLogoText />
-                </svg>
-                <div className="flex-1" />
-                <SidebarTrigger />
-            </div>
-        </SidebarHeader>
+      <SidebarHeader>
+        <div className="flex items-center gap-2">
+          <svg className="h-8 w-auto" viewBox="0 0 100 20">
+            <XavefLogoText />
+          </svg>
+          <div className="flex-1" />
+          <SidebarTrigger />
+        </div>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
           {navItems.map((item) => (
@@ -74,10 +74,22 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+          {isAdmin && (
+             <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin')}
+                    icon={<Shield />}
+                    tooltip="Admin"
+                >
+                    <Link href="/admin">Admin</Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="flex-col !items-start !gap-0">
-         <SidebarMenu>
+        <SidebarMenu>
           {bottomNavItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
@@ -94,12 +106,19 @@ export function AppSidebar() {
 
         <div className="mt-4 flex items-center gap-3 p-2">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? ''} />
-            <AvatarFallback>{user?.displayName?.charAt(0) ?? user?.email?.charAt(0)}</AvatarFallback>
+            <AvatarImage
+              src={user?.photoURL ?? undefined}
+              alt={user?.displayName ?? ''}
+            />
+            <AvatarFallback>
+              {user?.displayName?.charAt(0) ?? user?.email?.charAt(0)}
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1 overflow-hidden">
             <p className="truncate font-semibold">{user?.displayName}</p>
-            <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {user?.email}
+            </p>
           </div>
         </div>
       </SidebarFooter>
