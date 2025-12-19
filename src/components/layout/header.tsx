@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bell, Copy, LogOut, Moon, User as UserIcon } from 'lucide-react';
+import { Bell, LogOut, Moon, User as UserIcon } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -20,28 +20,16 @@ import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { useUserData } from '@/hooks/use-user-data';
-import { createReferralCode } from '@/app/(app)/actions';
-
-const pathToTitle: { [key: string]: string } = {
-  '/dashboard': 'Dashboard',
-  '/transactions': 'Transactions',
-  '/advice': 'AI Financial Advisor',
-  '/savings': 'Savings',
-  '/groups': 'Groups',
-  '/loans': 'Loans',
-  '/withdrawal': 'Withdrawal',
-  '/settings': 'Settings',
-};
+import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
 
 export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
   const { user } = useUser();
-  const { userData } = useUserData();
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
   const [isClient, setIsClient] = useState(false);
+  const [isReferralDialogOpen, setIsReferralDialogOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -63,108 +51,90 @@ export function AppHeader() {
       });
     }
   };
-  
-  const handleGenerateCode = async () => {
-    if (!user) {
-        toast({
-            variant: "destructive",
-            title: "Authentication Error",
-            description: "You must be logged in to generate a code.",
-        });
-        return;
-    }
-    const result = await createReferralCode(user.uid);
-    if (result.success && result.code) {
-      navigator.clipboard.writeText(result.code);
-      toast({
-        title: "Referral Code Generated & Copied!",
-        description: `Your new one-time code is: ${result.code}`,
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Failed to Generate Code",
-        description: result.error,
-      });
-    }
-  };
-
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-      <div className="md:hidden">
-        <SidebarTrigger />
-      </div>
-      <div className="flex-1" />
+    <>
+      <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+        <div className="md:hidden">
+          <SidebarTrigger />
+        </div>
+        <div className="flex-1" />
 
-      <div className="flex items-center gap-4">
-        {isClient && (
+        <div className="flex items-center gap-4">
+          {isClient && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {mockNotifications.map((notification) => (
+                  <DropdownMenuItem key={notification.id} className="flex flex-col items-start gap-1">
+                    <div className="flex w-full items-center">
+                      <p className={`flex-1 font-medium ${notification.read ? '' : 'font-bold'}`}>{notification.title}</p>
+                      {!notification.read && <div className="h-2 w-2 rounded-full bg-primary ml-2" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{notification.description}</p>
+                    <p className="text-xs text-muted-foreground/70">{new Date(notification.date).toLocaleDateString()}</p>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
-                )}
-              </Button>
+               <Avatar className="h-9 w-9 cursor-pointer">
+                  <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? ''} />
+                  <AvatarFallback>{user?.displayName?.charAt(0) ?? user?.email?.charAt(0)}</AvatarFallback>
+                </Avatar>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.displayName}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {mockNotifications.map((notification) => (
-                <DropdownMenuItem key={notification.id} className="flex flex-col items-start gap-1">
-                  <div className="flex w-full items-center">
-                    <p className={`flex-1 font-medium ${notification.read ? '' : 'font-bold'}`}>{notification.title}</p>
-                    {!notification.read && <div className="h-2 w-2 rounded-full bg-primary ml-2" />}
-                  </div>
-                  <p className="text-xs text-muted-foreground">{notification.description}</p>
-                  <p className="text-xs text-muted-foreground/70">{new Date(notification.date).toLocaleDateString()}</p>
-                </DropdownMenuItem>
-              ))}
+              <DropdownMenuItem asChild>
+                <Link href="/settings">
+                  <UserIcon className="mr-2" />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setIsReferralDialogOpen(true)}>
+                  Generate Referral Code
+              </DropdownMenuItem>
+               <DropdownMenuItem asChild>
+                <Link href="/settings">
+                  <Moon className="mr-2" />
+                  Toggle theme
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2" />
+                Log out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-             <Avatar className="h-9 w-9 cursor-pointer">
-                <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? ''} />
-                <AvatarFallback>{user?.displayName?.charAt(0) ?? user?.email?.charAt(0)}</AvatarFallback>
-              </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.displayName}</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email}
-                </p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/settings">
-                <UserIcon className="mr-2" />
-                Profile
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleGenerateCode}>
-                <Copy className="mr-2" />
-                Generate Referral Code
-            </DropdownMenuItem>
-             <DropdownMenuItem asChild>
-              <Link href="/settings">
-                <Moon className="mr-2" />
-                Toggle theme
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2" />
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </header>
+        </div>
+      </header>
+      {user && (
+        <ReferralCodeDialog 
+          userId={user.uid}
+          isOpen={isReferralDialogOpen}
+          setIsOpen={setIsReferralDialogOpen}
+        />
+      )}
+    </>
   );
 }
