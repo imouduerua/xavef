@@ -21,7 +21,6 @@ import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
 import { SidebarTrigger } from '../ui/sidebar';
-import { useTheme } from 'next-themes';
 
 export function AppHeader() {
   const router = useRouter();
@@ -29,10 +28,14 @@ export function AppHeader() {
   const { user } = useUser();
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
   const [isClient, setIsClient] = useState(false);
-  const { setTheme, theme } = useTheme();
+  const [theme, setTheme] = useState('light');
+
 
   useEffect(() => {
     setIsClient(true);
+    const storedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(storedTheme);
+    document.documentElement.classList.toggle('dark', storedTheme === 'dark');
   }, []);
 
   const handleLogout = async () => {
@@ -53,12 +56,15 @@ export function AppHeader() {
   };
   
   const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
   return (
     <>
-      <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background">
+      <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background px-4">
          <div className="md:hidden">
             <SidebarTrigger />
         </div>
