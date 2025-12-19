@@ -20,7 +20,7 @@ export default function DashboardPage() {
 
 
   const [balances, setBalances] = React.useState({
-    solidara: 100000.0,
+    solidara: 0.0,
     annual: 0.0,
   });
 
