@@ -67,7 +67,7 @@ export function AppSidebar() {
   const isInsideAdmin = pathname.startsWith('/admin');
 
   return (
-    <Sidebar className="border-r" collapsible="icon">
+    <Sidebar className="border-r" collapsible="offcanvas">
       <SidebarHeader>
         <XavefLogoText />
       </SidebarHeader>
