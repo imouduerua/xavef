@@ -1,7 +1,7 @@
 "use server";
 
-import { addDoc, collection } from "firebase/firestore";
-import { initializeFirebase } from "@/firebase";
+import { getFirestore } from "firebase-admin/firestore";
+import { initializeAdminApp } from "@/firebase/admin";
 
 function generateReferralCode(length = 8) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -17,13 +17,14 @@ export async function createReferralCode(userId: string): Promise<{ success: boo
         return { success: false, error: "You must be logged in to generate a code." };
     }
 
-    const { firestore } = initializeFirebase();
-
     try {
-        const code = generateReferralCode();
-        const referralCodesRef = collection(firestore, 'referralCodes');
+        await initializeAdminApp();
+        const firestore = getFirestore();
         
-        const docRef = await addDoc(referralCodesRef, {
+        const code = generateReferralCode();
+        const referralCodesRef = firestore.collection('referralCodes');
+        
+        await referralCodesRef.add({
             code,
             creatorUid: userId,
             used: false,
@@ -31,7 +32,8 @@ export async function createReferralCode(userId: string): Promise<{ success: boo
         });
 
         return { success: true, code };
-    } catch (error) {
+    } catch (error: any) {
+        console.error("Error generating referral code:", error.message);
         return { success: false, error: "Failed to generate referral code. Please try again." };
     }
 }
