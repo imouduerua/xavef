@@ -11,7 +11,7 @@ export const XavefLogoText = (props: Omit<React.ComponentProps<"div">, "children
             alt="Xavef Financials"
             width={120}
             height={30}
-            className="h-8 w-auto"
+            className="h-8 w-auto dark:invert"
         />
     </div>
 );

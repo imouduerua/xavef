@@ -1,8 +1,7 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bell, LogOut, Moon, User as UserIcon, Gift } from 'lucide-react';
+import { Bell, LogOut, Moon, User as UserIcon, Gift, Sun } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -22,6 +21,7 @@ import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
 import { SidebarTrigger } from '../ui/sidebar';
+import { useTheme } from 'next-themes';
 
 export function AppHeader() {
   const router = useRouter();
@@ -29,6 +29,7 @@ export function AppHeader() {
   const { user } = useUser();
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
   const [isClient, setIsClient] = useState(false);
+  const { setTheme, theme } = useTheme();
 
   useEffect(() => {
     setIsClient(true);
@@ -41,7 +42,6 @@ export function AppHeader() {
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
       });
-      // Force a full page reload to clear all client-side state
       window.location.assign('/');
     } catch (error) {
       toast({
@@ -50,6 +50,10 @@ export function AppHeader() {
         description: 'There was an error logging you out. Please try again.',
       });
     }
+  };
+  
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (
@@ -87,6 +91,13 @@ export function AppHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+          
+          <Button variant="ghost" size="icon" onClick={toggleTheme}>
+            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+          </Button>
+
           {isClient && user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -107,26 +118,20 @@ export function AppHeader() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/settings">
-                    <UserIcon className="mr-2" />
-                    Profile
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
                 <ReferralCodeDialog userId={user.uid}>
                     <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
-                        <Gift className="mr-2" />
-                        Generate Referral Code
+                        <Gift className="mr-2 h-4 w-4" />
+                        <span>Generate Referral Code</span>
                     </button>
                 </ReferralCodeDialog>
-                 <DropdownMenuItem asChild>
-                  <Link href="/settings">
-                    <Moon className="mr-2" />
-                    Toggle theme
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="mr-2" />
-                  Log out
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
