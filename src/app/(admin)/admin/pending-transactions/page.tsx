@@ -2,8 +2,6 @@
 
 import { PendingTransactions } from "@/components/admin/pending-transactions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Suspense } from "react";
-
 
 export default function AdminPendingTransactionsPage() {
     return (
@@ -14,9 +12,7 @@ export default function AdminPendingTransactionsPage() {
                     <CardDescription>Review all pending deposits and withdrawals before they are processed.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Suspense fallback={<div>Loading transactions...</div>}>
-                        <PendingTransactions />
-                    </Suspense>
+                    <PendingTransactions />
                 </CardContent>
             </Card>
         </div>
