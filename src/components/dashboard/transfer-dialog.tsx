@@ -1,12 +1,13 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Repeat, X } from 'lucide-react';
+import { Loader2, Repeat } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { makeTransfer } from '@/app/(app)/dashboard/actions';
+import type { AccountType } from '@/app/(app)/dashboard/page';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -37,11 +38,16 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 
-const toSelfSchema = z.object({
-  amount: z.coerce.number().positive('Amount must be a positive number.'),
-  fromAccount: z.string().min(1, 'Please select a source account.'),
-  toAccount: z.string().min(1, 'Please select a destination account.'),
-});
+const toSelfSchema = z
+  .object({
+    amount: z.coerce.number().positive('Amount must be a positive number.'),
+    fromAccount: z.enum(['solidara', 'annual']),
+    toAccount: z.enum(['solidara', 'annual']),
+  })
+  .refine((data) => data.fromAccount !== data.toAccount, {
+    message: 'Source and destination accounts cannot be the same.',
+    path: ['toAccount'],
+  });
 
 const toOtherSchema = z.object({
   recipientId: z.string().min(1, 'Recipient ID is required.'),
@@ -61,7 +67,16 @@ const formSchema = z.discriminatedUnion('transferType', [
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function TransferDialog() {
+interface TransferDialogProps {
+  balances: { solidara: number; annual: number };
+  onSelfTransfer: (
+    amount: number,
+    from: AccountType,
+    to: AccountType
+  ) => boolean;
+}
+
+export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<'toSelf' | 'toOther'>(
     'toSelf'
@@ -73,13 +88,30 @@ export function TransferDialog() {
       transferType: 'toSelf',
       amount: 0,
       fromAccount: 'solidara',
+      toAccount: 'annual',
     },
   });
 
-  const { isSubmitting, trigger, reset } = form.formState;
+  const { isSubmitting, reset } = form.formState;
 
   async function onSubmit(values: FormValues) {
-    if (values.transferType === 'toOther') {
+    if (values.transferType === 'toSelf') {
+      const success = onSelfTransfer(
+        values.amount,
+        values.fromAccount as AccountType,
+        values.toAccount as AccountType
+      );
+      if (success) {
+        toast({
+          title: 'Transfer Successful!',
+          description: `You transferred ₦${values.amount.toFixed(2)} from your ${
+            values.fromAccount
+          } account to your ${values.toAccount} account.`,
+        });
+        setIsOpen(false);
+        reset({ transferType: 'toSelf', amount: 0, fromAccount: 'solidara', toAccount: 'annual' });
+      }
+    } else if (values.transferType === 'toOther') {
       const result = await makeTransfer({
         recipientId: values.recipientId,
         amount: values.amount,
@@ -92,7 +124,7 @@ export function TransferDialog() {
           )} to ID ${values.recipientId}.`,
         });
         setIsOpen(false);
-        form.reset();
+        reset({ transferType: 'toOther', amount: 0, recipientId: '' });
       } else {
         toast({
           variant: 'destructive',
@@ -100,30 +132,18 @@ export function TransferDialog() {
           description: result.error,
         });
       }
-    } else {
-      // Handle "To Self" transfer logic
-      console.log('Transfer to self:', values);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast({
-        title: 'Transfer Successful!',
-        description: `You transferred ₦${values.amount.toFixed(2)} from ${
-          values.fromAccount
-        } to ${values.toAccount}.`,
-      });
-      setIsOpen(false);
-      form.reset();
     }
   }
 
   const handleTabChange = (value: string) => {
     const tab = value as 'toSelf' | 'toOther';
     setActiveTab(tab);
-    form.setValue('transferType', tab);
-    // Reset form state when switching tabs
-    form.reset({
+    reset({
       transferType: tab,
       amount: 0,
-      fromAccount: 'solidara',
+      ...(tab === 'toSelf'
+        ? { fromAccount: 'solidara', toAccount: 'annual' }
+        : { recipientId: '' }),
     });
   };
 
@@ -139,8 +159,7 @@ export function TransferDialog() {
         <DialogHeader>
           <DialogTitle>Transfer Funds</DialogTitle>
           <DialogDescription>
-            Move money between your accounts or send to another Xavef user. All
-            transfers require admin approval.
+            Move money between your accounts or send to another Xavef user.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -188,7 +207,10 @@ export function TransferDialog() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="solidara">
-                            Savings (Olidara) (Balance: ₦100,000.00)
+                            Savings (Olidara) (Balance: ₦{balances.solidara.toFixed(2)})
+                          </SelectItem>
+                          <SelectItem value="annual">
+                            Annual Savings (Balance: ₦{balances.annual.toFixed(2)})
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -212,8 +234,11 @@ export function TransferDialog() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                           <SelectItem value="solidara">
+                            Savings (Olidara) (Balance: ₦{balances.solidara.toFixed(2)})
+                          </SelectItem>
                           <SelectItem value="annual">
-                            Annual Savings (Balance: ₦0.00)
+                            Annual Savings (Balance: ₦{balances.annual.toFixed(2)})
                           </SelectItem>
                         </SelectContent>
                       </Select>

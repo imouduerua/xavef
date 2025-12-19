@@ -2,6 +2,7 @@
 
 import { Copy } from 'lucide-react';
 import Link from 'next/link';
+import React from 'react';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
 import { SolidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
@@ -10,7 +11,40 @@ import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 
+export type AccountType = 'solidara' | 'annual';
+
 export default function DashboardPage() {
+  const [balances, setBalances] = React.useState({
+    solidara: 100000.0,
+    annual: 0.0,
+  });
+
+  const totalSavings = balances.solidara + balances.annual;
+
+  const handleSelfTransfer = (
+    amount: number,
+    from: AccountType,
+    to: AccountType
+  ) => {
+    if (balances[from] < amount) {
+        toast({
+            variant: "destructive",
+            title: "Transfer Failed",
+            description: "Insufficient funds.",
+        });
+        return false;
+    }
+
+    setBalances((prevBalances) => ({
+      ...prevBalances,
+      [from]: prevBalances[from] - amount,
+      [to]: prevBalances[to] + amount,
+    }));
+
+    return true;
+  };
+
+
   const copyId = () => {
     navigator.clipboard.writeText('1234');
     toast({
@@ -30,16 +64,16 @@ export default function DashboardPage() {
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <TransferDialog />
+          <TransferDialog balances={balances} onSelfTransfer={handleSelfTransfer} />
           <Button asChild>
             <Link href="/transactions">Transaction History</Link>
           </Button>
         </div>
       </div>
       <div className="grid gap-6 md:grid-cols-3">
-        <SolidaraSavingsCard />
-        <AnnualSavingsCard />
-        <TotalSavingsCard />
+        <SolidaraSavingsCard balance={balances.solidara} />
+        <AnnualSavingsCard balance={balances.annual} />
+        <TotalSavingsCard balance={totalSavings} />
       </div>
       <div></div>
     </div>
