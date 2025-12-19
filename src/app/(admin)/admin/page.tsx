@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users } from "lucide-react";
+import { Users, Clock } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminDashboardPage() {
@@ -29,6 +29,23 @@ export default function AdminDashboardPage() {
                     <CardContent>
                          <Button asChild>
                             <Link href="/admin/users">Go to User Management</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Pending Transactions</CardTitle>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">Review Transactions</div>
+                        <p className="text-xs text-muted-foreground">
+                            Approve or decline pending deposits and withdrawals.
+                        </p>
+                    </CardContent>
+                    <CardContent>
+                         <Button asChild>
+                            <Link href="/admin/pending-transactions">Go to Pending Transactions</Link>
                         </Button>
                     </CardContent>
                 </Card>

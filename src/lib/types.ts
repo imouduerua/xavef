@@ -44,6 +44,8 @@ export interface Transaction {
   type: TransactionType;
   status: TransactionStatus;
   amount: number;
+  userId?: string; // Optional: To link transaction to user when querying collection group
+  userEmail?: string; // Optional: To display user email in admin table
 }
 
 export interface Notification {

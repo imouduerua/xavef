@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
+  Clock,
 } from 'lucide-react';
 
 import {
@@ -24,6 +25,7 @@ import { useUser } from '@/firebase';
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { href: '/admin/users', icon: Users, label: 'User Management' },
+  { href: '/admin/pending-transactions', icon: Clock, label: 'Pending Transactions' },
 ];
 
 
