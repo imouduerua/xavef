@@ -2,16 +2,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function SettingsPage() {
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Settings</CardTitle>
-                <CardDescription>
-                    Manage your account settings.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p>Settings management features will be implemented here.</p>
-            </CardContent>
-        </Card>
+        <div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Settings</CardTitle>
+                    <CardDescription>
+                        Manage your account settings.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p>Settings management features will be implemented here.</p>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
