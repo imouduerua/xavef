@@ -152,7 +152,7 @@ function DashboardContent() {
           </Button>
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SolidaraSavingsCard balance={balances.solidara} />
         <AnnualSavingsCard balance={balances.annual} />
         <TotalSavingsCard balance={totalSavings} />
