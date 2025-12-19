@@ -114,8 +114,8 @@ function DashboardContent() {
   
   if (userLoading || userDataLoading || isCreatingProfile) {
     return (
-        <div className="space-y-8 p-4 sm:p-6 lg:p-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 sm:p-6 lg:p-8">
                <div className="flex items-center gap-4 text-sm">
                  <Skeleton className="h-6 w-48" />
                  <Skeleton className="h-6 w-8" />
@@ -125,7 +125,7 @@ function DashboardContent() {
                  <Skeleton className="h-10 w-40" />
                </div>
             </div>
-             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-4 sm:p-6 lg:p-8">
                 <CardSkeleton />
                 <CardSkeleton />
                 <CardSkeleton />
@@ -136,8 +136,8 @@ function DashboardContent() {
 
 
   return (
-    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 sm:p-6 lg:p-8">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Your Xavef ID:</span>
           <span className="font-semibold">{userData?.xavefId}</span>
@@ -152,7 +152,7 @@ function DashboardContent() {
           </Button>
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 p-4 sm:p-6 lg:p-8">
         <SolidaraSavingsCard balance={balances.solidara} />
         <AnnualSavingsCard balance={balances.annual} />
         <TotalSavingsCard balance={totalSavings} />
