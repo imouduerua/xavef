@@ -3,8 +3,7 @@
 
 import { Copy } from 'lucide-react';
 import Link from 'next/link';
-import React, { useEffect, Suspense, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { Suspense } from 'react';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
 import { SolidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
@@ -14,64 +13,16 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useUserData } from '@/hooks/use-user-data';
 import { useUser } from '@/firebase';
-import { createUserProfile } from './actions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
+import { ProfileInitializer } from '@/components/dashboard/profile-initializer';
 
 export type AccountType = 'solidara' | 'annual';
 
 function DashboardContent() {
-  const { user, loading: userLoading } = useUser();
+  const { loading: userLoading } = useUser();
   const { userData, loading: userDataLoading } = useUserData();
-  const [isCreatingProfile, setIsCreatingProfile] = React.useState(false);
-  const searchParams = useSearchParams();
-  const referralCode = searchParams.get('referralCode');
-  const profileCreationAttempted = useRef(false);
-
-  useEffect(() => {
-    // Ensure this effect runs only once and under the right conditions
-    if (user && !userData && !userDataLoading && !isCreatingProfile && !profileCreationAttempted.current) {
-        if (referralCode) {
-            profileCreationAttempted.current = true; // Mark that we are attempting to create a profile
-            setIsCreatingProfile(true);
-            
-            toast({
-                title: "Finalizing Account Setup",
-                description: "Please wait while we create your user profile...",
-            });
-
-            const handleProfileCreation = async () => {
-                try {
-                    const result = await createUserProfile(user.uid, user.email!, referralCode);
-                    if (result.success) {
-                        toast({
-                            title: "Account Ready!",
-                            description: "Your profile has been created successfully.",
-                        });
-                    } else {
-                         toast({
-                            variant: "destructive",
-                            title: "Profile Creation Failed",
-                            description: result.error || "An unknown error occurred on the server.",
-                        });
-                    }
-                } catch (e: any) {
-                     toast({
-                        variant: "destructive",
-                        title: "Profile Creation Error",
-                        description: "A client-side error occurred. This might be due to an authentication token issue. Please try again later.",
-                    });
-                } finally {
-                    setIsCreatingProfile(false);
-                }
-            };
-
-            handleProfileCreation();
-        }
-    }
-  }, [user, userData, userDataLoading, isCreatingProfile, referralCode]);
-
-
+  
   const [balances, setBalances] = React.useState({
     solidara: 0.0,
     annual: 0.0,
@@ -112,9 +63,34 @@ function DashboardContent() {
     });
   };
   
-  if (userLoading || userDataLoading || isCreatingProfile) {
+  if (userLoading || userDataLoading) {
     return (
         <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+               <div className="flex items-center gap-4 text-sm">
+                 <Skeleton className="h-6 w-48" />
+                 <Skeleton className="h-6 w-8" />
+               </div>
+               <div className="flex items-center gap-2">
+                 <Skeleton className="h-10 w-24" />
+                 <Skeleton className="h-10 w-40" />
+               </div>
+            </div>
+             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <CardSkeleton />
+                <CardSkeleton />
+                <CardSkeleton />
+            </div>
+        </div>
+    )
+  }
+
+  // If there's no user data and we're not loading, it's likely a new user who needs a profile.
+  // The ProfileInitializer will handle the creation and subsequent data refetch.
+  if (!userData) {
+    return (
+       <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+           <ProfileInitializer />
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                <div className="flex items-center gap-4 text-sm">
                  <Skeleton className="h-6 w-48" />
@@ -137,6 +113,7 @@ function DashboardContent() {
 
   return (
     <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+      <ProfileInitializer />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Your Xavef ID:</span>
