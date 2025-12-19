@@ -67,25 +67,7 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      let referredBy = null;
-      let referralCodeDoc = null;
-      if (values.referralCode) {
-        const referralCodesRef = collection(firestore, 'referralCodes');
-        const q = query(referralCodesRef, where('code', '==', values.referralCode), where('used', '==', false));
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-          toast({
-            variant: "destructive",
-            title: "Registration Failed",
-            description: "Invalid or already used referral code.",
-          });
-          setIsLoading(false);
-          return;
-        }
-        referralCodeDoc = snapshot.docs[0];
-        referredBy = referralCodeDoc.data().creatorUid;
-      }
-
+      
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
       
@@ -97,21 +79,15 @@ export function RegisterForm() {
 
       const xavefId = await generateUniqueXavefId(firestore);
       
-      // Create user document first
       const userDocRef = doc(firestore, "users", user.uid);
       await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
         displayName: displayName,
         xavefId,
-        referredBy,
+        referredBy: null, // Temporarily disabled
         createdAt: new Date().toISOString(),
       });
-      
-      // Mark referral code as used in a separate operation
-      if (referralCodeDoc) {
-        await updateDoc(referralCodeDoc.ref, { used: true });
-      }
 
       toast({
         title: "Account Created",
@@ -119,6 +95,7 @@ export function RegisterForm() {
       });
       router.push("/dashboard");
     } catch (error: any) {
+      console.error(error);
       toast({
         variant: "destructive",
         title: "Registration Failed",

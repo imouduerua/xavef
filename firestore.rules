@@ -6,11 +6,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read, update: if request.auth != null && request.auth.uid == userId;
-      // Allow a user to create their own profile document, ensuring the UID in the path
-      // matches the authenticated user's UID and the UID in the document data.
-      allow create: if request.auth != null 
-                    && request.auth.uid == userId
-                    && request.resource.data.uid == request.auth.uid;
+      // Allow a user to create their own document.
+      allow create: if request.auth.uid == userId;
     }
 
     match /referralCodes/{codeId} {
