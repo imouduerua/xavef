@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SidebarTrigger } from '@/components/ui/sidebar';
 import { mockNotifications } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useAuth, useUser } from '@/firebase';
@@ -22,6 +21,7 @@ import { signOut } from 'firebase/auth';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
+import { SidebarTrigger } from '../ui/sidebar';
 
 export function AppHeader() {
   const router = useRouter();
@@ -54,8 +54,10 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-        <SidebarTrigger />
+      <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background px-4 md:px-6">
+         <div className="md:hidden">
+            <SidebarTrigger />
+        </div>
         <div className="flex-1" />
 
         <div className="flex items-center gap-4">
