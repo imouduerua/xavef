@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -48,54 +49,59 @@ async function generateUniqueXavefId(): Promise<string> {
 }
 
 export async function createUserProfile(uid: string, email: string, displayName: string, referralCode?: string | null): Promise<{ success: boolean, error?: string }> {
+    console.log(`[createUserProfile] Starting profile creation for uid: ${uid}`);
     const userDocRef = firestoreAdmin.collection("users").doc(uid);
 
     try {
-        console.log(`[createUserProfile] Starting transaction for user: ${uid}`);
-        await firestoreAdmin.runTransaction(async (transaction) => {
-            const userDoc = await transaction.get(userDocRef);
+        const userDoc = await userDocRef.get();
+        if (userDoc.exists) {
+            console.log(`[createUserProfile] Profile for user ${uid} already exists. Aborting.`);
+            return { success: true }; // Not an error, the profile is already there.
+        }
 
-            if (userDoc.exists) {
-                console.log(`[createUserProfile] Profile for user ${uid} already exists. Aborting.`);
-                return;
+        console.log(`[createUserProfile] Profile does not exist, creating new one.`);
+        const xavefId = await generateUniqueXavefId();
+        let referredBy: string | null = null;
+        let referralDocRef = null;
+
+        if (referralCode) {
+            console.log(`[createUserProfile] Processing referral code: ${referralCode}`);
+            referralDocRef = firestoreAdmin.collection('referralCodes').doc(referralCode);
+            const referralDoc = await referralDocRef.get();
+
+            if (referralDoc.exists && !referralDoc.data()?.used) {
+                referredBy = referralDoc.data()?.creatorUid;
+                console.log(`[createUserProfile] Referral code is valid. Referred by: ${referredBy}.`);
+            } else {
+                console.log("[createUserProfile] Referral code not found, is invalid, or has already been used.");
+                // We don't throw an error here, just proceed without the referral
             }
+        }
+        
+        const newUser = {
+            uid,
+            email,
+            displayName,
+            xavefId,
+            createdAt: FieldValue.serverTimestamp(),
+            referredBy,
+        };
 
-            console.log(`[createUserProfile] Generating Xavef ID for user ${uid}.`);
-            const xavefId = await generateUniqueXavefId();
-            let referredBy: string | null = null;
+        console.log(`[createUserProfile] Creating user document for ${uid} with data:`, newUser);
+        await userDocRef.set(newUser);
+        console.log(`[createUserProfile] User document created for ${uid}.`);
 
-            if (referralCode) {
-                console.log(`[createUserProfile] Processing referral code: ${referralCode}`);
-                const referralDocRef = firestoreAdmin.collection('referralCodes').doc(referralCode);
-                const referralDoc = await transaction.get(referralDocRef);
+        // If a valid referral code was used, update it now.
+        if (referralDocRef && referredBy) {
+            console.log(`[createUserProfile] Marking referral code ${referralCode} as used.`);
+            await referralDocRef.update({ used: true });
+            console.log(`[createUserProfile] Referral code ${referralCode} marked as used.`);
+        }
 
-                if (referralDoc.exists && !referralDoc.data()?.used) {
-                    referredBy = referralDoc.data()?.creatorUid;
-                    console.log(`[createUserProfile] Referral code is valid. Referred by: ${referredBy}. Marking code as used.`);
-                    transaction.update(referralDocRef, { used: true });
-                } else {
-                    console.log("[createUserProfile] Referral code not found, is invalid, or has already been used.");
-                    // We don't throw an error here, just proceed without the referral
-                }
-            }
-            
-            const newUser = {
-                uid,
-                email,
-                displayName,
-                xavefId,
-                createdAt: FieldValue.serverTimestamp(),
-                referredBy,
-            };
-
-            console.log(`[createUserProfile] Creating user document for ${uid} with data:`, newUser);
-            transaction.set(userDocRef, newUser);
-        });
-
-        console.log(`[createUserProfile] Transaction successful for user ${uid}.`);
+        console.log(`[createUserProfile] Profile creation process successful for user ${uid}.`);
         return { success: true };
     } catch (error: any) {
-        console.error("[createUserProfile] Error in transaction:", error);
-        return { success: false, error: `An unexpected error occurred: ${error.message}` };
+        console.error("[createUserProfile] CRITICAL ERROR during profile creation:", error);
+        return { success: false, error: `An unexpected error occurred during profile creation: ${error.message}` };
     }
 }
