@@ -40,7 +40,6 @@ import { toast } from '@/hooks/use-toast';
 
 const toSelfSchema = z
   .object({
-    amount: z.coerce.number().positive('Amount must be a positive number.'),
     fromAccount: z.enum(['solidara', 'annual']),
     toAccount: z.enum(['solidara', 'annual']),
   })
@@ -51,16 +50,17 @@ const toSelfSchema = z
 
 const toOtherSchema = z.object({
   recipientId: z.string().min(1, 'Recipient ID is required.'),
-  amount: z.coerce.number().positive('Amount must be a positive number.'),
 });
 
 const formSchema = z.discriminatedUnion('transferType', [
   z.object({
     transferType: z.literal('toSelf'),
+    amount: z.coerce.number().positive('Amount must be a positive number.'),
     ...toSelfSchema.shape,
   }),
   z.object({
     transferType: z.literal('toOther'),
+    amount: z.coerce.number().positive('Amount must be a positive number.'),
     ...toOtherSchema.shape,
   }),
 ]);
