@@ -67,53 +67,65 @@ export function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    let userCredential;
     try {
         // 1. Create user with email and password
-        userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         const user = userCredential.user;
         const displayName = values.email.split('@')[0];
 
         // 2. Update user profile
         await updateProfile(user, { displayName });
 
-        // 3. Check for referral code and get referrer UID
-        let referrerUid: string | null = null;
-        let referralCodeDocRef: any = null;
-        if (values.referralCode) {
-            const referralCodesRef = collection(firestore, 'referralCodes');
-            const q = query(referralCodesRef, where("code", "==", values.referralCode), where("used", "==", false));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const referralDoc = querySnapshot.docs[0];
-                referrerUid = referralDoc.data().creatorUid;
-                referralCodeDocRef = referralDoc.ref;
-            } else {
-                toast({
-                    variant: "destructive",
-                    title: "Registration Warning",
-                    description: "Invalid or already used referral code. Continuing without it.",
-                });
+        // Isolate Firestore operations
+        try {
+            // 3. Check for referral code and get referrer UID
+            let referrerUid: string | null = null;
+            let referralCodeDocRef: any = null;
+            if (values.referralCode) {
+                const referralCodesRef = collection(firestore, 'referralCodes');
+                const q = query(referralCodesRef, where("code", "==", values.referralCode), where("used", "==", false));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const referralDoc = querySnapshot.docs[0];
+                    referrerUid = referralDoc.data().creatorUid;
+                    referralCodeDocRef = referralDoc.ref;
+                } else {
+                    toast({
+                        variant: "destructive",
+                        title: "Registration Warning",
+                        description: "Invalid or already used referral code. Continuing without it.",
+                    });
+                }
             }
-        }
-        
-        // 4. Generate unique Xavef ID
-        const xavefId = await generateUniqueXavefId(firestore);
+            
+            // 4. Generate unique Xavef ID
+            const xavefId = await generateUniqueXavefId(firestore);
 
-        // 5. Create the user document in Firestore
-        const userDocRef = doc(firestore, "users", user.uid);
-        await setDoc(userDocRef, {
-            uid: user.uid,
-            email: user.email,
-            displayName: displayName,
-            xavefId,
-            referredBy: referrerUid,
-            createdAt: new Date().toISOString(),
-        });
-        
-        // 6. If a valid referral code was used, update it
-        if (referralCodeDocRef) {
-            await updateDoc(referralCodeDocRef, { used: true });
+            // 5. Create the user document in Firestore
+            const userDocRef = doc(firestore, "users", user.uid);
+            await setDoc(userDocRef, {
+                uid: user.uid,
+                email: user.email,
+                displayName: displayName,
+                xavefId,
+                referredBy: referrerUid,
+                createdAt: new Date().toISOString(),
+            });
+            
+            // 6. If a valid referral code was used, update it
+            if (referralCodeDocRef) {
+                await updateDoc(referralCodeDocRef, { used: true });
+            }
+        } catch (firestoreError: any) {
+            console.error("Firestore Error:", firestoreError);
+            // This toast will now show the specific Firestore error
+            toast({
+                variant: "destructive",
+                title: "Profile Save Failed",
+                description: firestoreError.message || "Could not save your user profile. Please contact support.",
+            });
+            // We still want to stop execution if the profile fails to save
+            return;
         }
 
         toast({
@@ -130,12 +142,6 @@ export function RegisterForm() {
                 variant: "destructive",
                 title: "Registration Failed",
                 description: "This email address is already in use. Please log in instead.",
-            });
-        } else if (userCredential && error.code?.includes('permission-denied')) {
-             toast({
-                variant: "destructive",
-                title: "Registration Incomplete",
-                description: "Your account was created, but we couldn't save your profile. Please contact support.",
             });
         } else {
             toast({
@@ -183,7 +189,7 @@ export function RegisterForm() {
           name="referralCode"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Referral Code</FormLabel>
+              <FormLabel>Referral Code (Optional)</FormLabel>
               <FormControl>
                 <Input placeholder="Enter code from a friend" {...field} />
               </FormControl>
