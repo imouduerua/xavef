@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function AdvicePage() {
     return (
-        <div>
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
             <Card>
                 <CardHeader>
                     <CardTitle>AI-Powered Financial Advisor</CardTitle>

@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Transaction, TransactionStatus, TransactionType } from "@/lib/types";
@@ -91,7 +91,13 @@ export default function TransactionsPage() {
   const payments = all.filter((tx) => tx.type === "Loan Payment");
 
   return (
-    <div>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+       <Card>
+          <CardHeader>
+            <CardTitle>Transaction History</CardTitle>
+            <CardDescription>View all your account activity.</CardDescription>
+          </CardHeader>
+       </Card>
       <Tabs defaultValue="all">
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>

@@ -63,9 +63,8 @@ function DashboardContent() {
     });
   };
   
-  if (userLoading || userDataLoading) {
-    return (
-        <div className="space-y-8">
+  const PageSkeleton = () => (
+     <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                <div className="flex items-center gap-4 text-sm">
                  <Skeleton className="h-6 w-48" />
@@ -82,37 +81,26 @@ function DashboardContent() {
                 <CardSkeleton />
             </div>
         </div>
-    )
+  )
+
+  if (userLoading || userDataLoading) {
+    return <PageSkeleton />
   }
 
   // If there's no user data and we're not loading, it's likely a new user who needs a profile.
   // The ProfileInitializer will handle the creation and subsequent data refetch.
   if (!userData) {
     return (
-       <div className="space-y-8">
+       <div className="space-y-6">
            <ProfileInitializer />
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-               <div className="flex items-center gap-4 text-sm">
-                 <Skeleton className="h-6 w-48" />
-                 <Skeleton className="h-6 w-8" />
-               </div>
-               <div className="flex items-center gap-2">
-                 <Skeleton className="h-10 w-24" />
-                 <Skeleton className="h-10 w-40" />
-               </div>
-            </div>
-             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <CardSkeleton />
-                <CardSkeleton />
-                <CardSkeleton />
-            </div>
+           <PageSkeleton />
         </div>
     )
   }
 
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <ProfileInitializer />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2 text-sm">
@@ -141,9 +129,11 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <DashboardContent />
-    </Suspense>
+    <div className="p-4 sm:p-6 lg:p-8">
+      <Suspense fallback={<div>Loading...</div>}>
+        <DashboardContent />
+      </Suspense>
+    </div>
   );
 }
 
