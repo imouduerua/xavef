@@ -64,17 +64,15 @@ export async function createUserProfile(uid: string, email: string, displayName:
 
         if (referralCode) {
             console.log(`Attempting to process referral code: ${referralCode}`);
-            const referralRef = firestoreAdmin.collection('referralCodes').where('code', '==', referralCode).where('used', '==', false);
-            const snapshot = await referralRef.limit(1).get();
+            const referralDocRef = firestoreAdmin.collection('referralCodes').doc(referralCode);
+            const referralDoc = await referralDocRef.get();
 
-            if (!snapshot.empty) {
-                const referralDoc = snapshot.docs[0];
-                referredBy = referralDoc.data().creatorUid;
+            if (referralDoc.exists && !referralDoc.data()?.used) {
+                referredBy = referralDoc.data()?.creatorUid;
                 console.log(`Referral code is valid. Referred by: ${referredBy}. Marking code as used.`);
-                // Use Admin SDK to update the referral code, bypassing security rules
-                await referralDoc.ref.update({ used: true });
+                await referralDocRef.update({ used: true });
             } else {
-                console.log("Referral code not found or already used.");
+                console.log("Referral code not found, is invalid, or has already been used.");
             }
         }
 
@@ -83,7 +81,7 @@ export async function createUserProfile(uid: string, email: string, displayName:
             email,
             displayName,
             xavefId,
-            createdAt: FieldValue.serverTimestamp(), // Use server timestamp for accuracy
+            createdAt: FieldValue.serverTimestamp(),
             referredBy,
         });
 
