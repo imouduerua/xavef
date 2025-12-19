@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -16,7 +17,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -41,8 +41,6 @@ export function AdminSidebar() {
     <Sidebar className="border-r" collapsible="icon">
       <SidebarHeader>
         <XavefLogoText />
-        <div className="flex-1" />
-        <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
