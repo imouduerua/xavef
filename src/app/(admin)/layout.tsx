@@ -18,7 +18,9 @@ export default function AdminLayout({
             <div className="flex-1 flex flex-col w-full">
               <AppHeader />
               <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                {children}
+                <div className="w-full">
+                    {children}
+                </div>
               </main>
             </div>
           </div>
