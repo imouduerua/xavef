@@ -7,7 +7,7 @@
       "properties": {
         "uid": {
           "type": "string",
-          "description": "The user's unique ID."
+          "description": "The user's unique ID from Firebase Auth."
         },
         "email": {
           "type": "string",
@@ -17,9 +17,26 @@
         "displayName": {
           "type": "string",
           "description": "The user's display name."
+        },
+        "xavefId": {
+          "type": "string",
+          "description": "A unique 4 to 6 digit user ID, like an account number."
+        },
+        "referralCode": {
+          "type": "string",
+          "description": "A unique code the user can share to invite others."
+        },
+        "referredBy": {
+          "type": "string",
+          "description": "The user ID of the user who referred them."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the user account was created."
         }
       },
-      "required": ["uid", "email"]
+      "required": ["uid", "email", "displayName", "xavefId", "referralCode", "createdAt"]
     },
     "transaction": {
       "title": "Transaction",
@@ -56,7 +73,7 @@
       "schema": {
         "$ref": "#/entities/user"
       },
-      "description": "Stores user profile information."
+      "description": "Stores user profile information, including their unique Xavef ID and referral details."
     },
     "/users/{userId}/transactions/{transactionId}": {
       "schema": {

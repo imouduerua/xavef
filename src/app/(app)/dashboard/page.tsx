@@ -10,10 +10,23 @@ import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
 import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { useDoc, useFirestore, useUser } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 export type AccountType = 'solidara' | 'annual';
 
 export default function DashboardPage() {
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userDocRef = React.useMemo(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const { data: userData } = useDoc(userDocRef);
+
+
   const [balances, setBalances] = React.useState({
     solidara: 100000.0,
     annual: 0.0,
@@ -46,7 +59,8 @@ export default function DashboardPage() {
 
 
   const copyId = () => {
-    navigator.clipboard.writeText('1234');
+    if (!userData?.xavefId) return;
+    navigator.clipboard.writeText(userData.xavefId);
     toast({
       title: 'Copied!',
       description: 'Your Xavef ID has been copied to your clipboard.',
@@ -58,7 +72,7 @@ export default function DashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Your Xavef ID:</span>
-          <span className="font-semibold">1234</span>
+          <span className="font-semibold">{userData?.xavefId}</span>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={copyId}>
             <Copy size={14} />
           </Button>

@@ -6,7 +6,7 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import React from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDocs, collection, query, where } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +31,36 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
+  invitationCode: z.string().optional(),
 });
+
+// Function to generate a unique 4-digit ID
+async function generateUniqueXavefId(firestore: any): Promise<string> {
+  let xavefId;
+  let isUnique = false;
+  const usersRef = collection(firestore, 'users');
+
+  while (!isUnique) {
+    xavefId = Math.floor(1000 + Math.random() * 9000).toString();
+    const q = query(usersRef, where('xavefId', '==', xavefId));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      isUnique = true;
+    }
+  }
+  return xavefId!;
+}
+
+
+// Function to generate a random referral code
+function generateReferralCode(length = 8) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
 
 export function RegisterForm() {
   const router = useRouter();
@@ -45,12 +74,31 @@ export function RegisterForm() {
       fullName: "",
       email: "",
       password: "",
+      invitationCode: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
+      // Validate invitation code if provided
+      let referredBy = null;
+      if (values.invitationCode) {
+        const usersRef = collection(firestore, 'users');
+        const q = query(usersRef, where('referralCode', '==', values.invitationCode));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+          toast({
+            variant: "destructive",
+            title: "Registration Failed",
+            description: "Invalid invitation code.",
+          });
+          setIsLoading(false);
+          return;
+        }
+        referredBy = snapshot.docs[0].id;
+      }
+
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
       
@@ -58,10 +106,17 @@ export function RegisterForm() {
         displayName: values.fullName,
       });
 
+      const xavefId = await generateUniqueXavefId(firestore);
+      const referralCode = generateReferralCode();
+
       await setDoc(doc(firestore, "users", user.uid), {
         uid: user.uid,
         email: user.email,
         displayName: values.fullName,
+        xavefId,
+        referralCode,
+        referredBy,
+        createdAt: new Date().toISOString(),
       });
 
       toast({
@@ -117,6 +172,19 @@ export function RegisterForm() {
               <FormLabel>Password</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="********" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="invitationCode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Invitation Code (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter code from a friend" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
