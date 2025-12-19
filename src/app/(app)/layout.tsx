@@ -13,12 +13,12 @@ export default function AppLayout({
       <UserDataProvider>
         <div className="flex min-h-screen bg-background">
           <AppSidebar />
-          <SidebarInset>
+          <div className="flex-1 flex flex-col">
             <AppHeader />
-            <div className="flex-1">
-              {children}
-            </div>
-          </SidebarInset>
+            <SidebarInset>
+                {children}
+            </SidebarInset>
+          </div>
         </div>
       </UserDataProvider>
     </SidebarProvider>
