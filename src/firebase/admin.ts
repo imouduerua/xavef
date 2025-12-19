@@ -1,15 +1,14 @@
 'use server';
 import 'server-only';
-import { initializeApp, getApps, App, type ServiceAccount } from 'firebase-admin/app';
+import { initializeApp, getApps, App } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { firebaseConfig } from './config';
 
 let app: App;
 
 if (!getApps().length) {
-  app = initializeApp({
-    projectId: firebaseConfig.projectId,
-  });
+  // This will use the Application Default Credentials
+  // available in the App Hosting environment.
+  app = initializeApp();
 } else {
   app = getApps()[0];
 }
