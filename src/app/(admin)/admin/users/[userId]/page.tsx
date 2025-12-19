@@ -28,8 +28,8 @@ export default function UserTransactionsPage() {
   const { data: userData, loading } = useDoc<UserData>(userDocRef);
 
   return (
-    <div className="space-y-4">
-       <Link href="/admin" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-4">
+       <Link href="/admin/users" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />
         Back to User List
       </Link>
