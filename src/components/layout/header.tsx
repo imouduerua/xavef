@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bell } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { Bell, LogOut, Moon, Sun, User as UserIcon } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +16,10 @@ import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { mockNotifications } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { useUser } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { toast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -31,6 +34,8 @@ const pathToTitle: { [key: string]: string } = {
 
 export function AppHeader() {
   const pathname = usePathname();
+  const router = useRouter();
+  const auth = useAuth();
   const { user } = useUser();
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
   const [isClient, setIsClient] = useState(false);
@@ -38,6 +43,23 @@ export function AppHeader() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'There was an error logging you out. Please try again.',
+      });
+    }
+  };
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -73,10 +95,42 @@ export function AppHeader() {
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-        <Avatar className="h-9 w-9">
-          <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? ''} />
-          <AvatarFallback>{user?.displayName?.charAt(0) ?? user?.email?.charAt(0)}</AvatarFallback>
-        </Avatar>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+             <Avatar className="h-9 w-9 cursor-pointer">
+                <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? ''} />
+                <AvatarFallback>{user?.displayName?.charAt(0) ?? user?.email?.charAt(0)}</AvatarFallback>
+              </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user?.displayName}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user?.email}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/settings">
+                <UserIcon className="mr-2" />
+                Profile
+              </Link>
+            </DropdownMenuItem>
+             <DropdownMenuItem asChild>
+              <Link href="/settings">
+                <Moon className="mr-2" />
+                Toggle theme
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2" />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

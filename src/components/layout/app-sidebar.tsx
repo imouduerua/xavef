@@ -44,26 +44,7 @@ const bottomNavItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const auth = useAuth();
   const { user } = useUser();
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push('/');
-      toast({
-        title: 'Logged Out',
-        description: 'You have been successfully logged out.',
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Logout Failed',
-        description: 'There was an error logging you out. Please try again.',
-      });
-    }
-  };
 
   return (
     <Sidebar className="border-r" collapsible="icon">
@@ -119,9 +100,6 @@ export function AppSidebar() {
             <p className="truncate font-semibold">{user?.displayName}</p>
             <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
           </div>
-          <SidebarMenuButton variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogout} tooltip="Logout">
-            <LogOut size={16} />
-          </SidebarMenuButton>
         </div>
       </SidebarFooter>
     </Sidebar>
