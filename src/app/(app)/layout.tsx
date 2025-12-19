@@ -13,12 +13,12 @@ export default function AppLayout({
       <UserDataProvider>
         <div className="min-h-screen bg-background flex">
           <AppSidebar />
-          <div className="flex-1 flex flex-col w-full overflow-x-hidden">
+          <div className="flex-1 flex flex-col">
             <AppHeader />
             <main className="flex-1 overflow-y-auto">
-                <div className="w-full">
-                    {children}
-                </div>
+              <div className="p-4 sm:p-6 lg:p-8">
+                {children}
+              </div>
             </main>
           </div>
         </div>

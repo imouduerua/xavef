@@ -2,18 +2,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function LoansPage() {
     return (
-        <div>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Loans</CardTitle>
-                    <CardDescription>
-                        Manage your loans.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p>Loan management features will be implemented here.</p>
-                </CardContent>
-            </Card>
-        </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>Loans</CardTitle>
+                <CardDescription>
+                    Manage your loans.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p>Loan management features will be implemented here.</p>
+            </CardContent>
+        </Card>
     );
 }
