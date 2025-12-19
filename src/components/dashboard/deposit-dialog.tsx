@@ -6,7 +6,6 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { createDepositTransaction } from '@/app/(app)/dashboard/actions';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -28,7 +27,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 const depositSchema = z.object({
   amount: z.coerce
@@ -47,6 +47,7 @@ interface DepositDialogProps {
 export function DepositDialog({ accountName, children }: DepositDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useUser();
+  const firestore = useFirestore();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(depositSchema),
@@ -58,36 +59,48 @@ export function DepositDialog({ accountName, children }: DepositDialogProps) {
   const {
     formState: { isSubmitting },
     reset,
+    handleSubmit,
   } = form;
 
   async function onSubmit(values: FormValues) {
     if (!user) {
-        toast({
-            variant: 'destructive',
-            title: 'Not Authenticated',
-            description: 'You must be logged in to make a deposit.',
-        });
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'Not Authenticated',
+        description: 'You must be logged in to make a deposit.',
+      });
+      return;
     }
+    
+    if(!firestore) return;
 
-    const result = await createDepositTransaction({
-        userId: user.uid,
+    const transactionRef = collection(firestore, `users/${user.uid}/transactions`);
+
+    try {
+      const newTransaction = {
+        date: serverTimestamp(),
         amount: values.amount,
         description: `Deposit to ${accountName}`,
-    });
+        status: 'Pending',
+        type: 'Deposit',
+      };
+      
+      await addDoc(transactionRef, newTransaction);
 
-    if (result.success) {
       toast({
         title: 'Deposit Submitted',
-        description: `Your deposit of ₦${values.amount.toFixed(2)} is pending approval.`,
+        description: `Your deposit of ₦${values.amount.toFixed(
+          2
+        )} is pending approval.`,
       });
       setIsOpen(false);
       reset({ amount: 0 });
-    } else {
+    } catch (error: any) {
+      console.error('Error creating deposit transaction:', error);
       toast({
         variant: 'destructive',
         title: 'Deposit Failed',
-        description: result.error,
+        description: error.message || 'An unexpected error occurred.',
       });
     }
   }
@@ -104,7 +117,7 @@ export function DepositDialog({ accountName, children }: DepositDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="amount"
