@@ -48,65 +48,70 @@ async function generateUniqueXavefId(): Promise<string> {
   return xavefId!;
 }
 
-export async function createUserProfile(uid: string, email: string, firstName: string, lastName: string, referralCode?: string | null): Promise<{ success: boolean, error?: string }> {
+export async function createUserProfile(uid: string, email: string, firstName: string, lastName: string, referralCode: string | null): Promise<{ success: boolean, error?: string }> {
     console.log(`[createUserProfile] Starting profile creation for uid: ${uid}`);
+    
+    if (!referralCode) {
+        console.error("[createUserProfile] CRITICAL ERROR: No referral code provided.");
+        return { success: false, error: "A referral code is required to create a profile." };
+    }
+
     const userDocRef = firestoreAdmin.collection("users").doc(uid);
+    const referralDocRef = firestoreAdmin.collection('referralCodes').doc(referralCode);
 
     try {
-        const userDoc = await userDocRef.get();
-        if (userDoc.exists) {
-            console.log(`[createUserProfile] Profile for user ${uid} already exists. Aborting.`);
-            return { success: true }; // Not an error, the profile is already there.
-        }
-
-        console.log(`[createUserProfile] Profile does not exist, creating new one.`);
-        const xavefId = await generateUniqueXavefId();
-        let referredBy: string | null = null;
-        let referralDocRef = null;
-
-        if (referralCode) {
-            console.log(`[createUserProfile] Processing referral code: ${referralCode}`);
-            referralDocRef = firestoreAdmin.collection('referralCodes').doc(referralCode);
-            const referralDoc = await referralDocRef.get();
-
-            if (referralDoc.exists && !referralDoc.data()?.used) {
-                referredBy = referralDoc.data()?.creatorUid;
-                console.log(`[createUserProfile] Referral code is valid. Referred by: ${referredBy}.`);
-            } else {
-                console.log("[createUserProfile] Referral code not found, is invalid, or has already been used.");
+        const result = await firestoreAdmin.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userDocRef);
+            if (userDoc.exists) {
+                console.log(`[createUserProfile] Profile for user ${uid} already exists. Aborting transaction.`);
+                // Not an error, just means we don't need to do anything.
+                return { success: true }; 
             }
-        }
-        
-        const newUser = {
-            uid,
-            email,
-            firstName,
-            lastName,
-            displayName: `${firstName} ${lastName}`,
-            dateOfBirth: null,
-            phoneNumber: null,
-            address: null,
-            state: null,
-            country: null,
-            xavefId,
-            createdAt: FieldValue.serverTimestamp(),
-            referredBy,
-        };
 
-        console.log(`[createUserProfile] Creating user document for ${uid} with data:`, newUser);
-        await userDocRef.set(newUser);
-        console.log(`[createUserProfile] User document created for ${uid}.`);
+            console.log(`[createUserProfile] Processing referral code: ${referralCode}`);
+            const referralDoc = await transaction.get(referralDocRef);
 
-        if (referralDocRef && referredBy) {
-            console.log(`[createUserProfile] Marking referral code ${referralCode} as used.`);
-            await referralDocRef.update({ used: true });
-            console.log(`[createUserProfile] Referral code ${referralCode} marked as used.`);
-        }
+            if (!referralDoc.exists || referralDoc.data()?.used) {
+                console.log("[createUserProfile] Referral code not found, is invalid, or has already been used.");
+                // We throw an error to abort the transaction.
+                throw new Error("The provided referral code is either invalid or has already been used.");
+            }
+            
+            const referredBy = referralDoc.data()?.creatorUid;
+            console.log(`[createUserProfile] Referral code is valid. Referred by: ${referredBy}.`);
 
-        console.log(`[createUserProfile] Profile creation process successful for user ${uid}.`);
-        return { success: true };
+            const xavefId = await generateUniqueXavefId();
+            
+            const newUser = {
+                uid,
+                email,
+                firstName,
+                lastName,
+                displayName: `${firstName} ${lastName}`,
+                dateOfBirth: null,
+                phoneNumber: null,
+                address: null,
+                state: null,
+                country: null,
+                xavefId,
+                createdAt: FieldValue.serverTimestamp(),
+                referredBy,
+            };
+
+            console.log(`[createUserProfile] Creating user document for ${uid} within transaction.`);
+            transaction.set(userDocRef, newUser);
+
+            console.log(`[createUserProfile] Marking referral code ${referralCode} as used within transaction.`);
+            transaction.update(referralDocRef, { used: true });
+
+            return { success: true };
+        });
+
+        console.log(`[createUserProfile] Transaction successful for user ${uid}.`);
+        return result;
+
     } catch (error: any) {
-        console.error("[createUserProfile] CRITICAL ERROR during profile creation:", error);
-        return { success: false, error: `An unexpected error occurred during profile creation: ${error.message}` };
+        console.error("[createUserProfile] CRITICAL ERROR during profile creation transaction:", error);
+        return { success: false, error: error.message || `An unexpected error occurred during profile creation.` };
     }
 }

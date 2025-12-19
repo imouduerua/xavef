@@ -57,7 +57,7 @@
           "description": "The timestamp when the user account was created."
         }
       },
-      "required": ["uid", "email", "firstName", "lastName", "xavefId", "createdAt"]
+      "required": ["uid", "email", "firstName", "lastName", "xavefId", "createdAt", "referredBy"]
     },
     "transaction": {
       "title": "Transaction",
