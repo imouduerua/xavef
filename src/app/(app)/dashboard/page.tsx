@@ -114,7 +114,7 @@ function DashboardContent() {
   
   if (userLoading || userDataLoading || isCreatingProfile) {
     return (
-        <div className="p-4 sm:p-6 lg:p-8 space-y-8">
+        <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                <div className="flex items-center gap-4 text-sm">
                  <Skeleton className="h-6 w-48" />
@@ -136,7 +136,7 @@ function DashboardContent() {
 
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-8">
+    <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Your Xavef ID:</span>
