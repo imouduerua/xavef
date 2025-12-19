@@ -17,7 +17,7 @@ service cloud.firestore {
                      && request.resource.data.used == true
                      && resource.data.used == false;
       
-      // No one can read or delete referral codes directly, except for reads during signup check.
+      // No one can read or delete referral codes directly.
       // A full read is disallowed to prevent enumeration.
       allow read, delete: if false;
     }
