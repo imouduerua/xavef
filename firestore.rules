@@ -6,11 +6,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read, update: if request.auth != null && request.auth.uid == userId;
-      // IMPORTANT: This rule is temporarily open for user creation to resolve
-      // a persistent registration issue. It MUST be secured. A user should only
-      // be able to create their own document.
-      // The secure rule is: allow create: if request.auth.uid == userId;
-      allow create: if true;
+      allow create: if request.auth != null && request.auth.uid == userId;
     }
 
     match /referralCodes/{codeId} {

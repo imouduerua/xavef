@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import React from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, getDocs, collection, query, where, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDocs, collection, query, where } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,6 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
-  referralCode: z.string().optional(),
 });
 
 // Function to generate a unique 4 to 6 digit ID
@@ -61,7 +60,6 @@ export function RegisterForm() {
     defaultValues: {
       email: "",
       password: "",
-      referralCode: "",
     },
   });
 
@@ -78,44 +76,20 @@ export function RegisterForm() {
 
         // Isolate Firestore operations
         try {
-            // 3. Check for referral code and get referrer UID
-            let referrerUid: string | null = null;
-            let referralCodeDocRef: any = null;
-            if (values.referralCode) {
-                const referralCodesRef = collection(firestore, 'referralCodes');
-                const q = query(referralCodesRef, where("code", "==", values.referralCode), where("used", "==", false));
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    const referralDoc = querySnapshot.docs[0];
-                    referrerUid = referralDoc.data().creatorUid;
-                    referralCodeDocRef = referralDoc.ref;
-                } else {
-                    toast({
-                        variant: "destructive",
-                        title: "Registration Warning",
-                        description: "Invalid or already used referral code. Continuing without it.",
-                    });
-                }
-            }
-            
-            // 4. Generate unique Xavef ID
+            // 3. Generate unique Xavef ID
             const xavefId = await generateUniqueXavefId(firestore);
 
-            // 5. Create the user document in Firestore
+            // 4. Create the user document in Firestore
             const userDocRef = doc(firestore, "users", user.uid);
             await setDoc(userDocRef, {
                 uid: user.uid,
                 email: user.email,
                 displayName: displayName,
                 xavefId,
-                referredBy: referrerUid,
+                referredBy: null, // No referral for now
                 createdAt: new Date().toISOString(),
             });
-            
-            // 6. If a valid referral code was used, update it
-            if (referralCodeDocRef) {
-                await updateDoc(referralCodeDocRef, { used: true });
-            }
+
         } catch (firestoreError: any) {
             console.error("Firestore Error:", firestoreError);
             // This toast will now show the specific Firestore error
@@ -179,19 +153,6 @@ export function RegisterForm() {
               <FormLabel>Password</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="********" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="referralCode"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Referral Code (Optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter code from a friend" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
