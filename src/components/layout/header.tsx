@@ -36,11 +36,12 @@ export function AppHeader() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.push('/');
       toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
       });
+      // Force a full page reload to clear all client-side state
+      window.location.assign('/');
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -110,9 +111,9 @@ export function AppHeader() {
                   </Link>
                 </DropdownMenuItem>
                 <ReferralCodeDialog userId={user.uid}>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
                         Generate Referral Code
-                    </DropdownMenuItem>
+                    </button>
                 </ReferralCodeDialog>
                  <DropdownMenuItem asChild>
                   <Link href="/settings">
