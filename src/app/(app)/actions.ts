@@ -1,9 +1,6 @@
 "use server";
 
-import { useAuth, useFirestore } from "@/firebase";
 import { addDoc, collection } from "firebase/firestore";
-import { headers } from "next/headers";
-import { getAuth } from "firebase/auth";
 import { initializeFirebase } from "@/firebase";
 
 function generateReferralCode(length = 8) {
@@ -15,13 +12,12 @@ function generateReferralCode(length = 8) {
     return result;
 }
 
-export async function createReferralCode(): Promise<{ success: boolean; code?: string; error?: string; }> {
-    const { auth, firestore } = initializeFirebase();
-    const currentUser = auth.currentUser;
-
-    if (!currentUser) {
+export async function createReferralCode(userId: string): Promise<{ success: boolean; code?: string; error?: string; }> {
+    if (!userId) {
         return { success: false, error: "You must be logged in to generate a code." };
     }
+
+    const { firestore } = initializeFirebase();
 
     try {
         const code = generateReferralCode();
@@ -29,7 +25,7 @@ export async function createReferralCode(): Promise<{ success: boolean; code?: s
         
         await addDoc(referralCodesRef, {
             code,
-            creatorUid: currentUser.uid,
+            creatorUid: userId,
             used: false,
             createdAt: new Date().toISOString(),
         });

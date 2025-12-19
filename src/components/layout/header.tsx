@@ -65,7 +65,15 @@ export function AppHeader() {
   };
   
   const handleGenerateCode = async () => {
-    const result = await createReferralCode();
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: "You must be logged in to generate a code.",
+        });
+        return;
+    }
+    const result = await createReferralCode(user.uid);
     if (result.success && result.code) {
       navigator.clipboard.writeText(result.code);
       toast({
