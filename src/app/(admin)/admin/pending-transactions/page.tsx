@@ -12,7 +12,7 @@ import {
 import { PendingTransactionsTable } from '@/components/admin/pending-transactions-table';
 import { useFirestore } from '@/firebase';
 import type { Transaction } from '@/lib/types';
-import { collection, collectionGroup, getDocs, query, where } from 'firebase/firestore';
+import { collection, collectionGroup, getDocs, query } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,11 +44,11 @@ export default function AdminPendingTransactionsPage() {
             usersMap.set(doc.id, doc.data());
         });
 
-        // 2. Fetch all transactions.
-        const transactionsQuery = query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Pending'));
+        // 2. Fetch all transactions from all users.
+        const transactionsQuery = query(collectionGroup(firestore, 'transactions'));
         const transactionsSnapshot = await getDocs(transactionsQuery);
         
-        const pendingTransactions: TransactionWithUserDetails[] = [];
+        const allTransactions: TransactionWithUserDetails[] = [];
         
         transactionsSnapshot.docs.forEach((txDoc) => {
           const data = txDoc.data() as Transaction;
@@ -56,7 +56,7 @@ export default function AdminPendingTransactionsPage() {
           const userData = usersMap.get(userId);
 
           if (userData) {
-            pendingTransactions.push({
+            allTransactions.push({
               ...data,
               id: txDoc.id,
               userId: userId,
@@ -65,6 +65,9 @@ export default function AdminPendingTransactionsPage() {
             });
           }
         });
+        
+        // 3. Filter for pending transactions on the client side.
+        const pendingTransactions = allTransactions.filter(tx => tx.status === 'Pending');
 
         setData({ transactions: pendingTransactions });
       } catch (error: any) {
