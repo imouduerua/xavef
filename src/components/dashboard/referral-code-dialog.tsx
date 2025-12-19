@@ -1,6 +1,5 @@
 'use client';
 
-import { useFirestore, useAuth } from '@/firebase';
 import {
   Dialog,
   DialogContent,
@@ -10,57 +9,43 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { addDoc, collection } from 'firebase/firestore';
 import { Check, Copy, Loader2, PartyPopper, RefreshCw } from 'lucide-react';
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { firestoreAdmin } from '@/firebase/admin';
+import { generateReferralCode } from '@/app/(app)/dashboard/referral-actions';
+
 
 interface ReferralCodeDialogProps {
   userId: string;
   children: React.ReactNode;
 }
 
-function generateReferralCode(length = 8) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
 export function ReferralCodeDialog({
   userId,
   children,
 }: ReferralCodeDialogProps) {
-  const firestore = useFirestore();
   const [isOpen, setIsOpen] = useState(false);
   const [code, setCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
   const handleGenerateCode = async () => {
-    if (!userId || !firestore) return;
+    if (!userId) return;
     setIsLoading(true);
     setIsCopied(false);
     try {
-      const newCode = generateReferralCode();
-      const referralCodesRef = collection(firestore, 'referralCodes');
+      const result = await generateReferralCode(userId);
 
-      await addDoc(referralCodesRef, {
-        code: newCode,
-        creatorUid: userId,
-        used: false,
-        createdAt: new Date().toISOString(),
-      });
-
-      setCode(newCode);
-      toast({
-        title: 'Code Generated!',
-        description: 'You can now copy and share your new code.',
-      });
+      if (result.success && result.code) {
+        setCode(result.code);
+        toast({
+          title: 'Code Generated!',
+          description: 'You can now copy and share your new code.',
+        });
+      } else {
+        throw new Error(result.error || 'Failed to generate code.');
+      }
     } catch (error: any) {
       console.error('Error generating referral code:', error);
       toast({
