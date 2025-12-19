@@ -28,28 +28,38 @@ export function PendingTransactions() {
 
   const fetchPendingTransactions = React.useCallback(async () => {
     setLoading(true);
-    const transactionsQuery = query(
-      collectionGroup(firestore, 'transactions'),
-      where('status', '==', 'Pending')
-    );
+    // This query no longer needs a composite index. We will filter client-side.
+    const transactionsQuery = query(collectionGroup(firestore, 'transactions'));
     
-    const querySnapshot = await getDocs(transactionsQuery);
-    const transactionsData: TransactionWithUserDetails[] = [];
+    try {
+      const querySnapshot = await getDocs(transactionsQuery);
+      const transactionsData: TransactionWithUserDetails[] = [];
 
-    for (const txDoc of querySnapshot.docs) {
-      const data = txDoc.data() as Transaction;
-      const userId = txDoc.ref.parent.parent?.id; // Get the user ID from the path
-      if (userId) {
-        const userDocRef = doc(firestore, 'users', userId);
-        // This part is simplified. In a real app, you might fetch user data
-        // or have the email already on the transaction document.
-        // For now, we'll just add the ID.
-         transactionsData.push({ ...data, id: txDoc.id, userId, userEmail: `user-${userId.substring(0,5)}...` });
+      for (const txDoc of querySnapshot.docs) {
+        const data = txDoc.data() as Transaction;
+        
+        // Filter for pending transactions on the client
+        if (data.status === 'Pending') {
+            const userId = txDoc.ref.parent.parent?.id;
+            if (userId) {
+                // In a real app, you might fetch user data or have the email on the doc.
+                // For now, we'll just add the ID.
+                transactionsData.push({ ...data, id: txDoc.id, userId, userEmail: `user-${userId.substring(0,5)}...` });
+            }
+        }
       }
+      
+      setTransactions(transactionsData);
+    } catch (error) {
+        console.error("Error fetching transactions:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Failed to Load Transactions',
+            description: 'Could not fetch pending transactions. Please check console for errors.',
+        });
+    } finally {
+        setLoading(false);
     }
-    
-    setTransactions(transactionsData);
-    setLoading(false);
   }, [firestore]);
 
 
