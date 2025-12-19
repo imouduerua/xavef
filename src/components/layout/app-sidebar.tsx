@@ -14,6 +14,7 @@ import {
   BookOpen,
   BrainCircuit,
   Shield,
+  PanelLeft,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
@@ -67,7 +68,7 @@ export function AppSidebar() {
   const isInsideAdmin = pathname.startsWith('/admin');
 
   return (
-    <Sidebar className="border-r" collapsible="icon">
+    <Sidebar className="border-r" collapsible="offcanvas">
       <SidebarHeader>
         <XavefLogoText />
       </SidebarHeader>

@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Users,
   Clock,
+  PanelLeft,
 } from 'lucide-react';
 
 import {
@@ -38,7 +39,7 @@ export function AdminSidebar() {
   };
 
   return (
-    <Sidebar className="border-r" collapsible="icon">
+    <Sidebar className="border-r" collapsible="offcanvas">
       <SidebarHeader>
         <XavefLogoText />
       </SidebarHeader>
