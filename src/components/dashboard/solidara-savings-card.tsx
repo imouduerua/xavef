@@ -16,7 +16,7 @@ export function SolidaraSavingsCard() {
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-xl">Solidara Savings</CardTitle>
+            <CardTitle className="text-xl md:text-2xl">Solidara Savings</CardTitle>
             <CardDescription>Mutual fund contribution</CardDescription>
           </div>
           <div className="rounded-md bg-primary p-2 text-primary-foreground">
@@ -25,7 +25,7 @@ export function SolidaraSavingsCard() {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-5xl font-bold tracking-tight">
+        <p className="text-4xl font-bold tracking-tight md:text-5xl">
           ${balance.toLocaleString()}
         </p>
       </CardContent>
