@@ -12,7 +12,7 @@ import {
 import { PendingTransactionsTable } from '@/components/admin/pending-transactions-table';
 import { useFirestore } from '@/firebase';
 import type { Transaction } from '@/lib/types';
-import { collectionGroup, getDocs, query, where } from 'firebase/firestore';
+import { collection, collectionGroup, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -37,7 +37,7 @@ export default function AdminPendingTransactionsPage() {
       setLoading(true);
       try {
         // 1. Fetch all users and create a map for quick lookup.
-        const usersQuery = query(collectionGroup(firestore, 'users'));
+        const usersQuery = query(collection(firestore, 'users'));
         const usersSnapshot = await getDocs(usersQuery);
         const usersMap = new Map();
         usersSnapshot.forEach(doc => {
