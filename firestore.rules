@@ -1,0 +1,25 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can read their own profile, and anyone can create a user profile during signup.
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+    }
+
+    // A user can create a referral code for themselves.
+    // No one can read, update or delete referral codes directly.
+    match /referralCodes/{codeId} {
+      allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
+      allow read, update, delete: if false;
+    }
+    
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
