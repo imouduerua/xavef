@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { Separator } from '@/components/ui/separator';
 
 export type AccountType = 'solidara' | 'annual';
 
@@ -58,24 +59,34 @@ export default function DashboardPage() {
   };
 
 
-  const copyId = () => {
-    if (!userData?.xavefId) return;
-    navigator.clipboard.writeText(userData.xavefId);
+  const copyToClipboard = (text: string, type: 'ID' | 'Code') => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
     toast({
       title: 'Copied!',
-      description: 'Your Xavef ID has been copied to your clipboard.',
+      description: `Your Xavef ${type} has been copied to your clipboard.`,
     });
   };
 
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Your Xavef ID:</span>
-          <span className="font-semibold">{userData?.xavefId}</span>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={copyId}>
-            <Copy size={14} />
-          </Button>
+        <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Your Xavef ID:</span>
+            <span className="font-semibold">{userData?.xavefId}</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData?.xavefId, 'ID')}>
+              <Copy size={14} />
+            </Button>
+          </div>
+          <Separator orientation="vertical" className="h-6" />
+           <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Your Referral Code:</span>
+            <span className="font-semibold">{userData?.referralCode}</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData?.referralCode, 'Code')}>
+              <Copy size={14} />
+            </Button>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <TransferDialog balances={balances} onSelfTransfer={handleSelfTransfer} />
