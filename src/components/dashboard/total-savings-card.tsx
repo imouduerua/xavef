@@ -11,7 +11,7 @@ export function TotalSavingsCard({ balance }: TotalSavingsCardProps) {
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-base font-medium text-lg md:text-xl">Total Savings</CardTitle>
+            <CardTitle className="text-lg md:text-xl">Total Savings</CardTitle>
           </div>
           <div className="rounded-md bg-transparent text-muted-foreground">
             <Gem className="h-5 w-5" />

@@ -13,7 +13,7 @@ export function AnnualSavingsCard({ balance }: AnnualSavingsCardProps) {
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-base font-medium text-lg md:text-xl">Annual Savings</CardTitle>
+            <CardTitle className="text-lg md:text-xl">Annual Savings</CardTitle>
           </div>
           <div className="rounded-md bg-transparent text-muted-foreground">
             <Calendar className="h-5 w-5" />

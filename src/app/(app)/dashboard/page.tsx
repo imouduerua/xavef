@@ -31,41 +31,43 @@ function DashboardContent() {
   useEffect(() => {
     // Ensure this effect runs only once and under the right conditions
     if (user && !userData && !userDataLoading && !isCreatingProfile && !profileCreationAttempted.current) {
-        profileCreationAttempted.current = true; // Mark that we are attempting to create a profile
-        setIsCreatingProfile(true);
-        
-        toast({
-            title: "Finalizing Account Setup",
-            description: "Please wait while we create your user profile...",
-        });
+        if (referralCode) {
+            profileCreationAttempted.current = true; // Mark that we are attempting to create a profile
+            setIsCreatingProfile(true);
+            
+            toast({
+                title: "Finalizing Account Setup",
+                description: "Please wait while we create your user profile...",
+            });
 
-        const handleProfileCreation = async () => {
-            try {
-                const result = await createUserProfile(user.uid, user.email!, referralCode);
-                if (result.success) {
-                    toast({
-                        title: "Account Ready!",
-                        description: "Your profile has been created successfully.",
-                    });
-                } else {
+            const handleProfileCreation = async () => {
+                try {
+                    const result = await createUserProfile(user.uid, user.email!, referralCode);
+                    if (result.success) {
+                        toast({
+                            title: "Account Ready!",
+                            description: "Your profile has been created successfully.",
+                        });
+                    } else {
+                         toast({
+                            variant: "destructive",
+                            title: "Profile Creation Failed",
+                            description: result.error || "An unknown error occurred on the server.",
+                        });
+                    }
+                } catch (e: any) {
                      toast({
                         variant: "destructive",
-                        title: "Profile Creation Failed",
-                        description: result.error || "An unknown error occurred on the server.",
+                        title: "Profile Creation Error",
+                        description: "A client-side error occurred. This might be due to an authentication token issue. Please try again later.",
                     });
+                } finally {
+                    setIsCreatingProfile(false);
                 }
-            } catch (e: any) {
-                 toast({
-                    variant: "destructive",
-                    title: "Profile Creation Error",
-                    description: "A client-side error occurred. This might be due to an authentication token issue. Please try again later.",
-                });
-            } finally {
-                setIsCreatingProfile(false);
-            }
-        };
+            };
 
-        handleProfileCreation();
+            handleProfileCreation();
+        }
     }
   }, [user, userData, userDataLoading, isCreatingProfile, referralCode]);
 
@@ -113,7 +115,7 @@ function DashboardContent() {
   if (userLoading || userDataLoading || isCreatingProfile) {
     return (
         <div className="space-y-8">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                <div className="flex items-center gap-4 text-sm">
                  <Skeleton className="h-6 w-48" />
                  <Skeleton className="h-6 w-8" />
@@ -123,7 +125,7 @@ function DashboardContent() {
                  <Skeleton className="h-10 w-40" />
                </div>
             </div>
-             <div className="grid gap-6 md:grid-cols-3">
+             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <CardSkeleton />
                 <CardSkeleton />
                 <CardSkeleton />
@@ -135,15 +137,13 @@ function DashboardContent() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Your Xavef ID:</span>
-            <span className="font-semibold">{userData?.xavefId}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData?.xavefId ?? '', 'ID')}>
-              <Copy size={14} />
-            </Button>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Your Xavef ID:</span>
+          <span className="font-semibold">{userData?.xavefId}</span>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData?.xavefId ?? '', 'ID')}>
+            <Copy size={14} />
+          </Button>
         </div>
         <div className="flex items-center gap-2">
           <TransferDialog balances={balances} onSelfTransfer={handleSelfTransfer} />
@@ -152,7 +152,7 @@ function DashboardContent() {
           </Button>
         </div>
       </div>
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <SolidaraSavingsCard balance={balances.solidara} />
         <AnnualSavingsCard balance={balances.annual} />
         <TotalSavingsCard balance={totalSavings} />
