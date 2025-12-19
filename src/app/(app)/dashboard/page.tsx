@@ -65,7 +65,7 @@ function DashboardContent() {
   
   if (userLoading || userDataLoading) {
     return (
-        <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+        <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                <div className="flex items-center gap-4 text-sm">
                  <Skeleton className="h-6 w-48" />
@@ -89,7 +89,7 @@ function DashboardContent() {
   // The ProfileInitializer will handle the creation and subsequent data refetch.
   if (!userData) {
     return (
-       <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+       <div className="space-y-8">
            <ProfileInitializer />
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                <div className="flex items-center gap-4 text-sm">
@@ -112,7 +112,7 @@ function DashboardContent() {
 
 
   return (
-    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+    <div className="space-y-8">
       <ProfileInitializer />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2 text-sm">

@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function SettingsPage() {
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
+        <div>
             <Card>
                 <CardHeader>
                     <CardTitle>Settings</CardTitle>
