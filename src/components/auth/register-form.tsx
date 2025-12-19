@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import React from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, getDocs, collection, query, where, writeBatch } from "firebase/firestore";
+import { doc, setDoc, getDocs, collection, query, where, updateDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -67,7 +67,6 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      // Validate invitation code if provided
       let referredBy = null;
       let referralCodeDoc = null;
       if (values.referralCode) {
@@ -98,11 +97,9 @@ export function RegisterForm() {
 
       const xavefId = await generateUniqueXavefId(firestore);
       
-      const batch = writeBatch(firestore);
-
-      // Create user document
+      // Create user document first
       const userDocRef = doc(firestore, "users", user.uid);
-      batch.set(userDocRef, {
+      await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
         displayName: displayName,
@@ -111,12 +108,10 @@ export function RegisterForm() {
         createdAt: new Date().toISOString(),
       });
       
-      // Mark referral code as used
+      // Mark referral code as used in a separate operation
       if (referralCodeDoc) {
-        batch.update(referralCodeDoc.ref, { used: true });
+        await updateDoc(referralCodeDoc.ref, { used: true });
       }
-
-      await batch.commit();
 
       toast({
         title: "Account Created",
@@ -127,7 +122,7 @@ export function RegisterForm() {
       toast({
         variant: "destructive",
         title: "Registration Failed",
-        description: error.message,
+        description: error.message || "An unknown error occurred.",
       });
     } finally {
       setIsLoading(false);
