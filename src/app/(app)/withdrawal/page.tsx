@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function WithdrawalPage() {
     return (
-        <div className="mx-auto max-w-3xl">
+        <div className="p-4 sm:p-6 lg:p-8">
             <Card>
                 <CardHeader>
                     <CardTitle>Withdrawal</CardTitle>

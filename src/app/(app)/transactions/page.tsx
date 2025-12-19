@@ -91,25 +91,27 @@ export default function TransactionsPage() {
   const payments = all.filter((tx) => tx.type === "Loan Payment");
 
   return (
-    <Tabs defaultValue="all">
-      <TabsList>
-        <TabsTrigger value="all">All</TabsTrigger>
-        <TabsTrigger value="deposits">Deposits</TabsTrigger>
-        <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
-        <TabsTrigger value="payments">Payments</TabsTrigger>
-      </TabsList>
-      <TabsContent value="all">
-        <TransactionsTable transactions={all} isLoading={loading} />
-      </TabsContent>
-      <TabsContent value="deposits">
-        <TransactionsTable transactions={deposits} isLoading={loading} />
-      </TabsContent>
-      <TabsContent value="withdrawals">
-        <TransactionsTable transactions={withdrawals} isLoading={loading} />
-      </TabsContent>
-      <TabsContent value="payments">
-        <TransactionsTable transactions={payments} isLoading={loading} />
-      </TabsContent>
-    </Tabs>
+    <div className="p-4 sm:p-6 lg:p-8">
+      <Tabs defaultValue="all">
+        <TabsList>
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="deposits">Deposits</TabsTrigger>
+          <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all">
+          <TransactionsTable transactions={all} isLoading={loading} />
+        </TabsContent>
+        <TabsContent value="deposits">
+          <TransactionsTable transactions={deposits} isLoading={loading} />
+        </TabsContent>
+        <TabsContent value="withdrawals">
+          <TransactionsTable transactions={withdrawals} isLoading={loading} />
+        </TabsContent>
+        <TabsContent value="payments">
+          <TransactionsTable transactions={payments} isLoading={loading} />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
