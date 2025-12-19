@@ -1,21 +1,55 @@
-import { PendingTransactions } from "@/components/admin/pending-transactions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Suspense } from "react";
+'use client';
 
-export default function AdminPendingTransactionsPage() {
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, Clock } from "lucide-react";
+import Link from "next/link";
+
+export default function AdminDashboardPage() {
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Pending Transactions</CardTitle>
-                    <CardDescription>Review and process all pending deposits and withdrawals.</CardDescription>
+                    <CardTitle>Admin Dashboard</CardTitle>
+                    <CardDescription>Welcome to the XAVEF Financials control panel. From here you can oversee users and manage the application.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Suspense fallback={<div>Loading pending transactions...</div>}>
-                        <PendingTransactions />
-                    </Suspense>
-                </CardContent>
             </Card>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">User Management</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">Oversee Users</div>
+                        <p className="text-xs text-muted-foreground">
+                            View all registered users and their transaction histories.
+                        </p>
+                    </CardContent>
+                    <CardContent>
+                         <Button asChild>
+                            <Link href="/admin/users">Go to User Management</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Pending Transactions</CardTitle>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">Review Transactions</div>
+                        <p className="text-xs text-muted-foreground">
+                            Approve or decline pending deposits and withdrawals.
+                        </p>
+                    </CardContent>
+                    <CardContent>
+                         <Button asChild>
+                            <Link href="/admin/pending-transactions">Go to Pending Transactions</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
