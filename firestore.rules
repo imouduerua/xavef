@@ -5,7 +5,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     match /users/{userId} {
-      // A user can only read or update their own document.
+      // A user can read or update their own document.
       allow read, update: if request.auth != null && request.auth.uid == userId;
       // Creation is handled by a trusted server-side (Admin) environment, not by clients.
       allow create: if false; 
@@ -23,6 +23,7 @@ service cloud.firestore {
     }
 
     match /users/{userId}/transactions/{transactionId} {
+        // Allow read and write for the user on their own transactions.
         allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }

@@ -2,7 +2,8 @@
 
 import { Copy } from 'lucide-react';
 import Link from 'next/link';
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
 import { SolidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
@@ -10,7 +11,6 @@ import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
 import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
 import { useUserData } from '@/hooks/use-user-data';
 import { useUser } from '@/firebase';
 import { createUserProfile } from './actions';
@@ -19,22 +19,22 @@ import { Card } from '@/components/ui/card';
 
 export type AccountType = 'solidara' | 'annual';
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { user, loading: userLoading } = useUser();
   const { userData, loading: userDataLoading } = useUserData();
   const [isCreatingProfile, setIsCreatingProfile] = React.useState(true);
-
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get('referralCode');
 
   useEffect(() => {
     const handleProfileCreation = async () => {
-        // If user is loaded, not loading user data, and the data is null (doesn't exist)
         if (user && !userDataLoading && !userData) {
             setIsCreatingProfile(true);
             toast({
               title: "Finalizing Account Setup",
               description: "Please wait while we create your user profile...",
             });
-            const result = await createUserProfile(user.uid, user.email!, user.displayName!);
+            const result = await createUserProfile(user.uid, user.email!, user.displayName!, referralCode);
             if (!result.success) {
                 toast({
                     variant: "destructive",
@@ -47,7 +47,6 @@ export default function DashboardPage() {
                     description: "Your profile has been created successfully.",
                 });
             }
-            // Setting to false will cause useUserData to refetch
             setIsCreatingProfile(false);
         } else if (user && userData) {
            setIsCreatingProfile(false);
@@ -55,7 +54,7 @@ export default function DashboardPage() {
     };
 
     handleProfileCreation();
-  }, [user, userData, userDataLoading]);
+  }, [user, userData, userDataLoading, referralCode]);
 
 
   const [balances, setBalances] = React.useState({
@@ -147,6 +146,14 @@ export default function DashboardPage() {
       </div>
       <div></div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
 

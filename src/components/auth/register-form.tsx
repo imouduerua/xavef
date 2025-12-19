@@ -28,6 +28,7 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
+  referralCode: z.string().optional(),
 });
 
 export function RegisterForm() {
@@ -40,6 +41,7 @@ export function RegisterForm() {
     defaultValues: {
       email: "",
       password: "",
+      referralCode: "",
     },
   });
 
@@ -56,7 +58,12 @@ export function RegisterForm() {
             title: "Account Created",
             description: "Welcome! Redirecting to your dashboard...",
         });
-        router.push("/dashboard");
+
+        // Redirect to dashboard, passing referral code if it exists
+        const redirectUrl = values.referralCode
+            ? `/dashboard?referralCode=${values.referralCode}`
+            : "/dashboard";
+        router.push(redirectUrl);
 
     } catch (error: any) {
         console.error("Registration Error:", error);
@@ -103,6 +110,19 @@ export function RegisterForm() {
               <FormLabel>Password</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="********" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="referralCode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Referral Code (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter referral code" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

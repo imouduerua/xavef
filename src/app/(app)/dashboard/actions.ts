@@ -2,7 +2,6 @@
 
 import { z } from 'zod';
 import { firestoreAdmin } from '@/firebase/admin';
-import { getAuth } from 'firebase/auth';
 
 const transferSchema = z.object({
   recipientId: z.string(),
@@ -18,21 +17,12 @@ export async function makeTransfer(values: z.infer<typeof transferSchema>): Prom
     return { success: false, error: 'Invalid input.' };
   }
 
-  // In a real app, you would have logic here to:
-  // 1. Authenticate the user
-  // 2. Check if the user has sufficient balance
-  // 3. Find the recipient by their ID
-  // 4. Perform the database transaction to debit the sender and credit the recipient
-  // 5. Record the transaction history
-
   console.log(
     `Simulating transfer of ₦${validation.data.amount} to ${validation.data.recipientId}`
   );
 
-  // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  // Simulate a potential error
   if (validation.data.recipientId === '0000') {
     return { success: false, error: 'This recipient is blocked.' };
   }
@@ -40,8 +30,6 @@ export async function makeTransfer(values: z.infer<typeof transferSchema>): Prom
   return { success: true };
 }
 
-
-// Function to generate a unique 4 to 6 digit ID
 async function generateUniqueXavefId(): Promise<string> {
   let xavefId;
   let isUnique = false;
@@ -58,17 +46,32 @@ async function generateUniqueXavefId(): Promise<string> {
   return xavefId!;
 }
 
-export async function createUserProfile(uid: string, email: string, displayName: string): Promise<{ success: boolean, error?: string }> {
+export async function createUserProfile(uid: string, email: string, displayName: string, referralCode?: string | null): Promise<{ success: boolean, error?: string }> {
     try {
         const userDocRef = firestoreAdmin.collection("users").doc(uid);
-
-        // Check if the document already exists
         const docSnap = await userDocRef.get();
         if (docSnap.exists) {
             return { success: true }; // Profile already exists
         }
 
         const xavefId = await generateUniqueXavefId();
+        let referredBy: string | null = null;
+
+        // Handle referral code
+        if (referralCode) {
+            const referralRef = firestoreAdmin.collection('referralCodes');
+            const query = referralRef.where('code', '==', referralCode).where('used', '==', false);
+            const snapshot = await query.limit(1).get();
+
+            if (!snapshot.empty) {
+                const referralDoc = snapshot.docs[0];
+                referredBy = referralDoc.data().creatorUid;
+                // Mark code as used in a transaction
+                await firestoreAdmin.runTransaction(async (transaction) => {
+                    transaction.update(referralDoc.ref, { used: true });
+                });
+            }
+        }
 
         await userDocRef.set({
             uid,
@@ -76,7 +79,9 @@ export async function createUserProfile(uid: string, email: string, displayName:
             displayName,
             xavefId,
             createdAt: new Date().toISOString(),
+            referredBy, // Add referredBy to the user document
         });
+
         return { success: true };
     } catch (error: any) {
         console.error("Error creating user profile with Admin SDK:", error);
