@@ -31,5 +31,5 @@ export function useAdminStatus() {
   const loading = userLoading || (user && !isSuperAdmin ? docLoading : false);
 
 
-  return { isAdmin, loading };
+  return { isAdmin, isSuperAdmin, loading };
 }

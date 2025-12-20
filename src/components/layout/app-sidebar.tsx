@@ -15,6 +15,7 @@ import {
   BrainCircuit,
   Shield,
   PanelLeft,
+  History,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
@@ -42,28 +43,33 @@ const navItems = [
   { href: '/withdrawal', icon: Wallet, label: 'Withdrawal' },
 ];
 
+const adminNavItems = [
+    { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+    { href: '/admin/users', icon: Users, label: 'User Management' },
+    { href: '/admin/pending-transactions', icon: Clock, label: 'Pending Transactions' },
+    { href: '/admin/transactions', icon: History, label: 'All Transactions', superAdminOnly: true },
+];
+
 const bottomNavItems = [{ href: '/settings', icon: Settings, label: 'Settings' }];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
-  const { isAdmin } = useAdminStatus();
+  const { isAdmin, isSuperAdmin } = useAdminStatus();
+
+  const isInsideAdmin = pathname.startsWith('/admin');
 
   const currentNavItems = useMemo(() => {
-    if (pathname.startsWith('/admin')) {
-      return [
-        { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-        { href: '/admin/users', icon: Users, label: 'User Management' },
-      ];
+    if (isInsideAdmin) {
+      return adminNavItems.filter(item => !item.superAdminOnly || isSuperAdmin);
     }
     return navItems;
-  }, [pathname]);
+  }, [isInsideAdmin, isSuperAdmin]);
 
   const isActive = (href: string, exact = false) => {
     return exact ? pathname === href : pathname.startsWith(href);
   };
   
-  const isInsideAdmin = pathname.startsWith('/admin');
 
   return (
     <Sidebar className="border-r" collapsible="icon">

@@ -39,6 +39,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
              const docData = doc.data();
             return {
                 id: doc.id,
+                path: doc.ref.path,
                 ...docData,
             } as T;
         });

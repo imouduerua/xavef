@@ -53,6 +53,7 @@ export type TransactionStatus = "Completed" | "Pending" | "Failed";
 
 export interface Transaction {
   id: string;
+  path: string; // Added by useCollection for collectionGroup queries
   date: any;
   description: string;
   type: TransactionType;

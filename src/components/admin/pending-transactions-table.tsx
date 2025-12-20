@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '../ui/table';
 import { Button } from '../ui/button';
-import { Check, Loader2, X, Download } from 'lucide-react';
+import { Check, Loader2, X, Download, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { updateTransactionStatus } from './actions';
@@ -66,7 +66,15 @@ export function PendingTransactionsTable({ transactions: initialTransactions }: 
 
 
   if (transactions.length === 0) {
-    return <p>No pending transactions found.</p>;
+    return (
+       <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
+        <Clock className="mx-auto h-12 w-12 text-muted-foreground" />
+        <h3 className="mt-4 text-lg font-semibold">No Pending Transactions</h3>
+        <p className="mb-4 mt-2 text-sm text-muted-foreground">
+          All transactions have been reviewed.
+        </p>
+      </div>
+    );
   }
 
   const formatDate = (date: any) => {
