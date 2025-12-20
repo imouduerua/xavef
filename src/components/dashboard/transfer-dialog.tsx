@@ -82,7 +82,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
     resolver: zodResolver(formSchema),
     defaultValues: {
       transferType: 'toSelf',
-      amount: undefined,
+      amount: '' as any,
       fromAccount: 'solidara',
       toAccount: 'annual',
     },
@@ -105,7 +105,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
           } account to your ${values.toAccount} account.`,
         });
         setIsOpen(false);
-        reset({ transferType: 'toSelf', amount: undefined, fromAccount: 'solidara', toAccount: 'annual' });
+        reset({ transferType: 'toSelf', amount: '' as any, fromAccount: 'solidara', toAccount: 'annual' });
       }
     } else if (values.transferType === 'toOther') {
       const result = await makeTransfer({
@@ -120,7 +120,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
           )} to ID ${values.recipientId}.`,
         });
         setIsOpen(false);
-        reset({ transferType: 'toOther', amount: undefined, recipientId: '' });
+        reset({ transferType: 'toOther', amount: '' as any, recipientId: '' });
       } else {
         toast({
           variant: 'destructive',
@@ -136,7 +136,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
     setActiveTab(tab);
     reset({
       transferType: tab,
-      amount: undefined,
+      amount: '' as any,
       ...(tab === 'toSelf'
         ? { fromAccount: 'solidara', toAccount: 'annual' }
         : { recipientId: '' }),

@@ -57,7 +57,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
   const form = useForm<FormValues>({
     resolver: zodResolver(depositSchema),
     defaultValues: {
-      amount: undefined,
+      amount: '' as any,
     },
   });
 
@@ -121,7 +121,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
     if (!open) {
       // Reset state when dialog is closed
       setTimeout(() => {
-        reset({ amount: undefined });
+        reset({ amount: '' as any });
         setStep('amount');
       }, 300); // Delay to allow animation to finish
     }
