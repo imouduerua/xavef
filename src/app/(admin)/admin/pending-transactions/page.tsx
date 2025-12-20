@@ -29,8 +29,6 @@ export default function AdminPendingTransactionsPage() {
   const [data, setData] = useState<{
     transactions: TransactionWithUserDetails[] | null;
     error?: string;
-    errorCode?: string
-    indexCreationUrl?: string;
   }>({ transactions: null });
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
@@ -86,33 +84,21 @@ export default function AdminPendingTransactionsPage() {
       } catch (error: any) {
         console.error("Error fetching pending transactions:", error);
         let errorMessage = "Could not fetch pending transactions.";
-        let indexCreationUrl: string | undefined;
-
-        if (error.code === 'failed-precondition' && error.message.includes('index')) {
-          errorMessage = "A database index is required for this query. Please create the necessary composite index and then refresh this page.";
-          // Extract URL from the error message
-          const urlMatch = error.message.match(/https?:\/\/[^\s]+/);
-          if (urlMatch) {
-            indexCreationUrl = urlMatch[0];
-          }
-        } else if (error.code === 'permission-denied') {
+        
+        if (error.code === 'permission-denied') {
           errorMessage = "Permission denied. You must be an admin to view this page.";
         }
         
         setData({
           transactions: null,
           error: errorMessage,
-          errorCode: error.code,
-          indexCreationUrl: indexCreationUrl,
         });
         
-        if (!indexCreationUrl) {
-            toast({
-                variant: "destructive",
-                title: "Error Fetching Data",
-                description: errorMessage,
-            });
-        }
+        toast({
+            variant: "destructive",
+            title: "Error Fetching Data",
+            description: errorMessage,
+        });
 
       } finally {
         setLoading(false);
@@ -128,23 +114,6 @@ export default function AdminPendingTransactionsPage() {
   const renderErrorContent = () => {
     if (!data.error) return null;
     
-    if (data.indexCreationUrl) {
-        return (
-            <Alert variant="destructive">
-                <AlertTitle>Database Index Required</AlertTitle>
-                <AlertDescription>
-                    {data.error}
-                    <Button asChild className="mt-4">
-                        <a href={data.indexCreationUrl} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            Create Index in Firebase Console
-                        </a>
-                    </Button>
-                </AlertDescription>
-            </Alert>
-        )
-    }
-
     return (
         <Alert variant="destructive">
             <AlertTitle>Error</AlertTitle>
