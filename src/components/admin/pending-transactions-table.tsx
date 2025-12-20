@@ -16,7 +16,6 @@ import { Check, Loader2, X, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { updateTransactionStatus } from './actions';
-import type { Timestamp } from 'firebase/firestore';
 
 type TransactionWithUserDetails = Transaction & { userId: string, userEmail: string, xavefId: string };
 
@@ -42,7 +41,6 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                 title: 'Transaction Updated',
                 description: `Transaction has been marked as ${newStatus}.`,
             });
-            // Remove the processed transaction from the local state to update the UI
             setTransactions(prev => prev.filter(tx => tx.id !== transactionId));
         } else {
              toast({
@@ -69,11 +67,9 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
 
   const formatDate = (date: any) => {
     if (!date) return 'N/A';
-    // Firebase Timestamps have a toDate() method
     if (date.toDate) {
       return date.toDate().toLocaleString();
     }
-    // Fallback for string/number dates
     const d = new Date(date);
     if (isNaN(d.getTime())) return 'Invalid Date';
     return d.toLocaleString();

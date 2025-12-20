@@ -91,6 +91,7 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
       return;
     }
     
+    // Recalculate here to ensure accuracy at the time of submission
     const finalFee = values.amount * WITHDRAWAL_FEE_PERCENTAGE;
     const finalPayout = values.amount - finalFee;
 

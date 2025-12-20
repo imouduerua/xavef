@@ -56,7 +56,6 @@ export default function AdminPendingTransactionsPage() {
       try {
         const transactionsWithUserDetails: TransactionWithUserDetails[] = await Promise.all(
           rawTransactions.map(async (tx) => {
-            // The userId is now guaranteed by the useCollection hook
             const userId = tx.userId!;
 
             const userRef = doc(firestore, 'users', userId);
@@ -64,9 +63,6 @@ export default function AdminPendingTransactionsPage() {
             const userEmail = userSnap.exists() ? (userSnap.data() as UserData).email : 'Unknown User';
             const xavefId = userSnap.exists() ? (userSnap.data() as UserData).xavefId : 'N/A';
 
-            // IMPORTANT: Return the entire original transaction object 'tx',
-            // then layer the user details on top. This preserves all fields
-            // from the original transaction, including `payoutAmount`.
             return {
                 ...tx,
                 userId,
