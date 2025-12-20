@@ -36,12 +36,10 @@ import { useMemo } from 'react';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/transactions', icon: BookOpen, label: 'Transactions' },
   { href: '/savings', icon: PiggyBank, label: 'Savings' },
   { href: '/groups', icon: Users, label: 'Groups' },
   { href: '/loans', icon: Landmark, label: 'Loans' },
   { href: '/withdrawal', icon: Wallet, label: 'Withdrawal' },
-  { href: '/advice', icon: BrainCircuit, label: 'Advice' },
 ];
 
 const bottomNavItems = [{ href: '/settings', icon: Settings, label: 'Settings' }];
