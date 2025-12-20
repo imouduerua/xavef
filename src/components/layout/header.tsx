@@ -1,9 +1,12 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bell, LogOut, Moon, User as UserIcon, Gift, Sun } from 'lucide-react';
+import { ArrowLeft, Bell, Gift, LogOut, Moon, Sun, User as UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,16 +15,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { mockNotifications } from '@/lib/mock-data';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { useAuth, useUser } from '@/firebase';
-import { signOut } from 'firebase/auth';
-import { toast } from '@/hooks/use-toast';
-import Link from 'next/link';
 import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
 import { SidebarTrigger } from '../ui/sidebar';
+import { useAuth, useUser } from '@/firebase';
+import { toast } from '@/hooks/use-toast';
+import { mockNotifications } from '@/lib/mock-data';
+import { signOut } from 'firebase/auth';
+import Link from 'next/link';
 
 export function AppHeader() {
   const router = useRouter();
@@ -67,6 +67,10 @@ export function AppHeader() {
     <>
       <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background px-4">
         <SidebarTrigger />
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => router.back()}>
+            <ArrowLeft />
+            <span className="sr-only">Back</span>
+        </Button>
         <div className="flex-1" />
 
         <div className="flex items-center gap-4">
