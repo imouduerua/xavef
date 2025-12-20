@@ -13,7 +13,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
-import { collectionGroup, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy } from 'firebase/firestore';
 
 type TransactionWithUserDetails = Transaction & {
   userId: string;
@@ -36,7 +36,8 @@ export default function AdminPendingTransactionsPage() {
       try {
         const pendingTxsQuery = query(
           collectionGroup(firestore, 'transactions'), 
-          where('status', '==', 'Pending')
+          where('status', '==', 'Pending'),
+          orderBy('date', 'desc')
         );
 
         const querySnapshot = await getDocs(pendingTxsQuery);
@@ -62,12 +63,6 @@ export default function AdminPendingTransactionsPage() {
           })
         );
         
-        transactionsWithUserDetails.sort((a, b) => {
-            const dateA = a.date ? new Date(a.date).getTime() : 0;
-            const dateB = b.date ? new Date(b.date).getTime() : 0;
-            return dateB - dateA;
-        });
-
         setTransactions(transactionsWithUserDetails);
 
       } catch (error: any) {

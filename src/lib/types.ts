@@ -1,3 +1,5 @@
+import type { FieldValue, Timestamp } from "firebase/firestore";
+
 export interface User {
   name: string;
   email: string;
@@ -17,7 +19,7 @@ export interface UserData {
   country: string | null;
   xavefId: string;
   referredBy: string | null;
-  createdAt: string;
+  createdAt: any;
   solidaraBalance: number;
   annualBalance: number;
   id?: string;
@@ -42,7 +44,7 @@ export type TransactionStatus = "Completed" | "Pending" | "Failed";
 
 export interface Transaction {
   id: string;
-  date: string;
+  date: any;
   description: string;
   type: TransactionType;
   status: TransactionStatus;
@@ -66,5 +68,5 @@ export interface ReferralCode {
     code: string;
     creatorUid: string;
     used: boolean;
-    createdAt: string;
+    createdAt: any;
 }

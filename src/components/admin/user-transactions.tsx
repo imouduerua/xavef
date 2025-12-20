@@ -44,6 +44,16 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
   const { data: transactions, loading } =
     useCollection<Transaction>(transactionsQuery);
 
+  const formatDate = (date: any) => {
+    if (!date) return 'N/A';
+    if (date.toDate) {
+      return date.toDate().toLocaleDateString();
+    }
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleDateString();
+  };
+
   if (loading) {
     return (
       <div className="space-y-2">
@@ -77,7 +87,7 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
             <TableCell>
               <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
             </TableCell>
-            <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
+            <TableCell>{formatDate(tx.date)}</TableCell>
             <TableCell
               className={`text-right font-semibold ${
                 tx.amount > 0 ? 'text-green-600' : ''

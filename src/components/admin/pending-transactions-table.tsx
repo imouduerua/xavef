@@ -15,6 +15,7 @@ import { Check, Loader2, X, Eye } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { updateTransactionStatus } from './actions';
+import type { Timestamp } from 'firebase/firestore';
 
 type TransactionWithUserDetails = Transaction & { userId: string, userEmail: string };
 
@@ -65,6 +66,18 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
     return <p>No pending transactions found.</p>;
   }
 
+  const formatDate = (date: any) => {
+    if (!date) return 'N/A';
+    // Firebase Timestamps have a toDate() method
+    if (date.toDate) {
+      return date.toDate().toLocaleDateString();
+    }
+    // Fallback for string dates
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleDateString();
+  };
+
   return (
     <div className="w-full overflow-x-auto">
       <Table>
@@ -86,8 +99,8 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
 
             return (
               <TableRow key={tx.id}>
-                <TableCell className="font-medium">{tx.userEmail}</TableCell>
-                <TableCell>{tx.date ? new Date(tx.date).toLocaleDateString() : 'N/A'}</TableCell>
+                <TableCell className="font-medium break-all">{tx.userEmail}</TableCell>
+                <TableCell>{formatDate(tx.date)}</TableCell>
                 <TableCell>{tx.description}</TableCell>
                 <TableCell>{tx.type}</TableCell>
                 <TableCell
@@ -110,34 +123,36 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                     <span className="text-xs text-muted-foreground">N/A</span>
                   )}
                 </TableCell>
-                <TableCell className="text-center space-x-2">
-                  {isUpdating ? (
-                    <Button variant="outline" size="sm" disabled>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
-                    </Button>
-                  ) : (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
-                        onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Completed')}
-                      >
-                        <Check className="mr-2 h-4 w-4" />
-                        Approve
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700"
-                        onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Failed')}
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        Decline
-                      </Button>
-                    </>
-                  )}
+                <TableCell className="text-center">
+                  <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                      {isUpdating ? (
+                        <Button variant="outline" size="sm" disabled>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+                            onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Completed')}
+                          >
+                            <Check className="mr-2 h-4 w-4" />
+                            Approve
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700"
+                            onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Failed')}
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            Decline
+                          </Button>
+                        </>
+                      )}
+                  </div>
                 </TableCell>
               </TableRow>
             );

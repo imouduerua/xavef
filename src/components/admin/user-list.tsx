@@ -27,6 +27,18 @@ export function UserList() {
   );
   const { data: users, loading } = useCollection<UserDataWithId>(usersQuery);
 
+  const formatDate = (date: any) => {
+    if (!date) return 'N/A';
+    // Firebase Timestamps have a toDate() method
+    if (date.toDate) {
+      return date.toDate().toLocaleDateString();
+    }
+    // Fallback for string dates
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleDateString();
+  };
+
   if (loading) {
     return (
       <div className="space-y-2">
@@ -57,9 +69,7 @@ export function UserList() {
             <TableCell className="font-medium">{user.email}</TableCell>
             <TableCell>{user.xavefId}</TableCell>
             <TableCell>
-              {user.createdAt
-                ? new Date(user.createdAt).toLocaleDateString()
-                : 'N/A'}
+              {formatDate(user.createdAt)}
             </TableCell>
             <TableCell className="text-right">
               <Button variant="outline" size="sm" asChild>

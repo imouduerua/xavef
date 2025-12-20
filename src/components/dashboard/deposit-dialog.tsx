@@ -29,7 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, Timestamp } from 'firebase/firestore';
 import type { AccountType } from '@/lib/types';
 import { BankDetailsCard } from './bank-details-card';
 import Image from 'next/image';
@@ -135,7 +135,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
 
     try {
       const newTransaction = {
-        date: serverTimestamp(),
+        date: Timestamp.now(),
         amount: amountAsNumber,
         description: `Deposit to ${accountName}`,
         status: 'Pending',
@@ -194,88 +194,86 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
            )}
         </DialogHeader>
 
-        <Form {...form}>
-          {step === 'amount' && (
-              <form onSubmit={handleSubmit(handleAmountSubmit)} className="space-y-4 px-6">
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amount</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
-                            ₦
-                          </span>
-                          <Input
-                            type="number"
-                            placeholder="0.00"
-                            className="pl-8"
-                            {...field}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <DialogFooter className="gap-2 sm:justify-end pt-4">
-                  <DialogClose asChild>
-                    <Button type="button" variant="outline">
-                      Cancel
-                    </Button>
-                  </DialogClose>
-                  <Button type="submit">
-                    <Banknote className="mr-2 h-4 w-4" />
-                    Proceed to Transfer
-                  </Button>
-                </DialogFooter>
-              </form>
-          )}
-
-          {step === 'details' && (
-            <div className="grid gap-4">
-              <ScrollArea className="px-6">
-                <div className='space-y-4'>
-                    <BankDetailsCard amount={Number(getValues("amount"))} />
-                     <FormItem>
-                        <FormLabel htmlFor="receipt">Proof of Payment</FormLabel>
+        <div className="grid gap-4 overflow-y-auto">
+          <Form {...form}>
+            {step === 'amount' ? (
+                <form onSubmit={handleSubmit(handleAmountSubmit)} className="space-y-4 px-6">
+                  <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Amount</FormLabel>
                         <FormControl>
-                          <Input id="receipt" type="file" accept="image/*" onChange={handleFileChange} />
+                          <div className="relative">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
+                              ₦
+                            </span>
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              className="pl-8"
+                              {...field}
+                            />
+                          </div>
                         </FormControl>
-                        <FormDescription>
-                            Upload a screenshot or receipt. Max size: {MAX_FILE_SIZE_MB}MB.
-                        </FormDescription>
-                        {proofOfPayment.dataUrl && (
-                            <div className="mt-4 relative w-full h-40 rounded-md overflow-hidden border">
-                                <Image src={proofOfPayment.dataUrl} alt="Receipt preview" layout="fill" objectFit="contain" />
-                            </div>
-                        )}
-                     </FormItem>
-                </div>
-              </ScrollArea>
-              <DialogFooter className="gap-2 sm:justify-end p-6 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setStep('amount')}>
-                    Back
-                </Button>
-                <Button type="button" onClick={handleConfirmTransfer} disabled={isSubmitting || !proofOfPayment.dataUrl}>
-                    {isSubmitting ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Submitting...
-                        </>
-                    ) : (
-                          <>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            I Have Made The Transfer
-                          </>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </Form>
+                  />
+                  <DialogFooter className="gap-2 sm:justify-end pt-4">
+                    <DialogClose asChild>
+                      <Button type="button" variant="outline">
+                        Cancel
+                      </Button>
+                    </DialogClose>
+                    <Button type="submit">
+                      <Banknote className="mr-2 h-4 w-4" />
+                      Proceed to Transfer
+                    </Button>
+                  </DialogFooter>
+                </form>
+            ) : (
+              <div className='px-6 space-y-4'>
+                  <BankDetailsCard amount={Number(getValues("amount"))} />
+                    <FormItem>
+                      <FormLabel htmlFor="receipt">Proof of Payment</FormLabel>
+                      <FormControl>
+                        <Input id="receipt" type="file" accept="image/*" onChange={handleFileChange} />
+                      </FormControl>
+                      <FormDescription>
+                          Upload a screenshot or receipt. Max size: {MAX_FILE_SIZE_MB}MB.
+                      </FormDescription>
+                      {proofOfPayment.dataUrl && (
+                          <div className="mt-4 relative w-full h-40 rounded-md overflow-hidden border">
+                              <Image src={proofOfPayment.dataUrl} alt="Receipt preview" layout="fill" objectFit="contain" />
+                          </div>
+                      )}
+                    </FormItem>
+              </div>
+            )}
+          </Form>
+        </div>
+        {step === 'details' && (
+            <DialogFooter className="gap-2 sm:justify-end p-6 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => setStep('amount')}>
+                  Back
+              </Button>
+              <Button type="button" onClick={handleConfirmTransfer} disabled={isSubmitting || !proofOfPayment.dataUrl}>
+                  {isSubmitting ? (
+                      <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Submitting...
+                      </>
+                  ) : (
+                        <>
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          I Have Made The Transfer
+                        </>
+                  )}
+              </Button>
+            </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

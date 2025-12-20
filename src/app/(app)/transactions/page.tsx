@@ -47,6 +47,16 @@ function MissingIndexAlert({ url }: { url: string }) {
     )
 }
 
+const formatDate = (date: any) => {
+    if (!date) return 'N/A';
+    if (date.toDate) {
+        return date.toDate().toLocaleDateString();
+    }
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleDateString();
+};
+
 function TransactionsTable({ transactions, isLoading, indexCreationUrl }: { transactions: Transaction[] | null, isLoading: boolean, indexCreationUrl?: string | null }) {
   if (isLoading) {
     return (
@@ -98,7 +108,7 @@ function TransactionsTable({ transactions, isLoading, indexCreationUrl }: { tran
                 <TableCell>
                   <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
                 </TableCell>
-                <TableCell>{tx.date ? new Date(tx.date).toLocaleDateString() : 'N/A'}</TableCell>
+                <TableCell>{formatDate(tx.date)}</TableCell>
                 <TableCell className={`text-right font-semibold ${tx.amount > 0 ? 'text-green-600' : ''}`}>
                   {tx.amount > 0 ? `+₦${tx.amount.toFixed(2)}` : `-₦${Math.abs(tx.amount).toFixed(2)}`}
                 </TableCell>

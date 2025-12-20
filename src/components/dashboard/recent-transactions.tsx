@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -17,7 +16,7 @@ import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { useMemo } from "react";
-import { collection, limit, query, where } from "firebase/firestore";
+import { collection, limit, query, where, orderBy } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 
 const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destructive"> = {
@@ -33,21 +32,25 @@ export function RecentTransactions() {
 
   const transactionsQuery = useMemo(() => {
     if (!user) return null;
-    // Removed orderBy to prevent index error. Sorting is now done on the client.
     return query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "in", ["Completed", "Failed"]),
+      orderBy("date", "desc"),
       limit(5)
     );
   }, [user, firestore]);
 
   const { data: transactions, loading } = useCollection<Transaction>(transactionsQuery);
 
-  // Sort transactions on the client-side
-  const sortedTransactions = useMemo(() => {
-    if (!transactions) return [];
-    return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions]);
+  const formatDate = (date: any) => {
+    if (!date) return 'N/A';
+    if (date.toDate) {
+      return date.toDate().toLocaleDateString();
+    }
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleDateString();
+  };
 
 
   if (loading) {
@@ -68,7 +71,7 @@ export function RecentTransactions() {
       )
   }
 
-  if (!sortedTransactions || sortedTransactions.length === 0) {
+  if (!transactions || transactions.length === 0) {
       return (
            <Card>
                 <CardHeader>
@@ -108,14 +111,14 @@ export function RecentTransactions() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {sortedTransactions.map((tx) => (
+                    {transactions.map((tx) => (
                     <TableRow key={tx.id}>
                         <TableCell className="font-medium">{tx.description}</TableCell>
                         <TableCell className="hidden sm:table-cell">{tx.type}</TableCell>
                         <TableCell className="hidden md:table-cell">
                             <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell">{new Date(tx.date).toLocaleDateString()}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{formatDate(tx.date)}</TableCell>
                         <TableCell className={`text-right font-semibold ${tx.amount > 0 ? 'text-green-600' : ''}`}>
                             {tx.amount > 0 ? `+₦${tx.amount.toFixed(2)}` : `-₦${Math.abs(tx.amount).toFixed(2)}`}
                         </TableCell>
