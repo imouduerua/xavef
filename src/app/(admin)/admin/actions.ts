@@ -26,50 +26,37 @@ export async function updateTransactionStatus(values: z.infer<typeof updateStatu
   const userRef = firestoreAdmin.doc(`users/${userId}`);
 
   try {
-    await firestoreAdmin.runTransaction(async (t) => {
-      const txDoc = await t.get(transactionRef);
-      if (!txDoc.exists) {
-        throw new Error("Transaction not found.");
+    const txDoc = await transactionRef.get();
+    if (!txDoc.exists) {
+      throw new Error("Transaction not found.");
+    }
+    const txData = txDoc.data() as Transaction;
+
+    if (txData.status !== 'Pending') {
+      console.log(`Transaction ${transactionId} is already ${txData.status}. No action taken.`);
+      return { success: true };
+    }
+
+    // First, update the transaction status
+    await transactionRef.update({ status: newStatus });
+
+    // If approved and it's a deposit, update the user's balance
+    if (newStatus === 'Completed' && txData.type === 'Deposit') {
+      const amount = Number(txData.amount);
+      const targetAccount = txData.targetAccount;
+
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error('Invalid transaction amount.');
       }
-      
-      const txData = txDoc.data() as Transaction;
-
-      // Only allow updates on pending transactions
-      if (txData.status !== 'Pending') {
-        console.log(`Transaction ${transactionId} is already ${txData.status}. No action taken.`);
-        return;
+      if (!targetAccount || (targetAccount !== 'solidara' && targetAccount !== 'annual')) {
+        throw new Error(`Invalid or missing target account '${targetAccount}' on transaction.`);
       }
 
-      // If we are approving a pending deposit, update the user's balance.
-      if (newStatus === 'Completed' && txData.type === 'Deposit') {
-        const userDoc = await t.get(userRef);
-        if (!userDoc.exists) {
-          throw new Error("User profile not found for balance update.");
-        }
-
-        const amount = Number(txData.amount);
-        if (isNaN(amount) || amount <= 0) {
-          throw new Error('Invalid transaction amount.');
-        }
-
-        const targetAccount = txData.targetAccount;
-
-        // CRITICAL FIX: Validate targetAccount before using it.
-        if (!targetAccount || (targetAccount !== 'solidara' && targetAccount !== 'annual')) {
-          throw new Error(`Invalid or missing target account '${targetAccount}' on transaction. Cannot update balance.`);
-        }
-        
-        const balanceFieldToUpdate = `${targetAccount}Balance`;
-        
-        // Use FieldValue.increment for a safe, atomic update.
-        t.update(userRef, {
-          [balanceFieldToUpdate]: FieldValue.increment(amount)
-        });
-      }
-      
-      // Finally, update the transaction's status itself.
-      t.update(transactionRef, { status: newStatus });
-    });
+      const balanceFieldToUpdate = `${targetAccount}Balance`;
+      await userRef.update({
+        [balanceFieldToUpdate]: FieldValue.increment(amount)
+      });
+    }
 
     // Revalidate paths to ensure data is refreshed on the client-side
     revalidatePath('/admin/pending-transactions', 'page');
