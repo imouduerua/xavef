@@ -1,8 +1,6 @@
 'use client';
 
-import { useCollection, useFirestore } from '@/firebase';
 import type { UserData } from '@/lib/types';
-import { collection, orderBy, query } from 'firebase/firestore';
 import React from 'react';
 import {
   Table,
@@ -19,14 +17,12 @@ import { ArrowRight } from 'lucide-react';
 
 type UserDataWithId = UserData & { id: string };
 
-export function UserList() {
-  const firestore = useFirestore();
-  const usersQuery = React.useMemo(
-    () => query(collection(firestore, 'users'), orderBy('email')),
-    [firestore]
-  );
-  const { data: users, loading } = useCollection<UserDataWithId>(usersQuery);
+interface UserListProps {
+    users: UserDataWithId[] | null;
+    loading: boolean;
+}
 
+export function UserList({ users, loading }: UserListProps) {
   const formatDate = (date: any) => {
     if (!date) return 'N/A';
     // Firebase Timestamps have a toDate() method
@@ -74,7 +70,7 @@ export function UserList() {
             <TableCell className="text-right">
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/admin/users/${user.uid}`}>
-                  View Transactions
+                  View User
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
