@@ -118,7 +118,7 @@ export function PendingTransactionsTable({ transactions: initialTransactions }: 
                   {formatCurrency(amount)}
                 </TableCell>
                 <TableCell className="text-right font-semibold">
-                  {tx.type === 'Withdrawal' && typeof tx.payoutAmount === 'number'
+                  {typeof tx.payoutAmount === 'number'
                     ? `₦${tx.payoutAmount.toFixed(2)}`
                     : 'N/A'}
                 </TableCell>
