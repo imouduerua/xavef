@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -63,11 +64,14 @@ function AllTransactionsPageContent() {
 
       if (error) {
         console.error('Error fetching transactions:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error Loading Data',
-          description: 'Could not load transaction history.',
-        });
+        // Let the UI handle the indexCreationUrl alert
+        if (!indexCreationUrl) {
+          toast({
+            variant: 'destructive',
+            title: 'Error Loading Data',
+            description: 'Could not load transaction history.',
+          });
+        }
         setTransactions([]);
         setLoading(false);
         return;
@@ -111,7 +115,7 @@ function AllTransactionsPageContent() {
     };
 
     processTransactions();
-  }, [rawTransactions, firestore, rawLoading, error]);
+  }, [rawTransactions, firestore, rawLoading, indexCreationUrl]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
