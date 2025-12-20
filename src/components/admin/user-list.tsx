@@ -15,10 +15,8 @@ import { Button } from '../ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
-type UserDataWithId = UserData & { id: string };
-
 interface UserListProps {
-    users: UserDataWithId[] | null;
+    users: UserData[] | null;
     loading: boolean;
 }
 
@@ -69,7 +67,7 @@ export function UserList({ users, loading }: UserListProps) {
             </TableCell>
             <TableCell className="text-right">
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/admin/users/${user.uid}`}>
+                <Link href={`/admin/users/${user.id}`}>
                   View User
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
