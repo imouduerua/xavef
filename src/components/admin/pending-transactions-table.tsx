@@ -16,6 +16,7 @@ import { Check, Loader2, X, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { updateTransactionStatus } from './actions';
+import Link from 'next/link';
 
 interface PendingTransactionsTableProps {
     transactions: TransactionWithUserDetails[];
@@ -106,7 +107,11 @@ export function PendingTransactionsTable({ transactions: initialTransactions }: 
 
             return (
               <TableRow key={tx.id}>
-                <TableCell className="font-medium break-all">{tx.userEmail}</TableCell>
+                <TableCell className="font-medium break-all">
+                  <Link href={`/admin/users/${tx.userId}`} className="hover:underline">
+                    {tx.userEmail}
+                  </Link>
+                </TableCell>
                 <TableCell>{tx.xavefId}</TableCell>
                 <TableCell>{formatDate(tx.date)}</TableCell>
                 <TableCell>{tx.type}</TableCell>
