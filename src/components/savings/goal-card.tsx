@@ -1,7 +1,6 @@
 
 'use client';
 
-import { format, formatDistanceToNow } from 'date-fns';
 import { MoreVertical, Trash2, Pencil, PartyPopper } from 'lucide-react';
 import React from 'react';
 
@@ -48,7 +47,6 @@ export function GoalCard({ goal }: GoalCardProps) {
 
   const isCompleted = goal.targetAmount > 0 && goal.currentAmount >= goal.targetAmount;
   const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
-  const targetDate = goal.targetDate ? goal.targetDate.toDate() : null;
 
   const formatCurrency = (amount: number) =>
     `₦${amount.toLocaleString('en-US', {
@@ -196,11 +194,6 @@ export function GoalCard({ goal }: GoalCardProps) {
             <span>{Math.round(progress)}%</span>
           </div>
         </div>
-        {targetDate && (
-          <div className="text-sm text-muted-foreground">
-            Target Date: {format(targetDate, 'PPP')} ({formatDistanceToNow(targetDate, { addSuffix: true })})
-          </div>
-        )}
       </CardContent>
       <CardFooter className="gap-2">
         {renderFooter()}

@@ -17,7 +17,6 @@ import {
 interface SavingGoalData {
   name: string;
   targetAmount: number;
-  targetDate?: Date;
   emoji?: string;
 }
 
@@ -33,7 +32,6 @@ export async function createSavingGoal(
       name: data.name,
       targetAmount: data.targetAmount,
       currentAmount: 0,
-      targetDate: data.targetDate || null,
       emoji: data.emoji || '🎯',
       createdAt: serverTimestamp(),
     });
@@ -48,14 +46,13 @@ export async function updateSavingGoal(
   firestore: Firestore,
   userId: string,
   goalId: string,
-  data: SavingGoalData
+  data: Partial<SavingGoalData>
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
         await updateDoc(goalDocRef, {
             name: data.name,
             targetAmount: data.targetAmount,
-            targetDate: data.targetDate || null,
             emoji: data.emoji || '🎯',
         });
         return { success: true };

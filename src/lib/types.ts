@@ -93,7 +93,6 @@ export interface SavingGoal {
     name: string;
     targetAmount: number;
     currentAmount: number;
-    targetDate?: any;
     createdAt: any;
     emoji?: string;
 }

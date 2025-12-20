@@ -101,7 +101,6 @@ export async function createUserProfile(
                     name: goal.name,
                     targetAmount: goal.targetAmount,
                     currentAmount: 0,
-                    targetDate: null,
                     createdAt: serverTimestamp(),
                     emoji: goal.emoji,
                 });
