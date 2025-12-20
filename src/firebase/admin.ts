@@ -3,20 +3,19 @@ import 'server-only';
 import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
-import { firebaseConfig } from './config';
 
-// This singleton pattern prevents re-initializing the SDK on hot reloads.
+// This singleton pattern prevents re-initializing the SDK on every hot-reload.
 const getFirebaseAdminApp = (): App => {
+  // If the app is already initialized, return it.
   if (getApps().length > 0) {
     return getApps()[0];
   }
 
-  // When running in a Google Cloud environment like App Hosting,
-  // the SDK automatically uses the default service account credentials.
-  // Explicitly passing the projectId ensures it connects to the correct project.
-  return initializeApp({
-    projectId: firebaseConfig.projectId,
-  });
+  // Otherwise, initialize a new app.
+  // When running in a Google Cloud environment like Firebase App Hosting,
+  // the SDK automatically discovers the service account credentials.
+  // Calling initializeApp() with no arguments is the recommended approach.
+  return initializeApp();
 };
 
 const app = getFirebaseAdminApp();
