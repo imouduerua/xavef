@@ -9,12 +9,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { PendingTransactionsTable } from '@/components/admin/pending-transactions-table';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, UserData } from '@/lib/types';
 import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
-import { collection, getDocs, query, where, doc, getDoc, collectionGroup } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 
 type TransactionWithUserDetails = Transaction & {
   userId: string;
@@ -35,30 +35,36 @@ export default function AdminPendingTransactionsPage() {
 
       setLoading(true);
       try {
-        const transactionsQuery = query(
-            collectionGroup(firestore, 'transactions'),
+        // 1. Get all users
+        const usersQuery = query(collection(firestore, 'users'));
+        const usersSnapshot = await getDocs(usersQuery);
+
+        const allPendingTransactions: TransactionWithUserDetails[] = [];
+
+        // 2. For each user, get their pending transactions
+        for (const userDoc of usersSnapshot.docs) {
+          const userData = userDoc.data() as UserData;
+          const userId = userDoc.id;
+
+          const transactionsQuery = query(
+            collection(firestore, `users/${userId}/transactions`),
             where('status', '==', 'Pending')
-        );
-        const querySnapshot = await getDocs(transactionsQuery);
+          );
+          
+          const transactionsSnapshot = await getDocs(transactionsQuery);
 
-        const transactions: TransactionWithUserDetails[] = [];
-
-        for (const txDoc of querySnapshot.docs) {
-          const txData = txDoc.data() as Transaction;
-          const userId = txDoc.ref.parent.parent!.id;
-
-          const userDocRef = doc(firestore, 'users', userId);
-          const userDoc = await getDoc(userDocRef);
-
-          transactions.push({
-            ...txData,
-            id: txDoc.id,
-            userId: userId,
-            userEmail: userDoc.exists() ? userDoc.data().email : 'Unknown User',
+          transactionsSnapshot.forEach((txDoc) => {
+            allPendingTransactions.push({
+              ...(txDoc.data() as Transaction),
+              id: txDoc.id,
+              userId: userId,
+              userEmail: userData.email || 'Unknown User',
+            });
           });
         }
         
-        const sortedTransactions = transactions.sort((a, b) => {
+        // 3. Sort the combined list by date
+        const sortedTransactions = allPendingTransactions.sort((a, b) => {
             const dateA = a.date ? new Date(a.date).getTime() : 0;
             const dateB = b.date ? new Date(b.date).getTime() : 0;
             return dateB - dateA;
