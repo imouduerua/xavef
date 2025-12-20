@@ -11,9 +11,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Transaction, TransactionStatus, TransactionType } from "@/lib/types";
+import type { Transaction, TransactionStatus } from "@/lib/types";
 import { useUser, useCollection, useFirestore } from "@/firebase";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { collection, query, orderBy } from "firebase/firestore";
 import React, { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -119,22 +119,17 @@ export default function TransactionsPage() {
     if (!user) return null;
     return query(
       collection(firestore, "users", user.uid, "transactions"),
-      where("status", "in", ["Completed", "Failed"]),
       orderBy("date", "desc")
     );
   }, [user, firestore]);
 
   const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 
-  // Client-side sorting is no longer the primary method, but can be a fallback
+  // The query now handles sorting, so client-side sorting is not strictly necessary
+  // but we keep it as a good practice in case the query changes.
   const sortedTransactions = useMemo(() => {
     if (!transactions) return [];
-    // The query now handles sorting, but we can keep this in case the query changes
-    return [...transactions].sort((a, b) => {
-        const dateA = a.date ? new Date(a.date).getTime() : 0;
-        const dateB = b.date ? new Date(b.date).getTime() : 0;
-        return dateB - dateA;
-    });
+    return [...transactions];
   }, [transactions]);
 
 
