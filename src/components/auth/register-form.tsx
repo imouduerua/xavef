@@ -69,7 +69,7 @@ export function RegisterForm() {
             description: "Finalizing your profile setup...",
         });
 
-        // Step 3: Create the Firestore user profile document using the new client-side action
+        // Step 3: Create the Firestore user profile document
         const profileResult = await createUserProfile(firestore, user, {
             firstName: values.firstName,
             lastName: values.lastName,
@@ -79,8 +79,9 @@ export function RegisterForm() {
         });
 
         if (!profileResult.success) {
-            // This is a critical failure. The profile could not be created.
-            // We should inform the user and delete the just-created auth account to allow them to try again.
+            // This is a critical failure, likely an invalid referral code.
+            // Throw an error that will be caught by the `catch` block below.
+            // This ensures the orphaned auth user is deleted.
             throw new Error(profileResult.error || "Failed to create user profile.");
         }
         
@@ -105,9 +106,8 @@ export function RegisterForm() {
         let errorMessage = "An unknown error occurred during registration.";
         if (error.code === 'auth/email-already-in-use') {
             errorMessage = "This email address is already in use. Please log in instead.";
-        } else if (error.message.includes("invalid or has already been used")) {
-            errorMessage = "The provided referral code is either invalid or has already been used.";
         } else if (error.message) {
+            // This will catch the error thrown from the profile creation failure
             errorMessage = error.message;
         }
 
