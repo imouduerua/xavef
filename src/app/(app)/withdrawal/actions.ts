@@ -74,7 +74,8 @@ export async function requestWithdrawal(
     if (error.code === 'auth/id-token-expired') {
         return { success: false, error: 'Your session has expired. Please log in again.' };
     }
-    if (error.code === 'auth/argument-error' || error.message.includes('incorrect audience')) {
+    // This error indicates a problem with the token itself or the project config.
+    if (error.code === 'auth/argument-error') {
         return { success: false, error: 'Authentication failed due to a project configuration mismatch. Please try again.' };
     }
     if (error.codePrefix === 'auth/') {
