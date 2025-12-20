@@ -42,19 +42,20 @@ export default function UserDetailPage() {
   const canTogglePermissions = adminUser?.email === 'admin@xavef.com';
 
   const handlePermissionToggle = async (checked: boolean) => {
-      // Add a more robust guard to ensure userId is present
-      if (!userId || !firestore || !canTogglePermissions) {
+      const currentUserId = params.userId as string;
+
+      if (!currentUserId || !firestore || !canTogglePermissions) {
           toast({
               variant: "destructive",
               title: "Update Failed",
-              description: "Cannot update permission at this time. User ID is missing.",
+              description: `Cannot update permission at this time. Required info is missing. User ID: ${currentUserId}`,
           });
           return;
       }
 
       setIsUpdating(true);
       try {
-          const userToUpdateDocRef = doc(firestore, "users", userId);
+          const userToUpdateDocRef = doc(firestore, "users", currentUserId);
           await updateDoc(userToUpdateDocRef, { canGenerateReferralCode: checked });
           toast({
               title: "Permission Updated",
