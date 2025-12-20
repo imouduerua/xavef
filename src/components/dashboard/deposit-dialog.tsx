@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -34,6 +33,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import type { AccountType } from '@/lib/types';
 import { BankDetailsCard } from './bank-details-card';
 import Image from 'next/image';
+import { ScrollArea } from '../ui/scroll-area';
 
 const depositSchema = z.object({
   amount: z.coerce
@@ -64,7 +64,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
   const form = useForm<FormValues>({
     resolver: zodResolver(depositSchema),
     defaultValues: {
-      amount: '',
+      amount: '' as any,
     },
   });
 
@@ -169,7 +169,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
     setIsOpen(open);
     if (!open) {
       setTimeout(() => {
-        reset({ amount: '' });
+        reset({ amount: '' as any });
         setStep('amount');
         setProofOfPayment({ file: null, dataUrl: null });
       }, 300);
@@ -179,8 +179,8 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90vh]">
+        <DialogHeader className="p-6 pb-0">
           <DialogTitle>Make a Deposit</DialogTitle>
            {step === 'amount' && (
             <DialogDescription>
@@ -196,7 +196,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
 
         <Form {...form}>
           {step === 'amount' && (
-              <form onSubmit={handleSubmit(handleAmountSubmit)} className="space-y-4">
+              <form onSubmit={handleSubmit(handleAmountSubmit)} className="space-y-4 px-6">
                 <FormField
                   control={form.control}
                   name="amount"
@@ -220,7 +220,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
                     </FormItem>
                   )}
                 />
-                <DialogFooter className="gap-2 sm:justify-end pt-4">
+                 <DialogFooter className="gap-2 sm:justify-end pt-4">
                   <DialogClose asChild>
                     <Button type="button" variant="outline">
                       Cancel
@@ -235,43 +235,45 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
           )}
 
           {step === 'details' && (
-              <div className='space-y-4'>
-                  <BankDetailsCard amount={Number(getValues("amount"))} />
-
-                   <FormItem>
-                      <FormLabel>Proof of Payment</FormLabel>
-                      <FormControl>
-                        <Input id="receipt" type="file" accept="image/*" onChange={handleFileChange} />
-                      </FormControl>
-                      <FormDescription>
-                          Upload a screenshot or receipt. Max size: {MAX_FILE_SIZE_MB}MB.
-                      </FormDescription>
-                      {proofOfPayment.dataUrl && (
-                          <div className="mt-4 relative w-full h-40 rounded-md overflow-hidden border">
-                              <Image src={proofOfPayment.dataUrl} alt="Receipt preview" layout="fill" objectFit="contain" />
-                          </div>
-                      )}
-                   </FormItem>
-
-                   <DialogFooter className="gap-2 sm:justify-end pt-4">
-                      <Button type="button" variant="outline" onClick={() => setStep('amount')}>
-                          Back
-                      </Button>
-                      <Button type="button" onClick={handleConfirmTransfer} disabled={isSubmitting || !proofOfPayment.dataUrl}>
-                          {isSubmitting ? (
-                              <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Submitting...
-                              </>
-                          ) : (
-                               <>
-                                 <CheckCircle className="mr-2 h-4 w-4" />
-                                 I Have Made The Transfer
-                               </>
-                          )}
-                      </Button>
-                  </DialogFooter>
-              </div>
+            <>
+              <ScrollArea className="px-6">
+                <div className='space-y-4'>
+                    <BankDetailsCard amount={Number(getValues("amount"))} />
+                     <FormItem>
+                        <FormLabel htmlFor="receipt">Proof of Payment</FormLabel>
+                        <FormControl>
+                          <Input id="receipt" type="file" accept="image/*" onChange={handleFileChange} />
+                        </FormControl>
+                        <FormDescription>
+                            Upload a screenshot or receipt. Max size: {MAX_FILE_SIZE_MB}MB.
+                        </FormDescription>
+                        {proofOfPayment.dataUrl && (
+                            <div className="mt-4 relative w-full h-40 rounded-md overflow-hidden border">
+                                <Image src={proofOfPayment.dataUrl} alt="Receipt preview" layout="fill" objectFit="contain" />
+                            </div>
+                        )}
+                     </FormItem>
+                </div>
+              </ScrollArea>
+              <DialogFooter className="gap-2 sm:justify-end p-6 pt-0">
+                <Button type="button" variant="outline" onClick={() => setStep('amount')}>
+                    Back
+                </Button>
+                <Button type="button" onClick={handleConfirmTransfer} disabled={isSubmitting || !proofOfPayment.dataUrl}>
+                    {isSubmitting ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Submitting...
+                        </>
+                    ) : (
+                          <>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            I Have Made The Transfer
+                          </>
+                    )}
+                </Button>
+              </DialogFooter>
+            </>
           )}
         </Form>
       </DialogContent>
