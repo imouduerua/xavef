@@ -38,7 +38,12 @@ export function BankDetailsCard({ amount }: BankDetailsCardProps) {
                 </div>
                  <div className='flex justify-between items-center'>
                     <span className='text-sm text-muted-foreground'>Account Name</span>
-                    <span className='font-semibold'>{bankDetails.accountName}</span>
+                     <div className='flex items-center gap-2'>
+                        <span className='font-semibold'>{bankDetails.accountName}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(bankDetails.accountName, 'Account Name')}>
+                            <Copy size={14} />
+                        </Button>
+                    </div>
                 </div>
                 <div className='flex justify-between items-center'>
                     <span className='text-sm text-muted-foreground'>Account Number</span>
@@ -51,7 +56,12 @@ export function BankDetailsCard({ amount }: BankDetailsCardProps) {
                 </div>
                  <div className='flex justify-between items-center'>
                     <span className='text-sm text-muted-foreground'>Bank Name</span>
-                    <span className='font-semibold'>{bankDetails.bankName}</span>
+                    <div className='flex items-center gap-2'>
+                        <span className='font-semibold'>{bankDetails.bankName}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(bankDetails.bankName, 'Bank Name')}>
+                            <Copy size={14} />
+                        </Button>
+                    </div>
                 </div>
             </CardContent>
         </Card>
