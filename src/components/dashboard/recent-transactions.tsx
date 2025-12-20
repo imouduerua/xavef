@@ -17,7 +17,7 @@ import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { useMemo } from "react";
-import { collection, limit, orderBy, query } from "firebase/firestore";
+import { collection, limit, orderBy, query, where } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 
 const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destructive"> = {
@@ -35,6 +35,7 @@ export function RecentTransactions() {
     if (!user) return null;
     return query(
       collection(firestore, "users", user.uid, "transactions"),
+      where("status", "in", ["Completed", "Failed"]),
       orderBy("date", "desc"),
       limit(5)
     );
@@ -68,7 +69,7 @@ export function RecentTransactions() {
                     <CardDescription>A summary of your latest account activity.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p>No transactions found.</p>
+                    <p>No recent transactions found.</p>
                 </CardContent>
             </Card>
       )

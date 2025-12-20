@@ -37,6 +37,18 @@ function TransactionsTable({ transactions, isLoading }: { transactions: Transact
       </Card>
     );
   }
+
+  if (transactions.length === 0) {
+    return (
+        <Card>
+            <CardContent className="pt-6">
+                <p>No transactions found for this category.</p>
+            </CardContent>
+        </Card>
+    )
+  }
+
+
   return (
     <Card>
       <CardContent className="pt-6">
@@ -79,6 +91,7 @@ export default function TransactionsPage() {
     if (!user) return null;
     return query(
       collection(firestore, "users", user.uid, "transactions"),
+      where("status", "in", ["Completed", "Failed"]),
       orderBy("date", "desc")
     );
   }, [user, firestore]);
