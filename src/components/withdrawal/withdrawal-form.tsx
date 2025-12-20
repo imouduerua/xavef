@@ -28,11 +28,14 @@ import {
 import { toast } from '@/hooks/use-toast';
 import type { BankAccount } from '@/lib/types';
 import { useUser, useFirestore } from '@/firebase';
+import { Card, CardContent } from '../ui/card';
 
 interface WithdrawalFormProps {
   solidaraBalance: number;
   bankAccounts: BankAccount[];
 }
+
+const WITHDRAWAL_FEE_PERCENTAGE = 0.033; // 3.3%
 
 export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -54,6 +57,11 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
       bankAccountId: bankAccounts[0]?.bankAccountNumber || '',
     },
   });
+
+  const watchAmount = form.watch('amount');
+  const withdrawalAmount = Number(watchAmount) || 0;
+  const fee = withdrawalAmount * WITHDRAWAL_FEE_PERCENTAGE;
+  const payoutAmount = withdrawalAmount - fee;
 
   async function onSubmit(values: z.infer<typeof withdrawalSchema>) {
     setIsSubmitting(true);
@@ -81,13 +89,19 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
       setIsSubmitting(false);
       return;
     }
+    
+    const finalFee = values.amount * WITHDRAWAL_FEE_PERCENTAGE;
+    const finalPayout = values.amount - finalFee;
+
 
     try {
       const transactionRef = collection(firestore, 'users', user.uid, 'transactions');
       
       const newTransaction = {
         date: serverTimestamp(),
-        amount: -values.amount,
+        amount: -values.amount, // The full amount deducted from user's balance
+        fee: finalFee,
+        payoutAmount: finalPayout, // The amount sent to the user's bank
         description: `Withdrawal to ${selectedAccount.bankName}`,
         type: 'Withdrawal',
         status: 'Pending',
@@ -146,6 +160,26 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
             </FormItem>
           )}
         />
+        
+        {withdrawalAmount > 0 && (
+            <Card className="bg-muted/50">
+                <CardContent className="p-4 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                        <span>Withdrawal Amount:</span>
+                        <span className="font-medium">₦{withdrawalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                     <div className="flex justify-between">
+                        <span>Fee (3.3%):</span>
+                        <span className="font-medium text-destructive">- ₦{fee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                     <div className="flex justify-between font-semibold pt-2 border-t">
+                        <span>You Will Receive:</span>
+                        <span>₦{payoutAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                </CardContent>
+            </Card>
+        )}
+
         <FormField
           control={form.control}
           name="bankAccountId"

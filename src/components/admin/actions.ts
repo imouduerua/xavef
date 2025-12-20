@@ -35,28 +35,28 @@ export async function updateTransactionStatus(
     // Update the transaction status
     batch.update(txRef, { status: newStatus });
 
-    // If approving a deposit, update the corresponding user balance
-    if (newStatus === 'Completed' && txData.type === 'Deposit') {
-      const userDoc = await getDoc(userRef);
-      if (!userDoc.exists()) {
-          throw new Error("User associated with transaction not found.");
-      }
+    // If approving a transaction, update the user's balance
+    if (newStatus === 'Completed') {
+       const amount = Number(txData.amount);
+       if (isNaN(amount)) {
+         throw new Error("Invalid transaction amount.")
+       }
 
-      // Default to 'solidara' if targetAccount is missing for backward compatibility
-      const targetAccount = txData.targetAccount || 'solidara';
+       // For deposits, amount is positive. For withdrawals, it's negative.
+       // The `increment` function handles both addition and subtraction.
+       if (txData.type === 'Deposit' || txData.type === 'Withdrawal') {
+         const targetAccount = txData.targetAccount || 'solidara';
 
-      if (targetAccount !== 'solidara' && targetAccount !== 'annual') {
-        throw new Error('Invalid target account on the transaction.');
-      }
-
-      const balanceFieldToUpdate = `${targetAccount}Balance` as keyof UserData;
-      const amount = Number(txData.amount);
-      if (isNaN(amount) || amount <= 0) {
-          throw new Error("Invalid transaction amount.")
-      }
-      
-      batch.update(userRef, { [balanceFieldToUpdate]: increment(amount) });
+         if (targetAccount !== 'solidara' && targetAccount !== 'annual') {
+           throw new Error('Invalid target account on the transaction.');
+         }
+         
+         const balanceFieldToUpdate = `${targetAccount}Balance` as keyof UserData;
+         
+         batch.update(userRef, { [balanceFieldToUpdate]: increment(amount) });
+       }
     }
+
 
     await batch.commit();
 

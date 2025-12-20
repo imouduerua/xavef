@@ -79,6 +79,12 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
     return d.toLocaleString();
   };
 
+  const formatCurrency = (amount?: number) => {
+    if (amount === undefined || amount === null) return 'N/A';
+    const sign = amount >= 0 ? '+' : '-';
+    return `${sign}₦${Math.abs(amount).toFixed(2)}`;
+  }
+
   return (
     <div className="w-full overflow-x-auto">
       <Table>
@@ -87,9 +93,10 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
             <TableHead>User Email</TableHead>
             <TableHead>Xavef ID</TableHead>
             <TableHead>Date</TableHead>
-            <TableHead>Description</TableHead>
             <TableHead>Type</TableHead>
             <TableHead className="text-right">Amount</TableHead>
+            <TableHead className="text-right">Fee</TableHead>
+            <TableHead className="text-right">Payout</TableHead>
             <TableHead className="text-center">Proof</TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
@@ -104,16 +111,19 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                 <TableCell className="font-medium break-all">{tx.userEmail}</TableCell>
                 <TableCell>{tx.xavefId}</TableCell>
                 <TableCell>{formatDate(tx.date)}</TableCell>
-                <TableCell>{tx.description}</TableCell>
                 <TableCell>{tx.type}</TableCell>
                 <TableCell
                   className={`text-right font-semibold ${
-                    amount > 0 ? 'text-green-600' : ''
+                    amount > 0 ? 'text-green-600' : 'text-red-600'
                   }`}
                 >
-                  {amount > 0
-                    ? `+₦${amount.toFixed(2)}`
-                    : `-₦${Math.abs(amount).toFixed(2)}`}
+                  {formatCurrency(amount)}
+                </TableCell>
+                 <TableCell className="text-right text-muted-foreground">
+                  {tx.fee !== undefined ? `₦${tx.fee.toFixed(2)}` : 'N/A'}
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  {tx.payoutAmount !== undefined ? `₦${tx.payoutAmount.toFixed(2)}` : 'N/A'}
                 </TableCell>
                 <TableCell className="text-center">
                   {tx.proofOfPaymentUrl ? (

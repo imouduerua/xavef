@@ -56,10 +56,13 @@ export interface Transaction {
   type: TransactionType;
   status: TransactionStatus;
   amount: number;
+  fee?: number;
+  payoutAmount?: number;
   targetAccount?: AccountType;
   proofOfPaymentUrl?: string;
   userId?: string; // Optional: To link transaction to user when querying collection group
   userEmail?: string; // Optional: To display user email in admin table
+  xavefId?: string;
 }
 
 export interface Notification {
