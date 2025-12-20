@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
 
 type TransactionWithUserDetails = Transaction & {
@@ -40,57 +40,64 @@ export default function AdminPendingTransactionsPage() {
 
       setLoading(true);
       try {
-        const usersQuery = query(collection(firestore, 'users'));
-        const usersSnapshot = await getDocs(usersQuery);
+        // Use a collection group query to fetch all pending transactions across all users.
+        // This is much more efficient than fetching all users and then their transactions.
+        const pendingTxsQuery = query(
+          collectionGroup(firestore, 'transactions'), 
+          where('status', '==', 'Pending'),
+          orderBy('date', 'desc')
+        );
 
-        const allPendingTransactions: TransactionWithUserDetails[] = [];
-
-        for (const userDoc of usersSnapshot.docs) {
-          const userData = userDoc.data() as UserData;
-          const userId = userDoc.id;
-
-          const transactionsQuery = query(
-            collection(firestore, `users/${userId}/transactions`),
-            where('status', '==', 'Pending')
-          );
-          
-          const transactionsSnapshot = await getDocs(transactionsQuery);
-
-          transactionsSnapshot.forEach((txDoc) => {
-            allPendingTransactions.push({
-              ...(txDoc.data() as Transaction),
-              id: txDoc.id,
-              userId: userId,
-              userEmail: userData.email || 'Unknown User',
-            });
-          });
-        }
+        const querySnapshot = await getDocs(pendingTxsQuery);
         
-        // Sort the combined list by date client-side
-        const sortedTransactions = allPendingTransactions.sort((a, b) => {
-            const dateA = a.date ? new Date(a.date).getTime() : 0;
-            const dateB = b.date ? new Date(b.date).getTime() : 0;
-            return dateB - dateA;
+        const pendingTransactions = querySnapshot.docs.map(doc => {
+            const data = doc.data() as Transaction;
+            const pathParts = doc.ref.path.split('/');
+            const userId = pathParts[1];
+            return {
+                ...data,
+                id: doc.id,
+                userId: userId,
+                userEmail: 'Loading...', // We'll fetch this next
+            };
         });
 
-        setData({ transactions: sortedTransactions });
+        // Now, fetch the user details for each transaction
+        const transactionsWithUserDetails: TransactionWithUserDetails[] = await Promise.all(
+          pendingTransactions.map(async (tx) => {
+            const userRef = doc(firestore, 'users', tx.userId);
+            const userSnap = await getDoc(userRef);
+            const userEmail = userSnap.exists() ? (userSnap.data() as UserData).email : 'Unknown User';
+            return { ...tx, userEmail };
+          })
+        );
+        
+        setData({ transactions: transactionsWithUserDetails });
 
       } catch (error: any) {
         console.error("Error fetching pending transactions:", error);
         let errorMessage = "Could not fetch pending transactions.";
-        if (error.code === 'permission-denied') {
+
+        // Handle the specific error for a missing index
+        if (error.code === 'failed-precondition' && error.message.includes('index')) {
+          errorMessage = error.message; // Pass the full error message which includes the creation link
+        } else if (error.code === 'permission-denied') {
           errorMessage = "Permission denied. You must be an admin to view this page.";
         }
+        
         setData({
           transactions: null,
           error: errorMessage,
           errorCode: error.code,
         });
-        toast({
-          variant: "destructive",
-          title: "Error Fetching Data",
-          description: errorMessage,
-        });
+
+        if (error.code !== 'failed-precondition') {
+            toast({
+              variant: "destructive",
+              title: "Error Fetching Data",
+              description: errorMessage,
+            });
+        }
       } finally {
         setLoading(false);
       }
@@ -112,24 +119,25 @@ export default function AdminPendingTransactionsPage() {
 
       return (
         <div className="text-destructive p-4 bg-destructive/10 rounded-md space-y-4">
+          <p className='font-bold'>Action Required: Firestore Index Missing</p>
           <p>
-            <b>Action Required:</b> To view pending transactions, a Firestore index must be created. This is a one-time setup.
+             To query pending transactions efficiently, a special database index is required. This is a one-time setup.
           </p>
           {firestoreIndexUrl ? (
             <p>
-              Please click the link below, then click &quot;Create&quot; in the Firebase Console. The index will take a few minutes to build.
+              Please click the link below to go to the Firebase Console, then click &quot;Create&quot; to build the index. It may take a few minutes to become active.
               <br />
               <Link
                 href={firestoreIndexUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline font-bold"
+                className="underline font-bold mt-2 inline-block"
               >
                 Create Firestore Index
               </Link>
             </p>
           ) : (
-            <p>Could not extract the index creation URL from the error. Please check the browser console for details.</p>
+            <p>Could not extract the index creation URL from the error. Please check the browser console for details and create the index manually in the Firebase console.</p>
           )}
         </div>
       );
@@ -163,4 +171,3 @@ export default function AdminPendingTransactionsPage() {
     </div>
   );
 }
-
