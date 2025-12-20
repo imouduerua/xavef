@@ -36,12 +36,12 @@ function DashboardContent() {
 
   const { data: pendingTransactions, loading: pendingTransactionsLoading } = useCollection<Transaction>(pendingTransactionsQuery);
 
-  const hasPendingSolidaraDeposit = useMemo(
-    () => pendingTransactions?.some(tx => tx.targetAccount === 'solidara'),
+  const pendingSolidaraDeposit = useMemo(
+    () => pendingTransactions?.find(tx => tx.targetAccount === 'solidara'),
     [pendingTransactions]
   );
-  const hasPendingAnnualDeposit = useMemo(
-    () => pendingTransactions?.some(tx => tx.targetAccount === 'annual'),
+  const pendingAnnualDeposit = useMemo(
+    () => pendingTransactions?.find(tx => tx.targetAccount === 'annual'),
     [pendingTransactions]
   );
   
@@ -154,8 +154,8 @@ function DashboardContent() {
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <SolidaraSavingsCard balance={balances.solidara} disabled={hasPendingSolidaraDeposit} />
-        <AnnualSavingsCard balance={balances.annual} disabled={hasPendingAnnualDeposit} />
+        <SolidaraSavingsCard balance={balances.solidara} pendingAmount={pendingSolidaraDeposit?.amount} />
+        <AnnualSavingsCard balance={balances.annual} pendingAmount={pendingAnnualDeposit?.amount} />
         <TotalSavingsCard balance={totalSavings} />
       </div>
       <div>

@@ -1,5 +1,5 @@
 
-import { Calendar } from 'lucide-react';
+import { Calendar, Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '../ui/button';
 import { DepositDialog } from './deposit-dialog';
@@ -7,14 +7,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 
 interface AnnualSavingsCardProps {
     balance: number;
-    disabled?: boolean;
+    pendingAmount?: number;
 }
 
-export function AnnualSavingsCard({ balance, disabled = false }: AnnualSavingsCardProps) {
+export function AnnualSavingsCard({ balance, pendingAmount }: AnnualSavingsCardProps) {
+  const isDisabled = pendingAmount !== undefined;
 
   const depositButton = (
     <DepositDialog accountName="Annual Savings" targetAccount="annual">
-        <Button className="w-full" disabled={disabled}>Deposit</Button>
+        <Button className="w-full" disabled={isDisabled}>Deposit</Button>
     </DepositDialog>
   );
 
@@ -34,10 +35,17 @@ export function AnnualSavingsCard({ balance, disabled = false }: AnnualSavingsCa
         <p className="text-2xl font-bold tracking-tight md:text-3xl">
           ₦{balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
-        <CardDescription>End of year savings goal</CardDescription>
+         {isDisabled ? (
+           <div className="flex items-center text-sm text-yellow-600 mt-2">
+                <Clock className="h-4 w-4 mr-2" />
+                <span>Pending deposit: ₦{pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+        ) : (
+            <CardDescription>End of year savings goal</CardDescription>
+        )}
       </CardContent>
       <CardFooter>
-         {disabled ? (
+         {isDisabled ? (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
