@@ -11,10 +11,12 @@ import {
 import { useDoc, useFirestore } from '@/firebase';
 import { UserData } from '@/lib/types';
 import { doc } from 'firebase/firestore';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Landmark, PiggyBank } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import React from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 
 export default function UserTransactionsPage() {
   const params = useParams();
@@ -27,6 +29,15 @@ export default function UserTransactionsPage() {
   );
   const { data: userData, loading } = useDoc<UserData>(userDocRef);
 
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount === undefined || amount === null) {
+      return '₦0.00';
+    }
+    return `₦${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const fullName = userData?.firstName || userData?.lastName ? `${userData.firstName} ${userData.lastName}`.trim() : (userData?.displayName || 'User');
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
        <Link href="/admin/users" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
@@ -36,14 +47,49 @@ export default function UserTransactionsPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Transaction History for {loading ? '...' : userData?.email}
+            {loading ? <Skeleton className="h-8 w-48" /> : `User Profile: ${fullName}`}
           </CardTitle>
           <CardDescription>
-            Viewing all transactions for user ID: {userId}
+             {loading ? <Skeleton className="h-4 w-64" /> : `Viewing details and transactions for ${userData?.email || '...'}`}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <UserTransactions userId={userId} />
+        <CardContent className="space-y-6">
+            <div>
+              <h3 className="text-lg font-medium">Account Balances</h3>
+              <Separator className="my-4" />
+              {loading ? (
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Solidara Savings</CardTitle>
+                        <PiggyBank className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{formatCurrency(userData?.solidaraBalance)}</div>
+                    </CardContent>
+                  </Card>
+                   <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Annual Savings</CardTitle>
+                        <Landmark className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{formatCurrency(userData?.annualBalance)}</div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+             <div>
+                <h3 className="text-lg font-medium">Transaction History</h3>
+                 <Separator className="my-4" />
+                <UserTransactions userId={userId} />
+            </div>
         </CardContent>
       </Card>
     </div>
