@@ -71,15 +71,14 @@ export function RegisterForm() {
 
         if (!profileResult.success) {
             // This is a critical failure, the user has an auth account but no profile.
-            // Advise them to contact support or try logging in again.
+            // Advise them to contact support. The user should not be redirected.
              toast({
                 variant: "destructive",
                 title: "Profile Creation Failed",
-                description: `${profileResult.error} Please try logging out and back in, or contact support if the problem persists.`,
+                description: `${profileResult.error} Please try registering again or contact support.`,
                 duration: 10000,
             });
-            // Still redirect to dashboard, where they might be prompted again or can see an error state.
-             router.push("/dashboard");
+             setIsLoading(false);
              return;
         }
         
@@ -88,7 +87,7 @@ export function RegisterForm() {
             description: "Welcome! Redirecting to your dashboard...",
         });
         
-        // 4. Redirect to the dashboard
+        // 4. Redirect to the dashboard ONLY after profile creation is successful
         router.push("/dashboard");
 
     } catch (error: any) {
@@ -107,9 +106,9 @@ export function RegisterForm() {
                 description: error.message || "An unknown error occurred.",
             });
         }
-    } finally {
         setIsLoading(false);
     }
+    // No need for finally block as loading is handled in error/success paths
   }
 
   return (

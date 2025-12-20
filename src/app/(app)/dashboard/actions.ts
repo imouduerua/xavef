@@ -124,7 +124,7 @@ export async function createUserProfile(uid: string, email: string, displayName:
             return { success: true };
         });
 
-        revalidatePath('/dashboard');
+        // No revalidate needed here, client will get data on redirect.
         return result;
 
     } catch (error: any) {
