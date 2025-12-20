@@ -63,8 +63,6 @@ export async function createUserProfile(uid: string, email: string, displayName:
         const result = await firestoreAdmin.runTransaction(async (transaction) => {
             const userDoc = await transaction.get(userDocRef);
             if (userDoc.exists) {
-                // This case should ideally not be hit if called right after registration,
-                // but it's a good safeguard.
                 return { success: true }; 
             }
 
@@ -124,11 +122,10 @@ export async function createUserProfile(uid: string, email: string, displayName:
             return { success: true };
         });
 
-        // No revalidate needed here, client will get data on redirect.
         return result;
 
     } catch (error: any) {
-        console.error("[createUserProfile] CRITICAL ERROR during profile creation transaction:", error);
-        return { success: false, error: error.message || `An unexpected error occurred during profile creation.` };
+        console.error("[createUserProfile] Error during profile creation transaction:", error);
+        return { success: false, error: error.message || `An unexpected error occurred.` };
     }
 }
