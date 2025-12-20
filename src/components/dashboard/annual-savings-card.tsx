@@ -1,13 +1,22 @@
+
 import { Calendar } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '../ui/button';
 import { DepositDialog } from './deposit-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 interface AnnualSavingsCardProps {
     balance: number;
+    disabled?: boolean;
 }
 
-export function AnnualSavingsCard({ balance }: AnnualSavingsCardProps) {
+export function AnnualSavingsCard({ balance, disabled = false }: AnnualSavingsCardProps) {
+
+  const depositButton = (
+    <DepositDialog accountName="Annual Savings" targetAccount="annual">
+        <Button className="w-full" disabled={disabled}>Deposit</Button>
+    </DepositDialog>
+  );
 
   return (
     <Card>
@@ -28,9 +37,20 @@ export function AnnualSavingsCard({ balance }: AnnualSavingsCardProps) {
         <CardDescription>End of year savings goal</CardDescription>
       </CardContent>
       <CardFooter>
-         <DepositDialog accountName="Annual Savings" targetAccount="annual">
-            <Button className="w-full">Deposit</Button>
-        </DepositDialog>
+         {disabled ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="w-full">{depositButton}</div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>You have a pending deposit for this account.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          depositButton
+        )}
       </CardFooter>
     </Card>
   );

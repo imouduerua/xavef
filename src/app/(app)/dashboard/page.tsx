@@ -3,7 +3,7 @@
 
 import { Copy } from 'lucide-react';
 import Link from 'next/link';
-import React, { Suspense } from 'react';
+import React, { Suspense, useMemo } from 'react';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
 import { SolidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
@@ -12,16 +12,38 @@ import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useUserData } from '@/hooks/use-user-data';
-import { useUser } from '@/firebase';
+import { useUser, useCollection, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProfileInitializer } from '@/components/dashboard/profile-initializer';
-import type { AccountType } from '@/lib/types';
+import type { AccountType, Transaction } from '@/lib/types';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
+import { collection, query, where } from 'firebase/firestore';
 
 function DashboardContent() {
-  const { loading: userLoading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const { userData, loading: userDataLoading } = useUserData();
+  const firestore = useFirestore();
+
+  const pendingTransactionsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(
+      collection(firestore, "users", user.uid, "transactions"),
+      where("status", "==", "Pending"),
+      where("type", "==", "Deposit")
+    );
+  }, [user, firestore]);
+
+  const { data: pendingTransactions, loading: pendingTransactionsLoading } = useCollection<Transaction>(pendingTransactionsQuery);
+
+  const hasPendingSolidaraDeposit = useMemo(
+    () => pendingTransactions?.some(tx => tx.targetAccount === 'solidara'),
+    [pendingTransactions]
+  );
+  const hasPendingAnnualDeposit = useMemo(
+    () => pendingTransactions?.some(tx => tx.targetAccount === 'annual'),
+    [pendingTransactions]
+  );
   
   const balances = {
     solidara: userData?.solidaraBalance ?? 0.0,
@@ -30,8 +52,6 @@ function DashboardContent() {
 
   const totalSavings = balances.solidara + balances.annual;
 
-  // This function is now a placeholder as we don't have a server action for self-transfers yet.
-  // It demonstrates the client-side logic but will not persist.
   const handleSelfTransfer = (
     amount: number,
     from: AccountType,
@@ -46,9 +66,6 @@ function DashboardContent() {
         return false;
     }
     
-    // NOTE: This state update is temporary. A real transfer would involve a server action
-    // and would rely on Firestore to update the data, which would then be reflected
-    // automatically by the useUserData hook.
     toast({
         title: "Feature not implemented",
         description: "Self-transfers will be enabled soon.",
@@ -96,12 +113,10 @@ function DashboardContent() {
         </div>
   )
 
-  if (userLoading || userDataLoading) {
+  if (userLoading || userDataLoading || pendingTransactionsLoading) {
     return <PageSkeleton />
   }
 
-  // If there's no user data and we're not loading, it's likely a new user who needs a profile.
-  // The ProfileInitializer will handle the creation and subsequent data refetch.
   if (!userData) {
     return (
        <div className="space-y-6">
@@ -139,8 +154,8 @@ function DashboardContent() {
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <SolidaraSavingsCard balance={balances.solidara} />
-        <AnnualSavingsCard balance={balances.annual} />
+        <SolidaraSavingsCard balance={balances.solidara} disabled={hasPendingSolidaraDeposit} />
+        <AnnualSavingsCard balance={balances.annual} disabled={hasPendingAnnualDeposit} />
         <TotalSavingsCard balance={totalSavings} />
       </div>
       <div>

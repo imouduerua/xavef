@@ -1,13 +1,23 @@
+
 import { PiggyBank } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '../ui/button';
 import { DepositDialog } from './deposit-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+
 
 interface SolidaraSavingsCardProps {
   balance: number;
+  disabled?: boolean;
 }
 
-export function SolidaraSavingsCard({ balance }: SolidaraSavingsCardProps) {
+export function SolidaraSavingsCard({ balance, disabled = false }: SolidaraSavingsCardProps) {
+  
+  const depositButton = (
+     <DepositDialog accountName="Savings (Olidara)" targetAccount="solidara">
+        <Button className="w-full" disabled={disabled}>Deposit</Button>
+    </DepositDialog>
+  );
 
   return (
     <Card>
@@ -28,9 +38,20 @@ export function SolidaraSavingsCard({ balance }: SolidaraSavingsCardProps) {
         <CardDescription>Daily savings contributions</CardDescription>
       </CardContent>
       <CardFooter>
-        <DepositDialog accountName="Savings (Olidara)" targetAccount="solidara">
-            <Button className="w-full">Deposit</Button>
-        </DepositDialog>
+        {disabled ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                 <div className="w-full">{depositButton}</div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>You have a pending deposit for this account.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          depositButton
+        )}
       </CardFooter>
     </Card>
   );
