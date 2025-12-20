@@ -71,7 +71,10 @@ export function GoalCard({ goal }: GoalCardProps) {
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between">
-          <CardTitle>{goal.name}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            {goal.emoji && <span className="text-2xl">{goal.emoji}</span>}
+            <span>{goal.name}</span>
+          </CardTitle>
           <AlertDialog>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

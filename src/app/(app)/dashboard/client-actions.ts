@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { 
@@ -8,7 +9,6 @@ import {
     serverTimestamp,
     Firestore,
     Timestamp,
-    getDoc,
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
 
@@ -90,8 +90,8 @@ export async function createUserProfile(
             // 2. Create default saving goals
             const goalsCollectionRef = collection(firestore, `users/${user.uid}/goals`);
             const defaultGoals = [
-                { name: 'House Rent', targetAmount: 0 },
-                { name: 'School Fees', targetAmount: 0 },
+                { name: 'House Rent', targetAmount: 0, emoji: '🏠' },
+                { name: 'School Fees', targetAmount: 0, emoji: '🎓' },
             ];
 
             for (const goal of defaultGoals) {
@@ -103,6 +103,7 @@ export async function createUserProfile(
                     currentAmount: 0,
                     targetDate: null,
                     createdAt: serverTimestamp(),
+                    emoji: goal.emoji,
                 });
             }
 

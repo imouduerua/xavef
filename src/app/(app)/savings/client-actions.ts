@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -13,6 +14,7 @@ interface SavingGoalData {
   name: string;
   targetAmount: number;
   targetDate?: Date;
+  emoji?: string;
 }
 
 export async function createSavingGoal(
@@ -28,6 +30,7 @@ export async function createSavingGoal(
       targetAmount: data.targetAmount,
       currentAmount: 0,
       targetDate: data.targetDate || null,
+      emoji: data.emoji || '🎯',
       createdAt: serverTimestamp(),
     });
     return { success: true };

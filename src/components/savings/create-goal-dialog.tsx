@@ -36,10 +36,13 @@ import { cn } from '@/lib/utils';
 import { useUser, useFirestore } from '@/firebase';
 import { createSavingGoal } from '@/app/(app)/savings/client-actions';
 
+const defaultEmojis = ['🎯', '✈️', '🏠', '🚗', '🎓', '🎁', '💻', '💍', '💼', '🏖️', '🚀', '🎉'];
+
 const formSchema = z.object({
   name: z.string().min(1, 'Goal name is required.'),
   targetAmount: z.coerce.number().positive('Target amount must be positive.'),
   targetDate: z.date().optional(),
+  emoji: z.string().optional(),
 });
 
 export function CreateGoalDialog() {
@@ -51,6 +54,7 @@ export function CreateGoalDialog() {
     defaultValues: {
       name: '',
       targetAmount: '' as any,
+      emoji: '🎯',
     },
   });
 
@@ -72,7 +76,12 @@ export function CreateGoalDialog() {
         description: `Your goal "${values.name}" has been created.`,
       });
       setIsOpen(false);
-      form.reset();
+      form.reset({
+        name: '',
+        targetAmount: '' as any,
+        targetDate: undefined,
+        emoji: '🎯',
+      });
     } else {
       toast({
         variant: 'destructive',
@@ -94,7 +103,7 @@ export function CreateGoalDialog() {
         <DialogHeader>
           <DialogTitle>Create a New Saving Goal</DialogTitle>
           <DialogDescription>
-            Define your goal and start saving towards it.
+            What are you saving for?
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -106,7 +115,7 @@ export function CreateGoalDialog() {
                 <FormItem>
                   <FormLabel>Goal Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., New Car, Vacation" {...field} />
+                    <Input placeholder="e.g., European Vacation" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -117,7 +126,7 @@ export function CreateGoalDialog() {
               name="targetAmount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Target Amount</FormLabel>
+                  <FormLabel>Goal Amount</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
@@ -130,7 +139,7 @@ export function CreateGoalDialog() {
                 </FormItem>
               )}
             />
-            <FormField
+             <FormField
               control={form.control}
               name="targetDate"
               render={({ field }) => (
@@ -165,6 +174,33 @@ export function CreateGoalDialog() {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="emoji"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Select an Emoji</FormLabel>
+                  <FormControl>
+                    <div className="grid grid-cols-6 gap-2">
+                      {defaultEmojis.map((emoji) => (
+                        <Button
+                          key={emoji}
+                          type="button"
+                          variant={field.value === emoji ? 'default' : 'outline'}
+                          className="text-2xl p-2 h-auto aspect-square"
+                          onClick={() => field.onChange(emoji)}
+                        >
+                          {emoji}
+                        </Button>
+                      ))}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <DialogFooter className="gap-2 pt-4">
               <DialogClose asChild>
                 <Button type="button" variant="outline">
