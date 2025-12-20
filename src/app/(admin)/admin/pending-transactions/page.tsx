@@ -63,16 +63,16 @@ export default function AdminPendingTransactionsPage() {
       try {
         const transactionsWithDetails = await Promise.all(
           rawTransactions.map(async (tx) => {
-            const userId = tx.userId!; // userId is now guaranteed by the hook
+            const userId = tx.userId!;
             const userRef = doc(firestore, 'users', userId);
             const userSnap = await getDoc(userRef);
             
             const userEmail = userSnap.exists() ? (userSnap.data() as UserData).email : 'Unknown User';
             const xavefId = userSnap.exists() ? (userSnap.data() as UserData).xavefId : 'N/A';
 
-            // Return the full transaction object plus the user details
+            // Correctly merge the original transaction data with the new user details
             return {
-                ...tx,
+                ...tx, // This preserves all original fields, including payoutAmount
                 userId,
                 userEmail,
                 xavefId,
