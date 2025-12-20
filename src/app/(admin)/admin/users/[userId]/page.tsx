@@ -23,16 +23,16 @@ import { toast } from '@/hooks/use-toast';
 import { useAdminStatus } from '@/hooks/use-admin-status';
 
 
-export default function UserTransactionsPage() {
+export default function UserDetailPage() {
   const params = useParams();
-  const { userId } = params as { userId: string };
+  const userId = params.userId as string;
   const firestore = useFirestore();
   const { user: adminUser } = useUser();
   const { isAdmin } = useAdminStatus();
   const [isUpdating, setIsUpdating] = React.useState(false);
 
   const userDocRef = React.useMemo(
-    () => (userId ? doc(firestore, 'users', userId) : null),
+    () => (userId && firestore ? doc(firestore, 'users', userId) : null),
     [userId, firestore]
   );
   const { data: userData, loading } = useDoc<UserData>(userDocRef);
@@ -47,7 +47,7 @@ export default function UserTransactionsPage() {
           await updateDoc(userDocRef, { canGenerateReferralCode: checked });
           toast({
               title: "Permission Updated",
-              description: `${userData?.displayName} can ${checked ? 'now' : 'no longer'} generate referral codes.`,
+              description: `${userData?.firstName || 'User'} can ${checked ? 'now' : 'no longer'} generate referral codes.`,
           });
       } catch (error: any) {
           console.error("Failed to update permission", error);
@@ -138,7 +138,7 @@ export default function UserTransactionsPage() {
                                         {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
                                         <Switch
                                             id="referral-permission"
-                                            checked={userData?.canGenerateReferralCode}
+                                            checked={!!userData?.canGenerateReferralCode}
                                             onCheckedChange={handlePermissionToggle}
                                             disabled={isUpdating}
                                         />
@@ -154,7 +154,7 @@ export default function UserTransactionsPage() {
              <div>
                 <h3 className="text-lg font-medium">Transaction History</h3>
                  <Separator className="my-4" />
-                <UserTransactions userId={userId} />
+                 {userId ? <UserTransactions userId={userId} /> : <p>User ID not found.</p>}
             </div>
         </CardContent>
       </Card>
