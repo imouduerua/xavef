@@ -138,6 +138,7 @@ export async function createUserProfile(uid: string, email: string, displayName:
         });
 
         console.log(`[createUserProfile] Transaction successful for user ${uid}.`);
+        revalidatePath('/dashboard');
         return result;
 
     } catch (error: any) {
