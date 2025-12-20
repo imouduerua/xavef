@@ -152,10 +152,10 @@ export function GoalCard({ goal }: GoalCardProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                  <EditGoalDialog goal={goal}>
-                    <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                         <Pencil className="mr-2 h-4 w-4" />
                         <span>Edit</span>
-                    </button>
+                    </DropdownMenuItem>
                 </EditGoalDialog>
                 <DropdownMenuSeparator />
                 <AlertDialogTrigger asChild>
