@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { Transaction } from '@/lib/types';
+import type { TransactionWithUserDetails } from '@/lib/types';
 import React from 'react';
 import {
   Table,
@@ -17,16 +17,18 @@ import { toast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { updateTransactionStatus } from './actions';
 
-type TransactionWithUserDetails = Transaction & { userId: string, userEmail: string, xavefId: string };
-
 interface PendingTransactionsTableProps {
-    initialTransactions: TransactionWithUserDetails[];
+    transactions: TransactionWithUserDetails[];
 }
 
-export function PendingTransactionsTable({ initialTransactions }: PendingTransactionsTableProps) {
+export function PendingTransactionsTable({ transactions: initialTransactions }: PendingTransactionsTableProps) {
   const [transactions, setTransactions] = React.useState<TransactionWithUserDetails[]>(initialTransactions);
   const [updatingId, setUpdatingId] = React.useState<string | null>(null);
   const firestore = useFirestore();
+
+  React.useEffect(() => {
+    setTransactions(initialTransactions);
+  }, [initialTransactions]);
 
   const handleUpdateStatus = async (
     userId: string,
@@ -41,6 +43,7 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                 title: 'Transaction Updated',
                 description: `Transaction has been marked as ${newStatus}.`,
             });
+            // Optimistically remove the transaction from the table
             setTransactions(prev => prev.filter(tx => tx.id !== transactionId));
         } else {
              toast({
@@ -122,7 +125,7 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                 <TableCell className="text-center">
                   {tx.proofOfPaymentUrl ? (
                     <Button variant="outline" size="icon" className="h-8 w-8" asChild>
-                      <a href={tx.proofOfPaymentUrl} download={`receipt-${tx.id}.png`}>
+                      <a href={tx.proofOfPaymentUrl} target="_blank" rel="noopener noreferrer">
                         <Download className="h-4 w-4" />
                       </a>
                     </Button>

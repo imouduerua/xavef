@@ -61,10 +61,15 @@ export interface Transaction {
   payoutAmount?: number;
   targetAccount?: AccountType;
   proofOfPaymentUrl?: string;
-  userId?: string; // Optional: To link transaction to user when querying collection group
-  userEmail?: string; // Optional: To display user email in admin table
-  xavefId?: string;
+  userId?: string; 
 }
+
+export interface TransactionWithUserDetails extends Transaction {
+  userId: string;
+  userEmail: string;
+  xavefId: string;
+}
+
 
 export interface Notification {
   id: string;

@@ -6,7 +6,7 @@ import { Loader2, Wallet } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -47,6 +47,7 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
     amount: z.coerce
       .number()
       .positive('Amount must be positive.')
+      .min(100, 'Minimum withdrawal is ₦100.00')
       .max(solidaraBalance, `Withdrawal cannot exceed your balance of ₦${solidaraBalance.toFixed(2)}`),
     bankAccountId: z.string().min(1, 'Please select a bank account.'),
   });
@@ -92,8 +93,9 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
     }
     
     // Recalculate here to ensure accuracy at the time of submission
-    const finalFee = values.amount * WITHDRAWAL_FEE_PERCENTAGE;
-    const finalPayout = values.amount - finalFee;
+    const finalAmount = Number(values.amount);
+    const finalFee = finalAmount * WITHDRAWAL_FEE_PERCENTAGE;
+    const finalPayout = finalAmount - finalFee;
 
 
     try {
@@ -101,7 +103,7 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
       
       const newTransaction = {
         date: serverTimestamp(),
-        amount: -values.amount, // The full amount deducted from user's balance
+        amount: -finalAmount, // The full amount deducted from user's balance
         fee: finalFee,
         payoutAmount: finalPayout, // The amount sent to the user's bank
         description: `Withdrawal to ${selectedAccount.bankName}`,
@@ -117,7 +119,7 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
       
       toast({
         title: 'Withdrawal Request Submitted',
-        description: `Your request for ₦${values.amount.toFixed(2)} is pending approval.`,
+        description: `Your request for ₦${finalAmount.toFixed(2)} is pending approval.`,
       });
       form.reset();
 
