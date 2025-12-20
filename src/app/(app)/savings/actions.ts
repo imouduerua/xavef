@@ -3,11 +3,8 @@
 
 import { z } from 'zod';
 import { addDoc, collection, doc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
-import { firestore } from '@/firebase/server-init';
 import { revalidatePath } from 'next/cache';
-import { auth } from 'firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
-import { authAdmin } from '@/firebase/admin';
+import { authAdmin, firestoreAdmin } from '@/firebase/admin';
 
 const goalSchema = z.object({
   name: z.string().min(1, 'Goal name is required.'),
@@ -29,7 +26,7 @@ export async function createSavingGoal(
   }
 
   try {
-    const goalsCollectionRef = collection(firestore, `users/${userId}/goals`);
+    const goalsCollectionRef = collection(firestoreAdmin, `users/${userId}/goals`);
     await addDoc(goalsCollectionRef, {
       userId,
       name: validation.data.name,
@@ -60,7 +57,7 @@ export async function deleteSavingGoal(
     }
 
     try {
-        const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
+        const goalDocRef = doc(firestoreAdmin, `users/${userId}/goals`, goalId);
         await deleteDoc(goalDocRef);
 
         revalidatePath('/savings');
