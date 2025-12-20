@@ -43,11 +43,11 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
              const userId = hasUserId ? pathParts[pathParts.indexOf('users') + 1] : undefined;
 
             return {
-                ...docData,
                 id: doc.id,
+                ...docData,
                 // Add userId if it's not already in the document data
                 ...(userId && !(docData as any).userId && { userId: userId }),
-            };
+            } as T;
         });
         setData(resultData);
         setLoading(false);
