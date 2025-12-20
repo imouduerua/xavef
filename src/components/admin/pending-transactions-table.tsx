@@ -80,6 +80,7 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
       <TableBody>
         {transactions.map((tx) => {
           const isUpdating = updatingId === tx.id;
+          const amount = Number(tx.amount);
 
           return (
             <TableRow key={tx.id}>
@@ -89,12 +90,12 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
               <TableCell>{tx.type}</TableCell>
               <TableCell
                 className={`text-right font-semibold ${
-                  tx.amount > 0 ? 'text-green-600' : ''
+                  amount > 0 ? 'text-green-600' : ''
                 }`}
               >
-                {tx.amount > 0
-                  ? `+₦${tx.amount.toFixed(2)}`
-                  : `-₦${Math.abs(tx.amount).toFixed(2)}`}
+                {amount > 0
+                  ? `+₦${amount.toFixed(2)}`
+                  : `-₦${Math.abs(amount).toFixed(2)}`}
               </TableCell>
               <TableCell className="text-center space-x-2">
                  {isUpdating ? (
