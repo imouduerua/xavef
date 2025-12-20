@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Transaction } from '@/lib/types';
@@ -11,7 +12,7 @@ import {
   TableRow,
 } from '../ui/table';
 import { Button } from '../ui/button';
-import { Check, Loader2, X, Eye } from 'lucide-react';
+import { Check, Loader2, X, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { updateTransactionStatus } from './actions';
@@ -115,8 +116,8 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                 <TableCell className="text-center">
                   {tx.proofOfPaymentUrl ? (
                     <Button variant="outline" size="icon" className="h-8 w-8" asChild>
-                      <a href={tx.proofOfPaymentUrl} target="_blank" rel="noopener noreferrer">
-                        <Eye className="h-4 w-4" />
+                      <a href={tx.proofOfPaymentUrl} download={`receipt-${tx.id}.png`}>
+                        <Download className="h-4 w-4" />
                       </a>
                     </Button>
                   ) : (
