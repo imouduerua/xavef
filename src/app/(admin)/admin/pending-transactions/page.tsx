@@ -12,8 +12,10 @@ import type { Transaction, UserData } from '@/lib/types';
 import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useFirestore } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy } from 'firebase/firestore';
+import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
+
 
 type TransactionWithUserDetails = Transaction & {
   userId: string;
@@ -25,52 +27,48 @@ export default function AdminPendingTransactionsPage() {
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
 
-  useEffect(() => {
-    async function getPendingTransactions() {
-      if (!firestore) {
-          setLoading(true);
-          return;
-      };
+  const pendingTxsQuery = React.useMemo(() => {
+    if (!firestore) return null;
+    return query(
+        collectionGroup(firestore, 'transactions'), 
+        where('status', '==', 'Pending'),
+        orderBy('date', 'desc')
+    );
+  }, [firestore]);
 
+  const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
+
+  useEffect(() => {
+    async function attachUserDetails() {
+      if (!rawTransactions || !firestore) {
+        setTransactions(null);
+        setLoading(rawLoading);
+        return;
+      }
+      
       setLoading(true);
       try {
-        const pendingTxsQuery = query(
-          collectionGroup(firestore, 'transactions'), 
-          where('status', '==', 'Pending'),
-          orderBy('date', 'desc')
-        );
-
-        const querySnapshot = await getDocs(pendingTxsQuery);
-        
-        const pendingTransactions = querySnapshot.docs.map(doc => {
-            const data = doc.data() as Transaction;
-            const pathParts = doc.ref.path.split('/');
-            const userId = pathParts[1];
-            return {
-                ...data,
-                id: doc.id,
-                userId: userId,
-                userEmail: 'Loading...',
-            };
-        });
-
         const transactionsWithUserDetails: TransactionWithUserDetails[] = await Promise.all(
-          pendingTransactions.map(async (tx) => {
-            const userRef = doc(firestore, 'users', tx.userId);
+          rawTransactions.map(async (tx) => {
+            const userId = tx.userId || doc(firestore, tx.id).parent.parent?.id;
+            if (!userId) {
+                // This case should ideally not happen if data structure is correct
+                return { ...tx, userId: 'unknown', userEmail: 'Unknown User' };
+            }
+
+            const userRef = doc(firestore, 'users', userId);
             const userSnap = await getDoc(userRef);
             const userEmail = userSnap.exists() ? (userSnap.data() as UserData).email : 'Unknown User';
-            return { ...tx, userEmail };
+            return { ...tx, userId, userEmail };
           })
         );
-        
         setTransactions(transactionsWithUserDetails);
-
-      } catch (error: any) {
-        console.error("Error fetching pending transactions:", error);
+      } catch (error) {
+        console.error("Error attaching user details:", error);
         toast({
             variant: "destructive",
-            title: "Error Fetching Data",
-            description: "Could not fetch pending transactions.",
+            title: "Error Processing Data",
+            description: "Could not process transaction details.",
         });
         setTransactions([]);
       } finally {
@@ -78,11 +76,12 @@ export default function AdminPendingTransactionsPage() {
       }
     }
 
-    if (firestore) {
-        getPendingTransactions();
-    }
-  }, [firestore]);
+    attachUserDetails();
+
+  }, [rawTransactions, firestore, rawLoading]);
   
+
+  const isOverallLoading = loading || rawLoading;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -95,8 +94,10 @@ export default function AdminPendingTransactionsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isOverallLoading ? (
             <Skeleton className="h-40 w-full" />
+          ) : indexCreationUrl ? (
+            <MissingIndexAlert url={indexCreationUrl} />
           ) : (
              transactions && <PendingTransactionsTable initialTransactions={transactions} />
           )}
