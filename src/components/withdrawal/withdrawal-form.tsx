@@ -27,6 +27,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import type { BankAccount } from '@/lib/types';
 import { requestWithdrawal } from '@/app/(app)/withdrawal/actions';
+import { useAuth } from '@/firebase';
 
 interface WithdrawalFormProps {
   solidaraBalance: number;
@@ -35,6 +36,7 @@ interface WithdrawalFormProps {
 
 export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const auth = useAuth();
 
   const withdrawalSchema = z.object({
     amount: z.coerce
@@ -70,10 +72,17 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
     }
 
     try {
-      const result = await requestWithdrawal({
-        amount: values.amount,
-        destinationBank: selectedAccount,
-      });
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            throw new Error("User not authenticated.");
+        }
+
+        const idToken = await currentUser.getIdToken();
+
+        const result = await requestWithdrawal({
+            amount: values.amount,
+            destinationBank: selectedAccount,
+        });
 
       if (result.success) {
         toast({

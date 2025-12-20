@@ -64,6 +64,7 @@ export async function requestWithdrawal(
     
     // Revalidate the transactions page to show the new pending transaction
     revalidatePath('/transactions');
+    revalidatePath('/dashboard');
     
     return { success: true };
 
