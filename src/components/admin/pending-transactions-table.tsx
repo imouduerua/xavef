@@ -25,25 +25,30 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
   const [transactions, setTransactions] = React.useState<TransactionWithUserDetails[]>(initialTransactions);
   const [updatingIds, setUpdatingIds] = React.useState<string[]>([]);
 
-  const handleUpdateStatus = async (userId: string, transactionId: string, newStatus: 'Completed' | 'Failed') => {
+  const handleUpdateStatus = (userId: string, transactionId: string, newStatus: 'Completed' | 'Failed') => {
     setUpdatingIds(prev => [...prev, transactionId]);
     
-    startTransition(async () => {
-      const result = await updateTransactionStatus({ userId, transactionId, newStatus });
-      if (result.success) {
-        toast({
-          title: `Transaction ${newStatus === 'Completed' ? 'Approved' : 'Declined'}`,
-        });
-        // Optimistically update UI
-        setTransactions(prev => prev.filter(tx => tx.id !== transactionId));
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Update Failed',
-          description: result.error,
-        });
-      }
-      setUpdatingIds(prev => prev.filter(id => id !== transactionId));
+    startTransition(() => {
+      // Optimistically update the UI
+      setTransactions(prev => prev.filter(tx => tx.id !== transactionId));
+
+      // Perform the server action in the background
+      updateTransactionStatus({ userId, transactionId, newStatus }).then(result => {
+        if (result.success) {
+          toast({
+            title: `Transaction ${newStatus === 'Completed' ? 'Approved' : 'Declined'}`,
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: result.error,
+          });
+          // Revert the optimistic update on failure by re-fetching or adding the item back
+          // For this app, we'll rely on a page refresh or re-navigation to see the failed item again.
+        }
+        setUpdatingIds(prev => prev.filter(id => id !== transactionId));
+      });
     });
   };
 
@@ -64,8 +69,12 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
         </TableRow>
       </TableHeader>
       <TableBody>
-        {transactions.map((tx) => {
+        {initialTransactions.map((tx) => {
           const isUpdating = updatingIds.includes(tx.id);
+          const isRemoved = !transactions.some(t => t.id === tx.id);
+
+          if (isRemoved) return null;
+
           return (
             <TableRow key={tx.id}>
               <TableCell className="font-medium truncate max-w-[150px]">{tx.userEmail}</TableCell>
