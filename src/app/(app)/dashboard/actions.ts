@@ -98,6 +98,9 @@ export async function createUserProfile(uid: string, email: string, referralCode
                 referredBy,
                 solidaraBalance: 0,
                 annualBalance: 0,
+                bankName: "",
+                accountName: "",
+                bankAccountNumber: "",
             };
 
             console.log(`[createUserProfile] Creating user document for ${uid} within transaction.`);

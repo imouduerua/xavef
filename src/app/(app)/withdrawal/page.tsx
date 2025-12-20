@@ -8,14 +8,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Wallet } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import type { UserData } from "@/lib/types";
 
-function isProfileComplete(userData: any) {
+function isProfileComplete(userData: UserData | null) {
     if (!userData) return false;
-    const requiredFields = [
+    const requiredFields: (keyof UserData)[] = [
         'firstName', 'lastName', 'phoneNumber', 'address', 'state', 'country',
         'bankName', 'accountName', 'bankAccountNumber'
     ];
-    return requiredFields.every(field => userData[field] && userData[field].trim() !== '');
+    return requiredFields.every(field => {
+        const value = userData[field];
+        return typeof value === 'string' && value.trim() !== '';
+    });
 }
 
 function WithdrawalForm() {
