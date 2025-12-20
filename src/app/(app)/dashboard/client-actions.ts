@@ -53,6 +53,7 @@ export async function createUserProfile(
             const referralDoc = await transaction.get(referralDocRef);
 
             if (!referralDoc.exists() || referralDoc.data()?.used) {
+                // This error will be caught by the outer catch block
                 throw new Error("The provided referral code is either invalid or has already been used.");
             }
 
