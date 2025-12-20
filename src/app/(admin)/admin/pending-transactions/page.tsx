@@ -71,7 +71,11 @@ export default function AdminPendingTransactionsPage() {
         );
         
         // Sort transactions by date client-side
-        transactionsWithUserDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        transactionsWithUserDetails.sort((a, b) => {
+            const dateA = a.date ? new Date(a.date).getTime() : 0;
+            const dateB = b.date ? new Date(b.date).getTime() : 0;
+            return dateB - dateA;
+        });
 
         setData({ transactions: transactionsWithUserDetails });
 
@@ -116,7 +120,7 @@ export default function AdminPendingTransactionsPage() {
     if (data.errorCode === 'failed-precondition') {
       const regex = /(https:\/\/[^\s]+)/;
       const match = data.error.match(regex);
-      const firestoreIndexUrl = match ? match[0] : null;
+      const firestoreIndexUrl = match ? match[0].replace(/%20/g,'') : null;
 
       return (
         <div className="text-destructive p-4 bg-destructive/10 rounded-md space-y-4">

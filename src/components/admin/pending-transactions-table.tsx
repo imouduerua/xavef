@@ -84,7 +84,7 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
           return (
             <TableRow key={tx.id}>
               <TableCell className="font-medium truncate max-w-[150px]">{tx.userEmail}</TableCell>
-              <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
+              <TableCell>{tx.date ? new Date(tx.date).toLocaleDateString() : 'N/A'}</TableCell>
               <TableCell>{tx.description}</TableCell>
               <TableCell>{tx.type}</TableCell>
               <TableCell
