@@ -72,17 +72,20 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
     }
 
     try {
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-            throw new Error("User not authenticated.");
-        }
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('User not authenticated. Please log in again.');
+      }
 
-        const idToken = await currentUser.getIdToken();
+      const idToken = await currentUser.getIdToken();
 
-        const result = await requestWithdrawal({
-            amount: values.amount,
-            destinationBank: selectedAccount,
-        });
+      const result = await requestWithdrawal(
+        {
+          amount: values.amount,
+          destinationBank: selectedAccount,
+        },
+        idToken
+      );
 
       if (result.success) {
         toast({

@@ -2,7 +2,6 @@
 
 import { z } from 'zod';
 import { authAdmin, firestoreAdmin } from '@/firebase/admin';
-import { headers } from 'next/headers';
 import { FieldValue } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 
@@ -18,16 +17,16 @@ const withdrawalSchema = z.object({
 });
 
 export async function requestWithdrawal(
-  values: z.infer<typeof withdrawalSchema>
+  values: z.infer<typeof withdrawalSchema>,
+  idToken: string
 ): Promise<{ success: boolean; error?: string }> {
   const validation = withdrawalSchema.safeParse(values);
   if (!validation.success) {
     return { success: false, error: 'Invalid input.' };
   }
 
-  const idToken = headers().get('Authorization')?.split('Bearer ')[1];
   if (!idToken) {
-    return { success: false, error: 'User not authenticated.' };
+    return { success: false, error: 'Authentication token is missing.' };
   }
 
   try {
@@ -70,6 +69,12 @@ export async function requestWithdrawal(
 
   } catch (error: any) {
     console.error('Error requesting withdrawal:', error);
+    if (error.code === 'auth/id-token-expired') {
+        return { success: false, error: 'Your session has expired. Please log in again.' };
+    }
+    if (error.codePrefix === 'auth/') {
+        return { success: false, error: 'User not authenticated.' };
+    }
     return { success: false, error: error.message || 'An unexpected server error occurred.' };
   }
 }
