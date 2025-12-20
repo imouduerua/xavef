@@ -65,8 +65,17 @@ export default function AdminPendingTransactionsPage() {
         let errorMessage = "Could not fetch pending transactions.";
         if (error.code === 'permission-denied') {
           errorMessage = "Permission denied. You must be an admin to view this page.";
-        } else if (error.code === 'failed-precondition') {
-            errorMessage = `Query requires an index. Please create it in the Firebase console. The error message in your terminal contains the direct link to create the index. Details: ${error.message}`;
+        } else if (error.code === 'failed-precondition' && error.message.includes('index')) {
+            // Extract the index creation link from the error message
+            const urlRegex = /(https?:\/\/[^\s]+)/;
+            const match = error.message.match(urlRegex);
+            const indexUrl = match ? match[0] : null;
+
+            errorMessage = `Query requires a Firestore index. Please create it in the Firebase console.`;
+            
+            if (indexUrl) {
+                errorMessage += ` You can click this link to create it automatically: <a href="${indexUrl}" target="_blank" rel="noopener noreferrer" class="underline font-semibold">${indexUrl}</a>. After the index is built (a few minutes), please refresh this page.`;
+            }
         }
         setData({
           transactions: null,
@@ -75,7 +84,7 @@ export default function AdminPendingTransactionsPage() {
         toast({
           variant: "destructive",
           title: "Error",
-          description: errorMessage,
+          description: "Failed to fetch data. Check the error message on the page.",
         });
       } finally {
         setLoading(false);
@@ -97,7 +106,12 @@ export default function AdminPendingTransactionsPage() {
         </CardHeader>
         <CardContent>
           {loading && <Skeleton className="h-40 w-full" />}
-          {data.error && <p className="text-destructive p-4 bg-destructive/10 rounded-md">{data.error}</p>}
+          {data.error && (
+            <div 
+              className="text-destructive p-4 bg-destructive/10 rounded-md"
+              dangerouslySetInnerHTML={{ __html: data.error }}
+            />
+          )}
           {!loading && data.transactions && (
             <PendingTransactionsTable initialTransactions={data.transactions} />
           )}
@@ -106,3 +120,4 @@ export default function AdminPendingTransactionsPage() {
     </div>
   );
 }
+
