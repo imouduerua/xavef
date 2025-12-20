@@ -235,7 +235,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
           )}
 
           {step === 'details' && (
-            <>
+            <div className="grid gap-4">
               <ScrollArea className="px-6">
                 <div className='space-y-4'>
                     <BankDetailsCard amount={Number(getValues("amount"))} />
@@ -255,7 +255,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
                      </FormItem>
                 </div>
               </ScrollArea>
-              <DialogFooter className="gap-2 sm:justify-end p-6 pt-0">
+              <DialogFooter className="gap-2 sm:justify-end p-6 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => setStep('amount')}>
                     Back
                 </Button>
@@ -273,7 +273,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
                     )}
                 </Button>
               </DialogFooter>
-            </>
+            </div>
           )}
         </Form>
       </DialogContent>
