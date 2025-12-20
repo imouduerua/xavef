@@ -70,12 +70,12 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
     if (!date) return 'N/A';
     // Firebase Timestamps have a toDate() method
     if (date.toDate) {
-      return date.toDate().toLocaleDateString();
+      return date.toDate().toLocaleString();
     }
-    // Fallback for string dates
+    // Fallback for string/number dates
     const d = new Date(date);
     if (isNaN(d.getTime())) return 'Invalid Date';
-    return d.toLocaleDateString();
+    return d.toLocaleString();
   };
 
   return (
