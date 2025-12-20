@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
-import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, collectionGroup } from 'firebase/firestore';
 
 type TransactionWithUserDetails = Transaction & {
   userId: string;
@@ -35,31 +35,29 @@ export default function AdminPendingTransactionsPage() {
 
       setLoading(true);
       try {
-        // Query without ordering to avoid needing a composite index
         const transactionsQuery = query(
-          collectionGroup(firestore, 'transactions'),
-          where('status', '==', 'Pending')
+            collectionGroup(firestore, 'transactions'),
+            where('status', '==', 'Pending')
         );
         const querySnapshot = await getDocs(transactionsQuery);
 
         const transactions: TransactionWithUserDetails[] = [];
-        
+
         for (const txDoc of querySnapshot.docs) {
-            const txData = txDoc.data() as Transaction;
-            const userId = txDoc.ref.parent.parent!.id;
-            
-            const userDocRef = doc(firestore, 'users', userId);
-            const userDoc = await getDoc(userDocRef);
+          const txData = txDoc.data() as Transaction;
+          const userId = txDoc.ref.parent.parent!.id;
 
-            transactions.push({
-                ...txData,
-                id: txDoc.id,
-                userId: userId,
-                userEmail: userDoc.exists() ? userDoc.data().email : 'Unknown User',
-            });
+          const userDocRef = doc(firestore, 'users', userId);
+          const userDoc = await getDoc(userDocRef);
+
+          transactions.push({
+            ...txData,
+            id: txDoc.id,
+            userId: userId,
+            userEmail: userDoc.exists() ? userDoc.data().email : 'Unknown User',
+          });
         }
-
-        // Sort the transactions by date on the client side (newest first)
+        
         const sortedTransactions = transactions.sort((a, b) => {
             const dateA = a.date ? new Date(a.date).getTime() : 0;
             const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -74,7 +72,6 @@ export default function AdminPendingTransactionsPage() {
         if (error.code === 'permission-denied') {
           errorMessage = "Permission denied. You must be an admin to view this page.";
         } else if (error.code === 'failed-precondition' && error.message.includes('index')) {
-            // Extract the index creation link from the error message
             const urlRegex = /(https?:\/\/[^\s]+)/;
             const match = error.message.match(urlRegex);
             const indexUrl = match ? match[0] : null;
