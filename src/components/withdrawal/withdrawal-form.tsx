@@ -103,9 +103,9 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
         fee: finalFee,
         payoutAmount: finalPayout, // The amount sent to the user's bank
         description: `Withdrawal to ${selectedAccount.bankName}`,
-        type: 'Withdrawal',
-        status: 'Pending',
-        targetAccount: 'solidara',
+        type: 'Withdrawal' as const,
+        status: 'Pending' as const,
+        targetAccount: 'solidara' as const,
         destinationBankName: selectedAccount.bankName,
         destinationAccountName: selectedAccount.accountName,
         destinationAccountNumber: selectedAccount.bankAccountNumber,
