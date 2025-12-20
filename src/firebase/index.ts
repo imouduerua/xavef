@@ -5,7 +5,7 @@ import {
   initializeApp,
 } from 'firebase/app';
 import { Auth, getAuth } from 'firebase/auth';
-import { Firestore, getFirestore } from 'firebase/firestore';
+import { Firestore, getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 import { firebaseConfig } from './config';
 
@@ -17,6 +17,15 @@ export function initializeFirebase(): {
   const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   const auth = getAuth(app);
   const firestore = getFirestore(app);
+
+  if (process.env.NODE_ENV === 'development') {
+    try {
+        connectFirestoreEmulator(firestore, 'localhost', 8080);
+    } catch (e) {
+        console.warn('Could not connect to Firestore emulator. This is expected if you are not running the emulator.', e);
+    }
+  }
+
   return { app, auth, firestore };
 }
 
