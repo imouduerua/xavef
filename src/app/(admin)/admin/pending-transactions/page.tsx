@@ -20,6 +20,7 @@ import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 type TransactionWithUserDetails = Transaction & {
   userId: string;
   userEmail: string;
+  xavefId: string;
 };
 
 export default function AdminPendingTransactionsPage() {
@@ -53,13 +54,15 @@ export default function AdminPendingTransactionsPage() {
             const userId = tx.userId;
             if (!userId) {
                 // This case should ideally not happen if data structure is correct
-                return { ...tx, userId: 'unknown', userEmail: 'Unknown User' };
+                return { ...tx, userId: 'unknown', userEmail: 'Unknown User', xavefId: 'N/A' };
             }
 
             const userRef = doc(firestore, 'users', userId);
             const userSnap = await getDoc(userRef);
             const userEmail = userSnap.exists() ? (userSnap.data() as UserData).email : 'Unknown User';
-            return { ...tx, userId, userEmail };
+            const xavefId = userSnap.exists() ? (userSnap.data() as UserData).xavefId : 'N/A';
+
+            return { ...tx, userId, userEmail, xavefId };
           })
         );
         setTransactions(transactionsWithUserDetails);

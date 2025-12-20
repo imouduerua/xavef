@@ -18,7 +18,7 @@ import { useFirestore } from '@/firebase';
 import { updateTransactionStatus } from './actions';
 import type { Timestamp } from 'firebase/firestore';
 
-type TransactionWithUserDetails = Transaction & { userId: string, userEmail: string };
+type TransactionWithUserDetails = Transaction & { userId: string, userEmail: string, xavefId: string };
 
 interface PendingTransactionsTableProps {
     initialTransactions: TransactionWithUserDetails[];
@@ -85,6 +85,7 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
         <TableHeader>
           <TableRow>
             <TableHead>User Email</TableHead>
+            <TableHead>Xavef ID</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Type</TableHead>
@@ -101,6 +102,7 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
             return (
               <TableRow key={tx.id}>
                 <TableCell className="font-medium break-all">{tx.userEmail}</TableCell>
+                <TableCell>{tx.xavefId}</TableCell>
                 <TableCell>{formatDate(tx.date)}</TableCell>
                 <TableCell>{tx.description}</TableCell>
                 <TableCell>{tx.type}</TableCell>
