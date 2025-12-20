@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -52,12 +52,14 @@ export function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    let userCredential;
+
     try {
-        // 1. Create the Firebase Auth user
-        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        // Step 1: Create the Firebase Auth user
+        userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         const user = userCredential.user;
         
-        // 2. Update their Auth profile display name
+        // Step 2: Update their Auth profile display name
         const displayName = `${values.firstName} ${values.lastName}`;
         await updateProfile(user, { displayName });
 
@@ -66,20 +68,13 @@ export function RegisterForm() {
             description: "Finalizing your profile setup...",
         });
 
-        // 3. Create the Firestore user profile document and default goals
+        // Step 3: Create the Firestore user profile document and default goals
         const profileResult = await createUserProfile(user.uid, user.email!, displayName, values.referralCode);
 
         if (!profileResult.success) {
-            // This is a critical failure, the user has an auth account but no profile.
-            // Advise them to contact support. The user should not be redirected.
-             toast({
-                variant: "destructive",
-                title: "Profile Creation Failed",
-                description: `${profileResult.error} Please try registering again or contact support.`,
-                duration: 10000,
-            });
-             setIsLoading(false);
-             return;
+            // This is a critical failure. The profile could not be created.
+            // We should inform the user and delete the just-created auth account to allow them to try again.
+            throw new Error(profileResult.error || "Failed to create user profile.");
         }
         
         toast({
@@ -87,28 +82,36 @@ export function RegisterForm() {
             description: "Welcome! Redirecting to your dashboard...",
         });
         
-        // 4. Redirect to the dashboard ONLY after profile creation is successful
+        // Step 4: Redirect to the dashboard ONLY after profile creation is successful
         router.push("/dashboard");
 
     } catch (error: any) {
         console.error("Registration Error:", error);
         
-        if (error.code === 'auth/email-already-in-use') {
-            toast({
-                variant: "destructive",
-                title: "Registration Failed",
-                description: "This email address is already in use. Please log in instead.",
-            });
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Registration Failed",
-                description: error.message || "An unknown error occurred.",
+        // If profile creation failed after auth user was created, delete the auth user
+        if (userCredential) {
+            await deleteUser(userCredential.user).catch(deleteError => {
+                console.error("Failed to clean up orphaned auth user:", deleteError);
             });
         }
+        
+        let errorMessage = "An unknown error occurred during registration.";
+        if (error.code === 'auth/email-already-in-use') {
+            errorMessage = "This email address is already in use. Please log in instead.";
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        toast({
+            variant: "destructive",
+            title: "Registration Failed",
+            description: errorMessage,
+            duration: 10000,
+        });
+
+    } finally {
         setIsLoading(false);
     }
-    // No need for finally block as loading is handled in error/success paths
   }
 
   return (

@@ -56,29 +56,30 @@ export async function createUserProfile(uid: string, email: string, displayName:
 
     const userDocRef = firestoreAdmin.collection("users").doc(uid);
     const referralDocRef = firestoreAdmin.collection('referralCodes').doc(referralCode);
-    const goalsCollectionRef = userDocRef.collection('goals');
-
-
+    
     try {
-        const result = await firestoreAdmin.runTransaction(async (transaction) => {
+        const referralDoc = await referralDocRef.get();
+        if (!referralDoc.exists || referralDoc.data()?.used) {
+            return { success: false, error: "The provided referral code is either invalid or has already been used." };
+        }
+
+        const referredBy = referralDoc.data()?.creatorUid;
+        if (!referredBy) {
+            return { success: false, error: "The referral code is invalid." };
+        }
+        
+        const xavefId = await generateUniqueXavefId();
+        const nameParts = displayName.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        await firestoreAdmin.runTransaction(async (transaction) => {
             const userDoc = await transaction.get(userDocRef);
             if (userDoc.exists) {
-                return { success: true }; 
+                // Profile already exists, which is fine. The transaction can just complete.
+                return;
             }
 
-            const referralDoc = await transaction.get(referralDocRef);
-
-            if (!referralDoc.exists || referralDoc.data()?.used) {
-                throw new Error("The provided referral code is either invalid or has already been used.");
-            }
-            
-            const referredBy = referralDoc.data()?.creatorUid;
-            const xavefId = await generateUniqueXavefId();
-
-            const nameParts = displayName.split(' ');
-            const firstName = nameParts[0] || '';
-            const lastName = nameParts.slice(1).join(' ') || '';
-            
             const newUser = {
                 uid,
                 email,
@@ -100,6 +101,7 @@ export async function createUserProfile(uid: string, email: string, displayName:
 
             transaction.set(userDocRef, newUser);
 
+            const goalsCollectionRef = userDocRef.collection('goals');
             const defaultGoals = [
                 { name: 'House Rent', targetAmount: 0 },
                 { name: 'School Fees', targetAmount: 0 },
@@ -118,14 +120,13 @@ export async function createUserProfile(uid: string, email: string, displayName:
             }
 
             transaction.update(referralDocRef, { used: true });
-
-            return { success: true };
         });
-
-        return result;
+        
+        revalidatePath('/dashboard');
+        return { success: true };
 
     } catch (error: any) {
         console.error("[createUserProfile] Error during profile creation transaction:", error);
-        return { success: false, error: error.message || `An unexpected error occurred.` };
+        return { success: false, error: error.message || `An unexpected server error occurred.` };
     }
 }
