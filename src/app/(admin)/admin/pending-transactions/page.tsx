@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
-import { collectionGroup, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy } from 'firebase/firestore';
 
 type TransactionWithUserDetails = Transaction & {
   userId: string;
@@ -35,10 +35,11 @@ export default function AdminPendingTransactionsPage() {
 
       setLoading(true);
       try {
-        // CORRECTED: Use collectionGroup to query across all 'transactions' subcollections.
+        // CORRECTED: Use collectionGroup and order by date. This will require a composite index.
         const transactionsQuery = query(
           collectionGroup(firestore, 'transactions'),
-          where('status', '==', 'Pending')
+          where('status', '==', 'Pending'),
+          orderBy('date', 'desc')
         );
         const querySnapshot = await getDocs(transactionsQuery);
 
@@ -66,6 +67,8 @@ export default function AdminPendingTransactionsPage() {
         let errorMessage = "Could not fetch pending transactions.";
         if (error.code === 'permission-denied') {
           errorMessage = "Permission denied. You must be an admin to view this page.";
+        } else if (error.code === 'failed-precondition') {
+            errorMessage = `Query requires an index. Please create it in the Firebase console. The error contains the direct link. Details: ${error.message}`;
         }
         setData({
           transactions: null,
