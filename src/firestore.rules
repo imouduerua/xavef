@@ -57,7 +57,7 @@ service cloud.firestore {
         // Admins can read and update transactions (e.g., to change status)
         allow get, list, update: if isAdmin();
         // Users cannot update or delete their own transactions
-        allow update(write), delete: if false;
+        allow update, delete: if false;
     }
 
     match /users/{userId}/goals/{goalId} {
