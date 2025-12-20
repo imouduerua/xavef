@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { makeTransfer } from '@/app/(app)/dashboard/actions';
-import type { AccountType } from '@/app/(app)/dashboard/page';
+import type { AccountType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -82,7 +82,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
     resolver: zodResolver(formSchema),
     defaultValues: {
       transferType: 'toSelf',
-      amount: 0,
+      amount: undefined,
       fromAccount: 'solidara',
       toAccount: 'annual',
     },
@@ -105,7 +105,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
           } account to your ${values.toAccount} account.`,
         });
         setIsOpen(false);
-        reset({ transferType: 'toSelf', amount: 0, fromAccount: 'solidara', toAccount: 'annual' });
+        reset({ transferType: 'toSelf', amount: undefined, fromAccount: 'solidara', toAccount: 'annual' });
       }
     } else if (values.transferType === 'toOther') {
       const result = await makeTransfer({
@@ -120,7 +120,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
           )} to ID ${values.recipientId}.`,
         });
         setIsOpen(false);
-        reset({ transferType: 'toOther', amount: 0, recipientId: '' });
+        reset({ transferType: 'toOther', amount: undefined, recipientId: '' });
       } else {
         toast({
           variant: 'destructive',
@@ -136,7 +136,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
     setActiveTab(tab);
     reset({
       transferType: tab,
-      amount: 0,
+      amount: undefined,
       ...(tab === 'toSelf'
         ? { fromAccount: 'solidara', toAccount: 'annual' }
         : { recipientId: '' }),
