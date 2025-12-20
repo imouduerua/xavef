@@ -41,37 +41,35 @@ export default function UserDetailPage() {
 
   const canTogglePermissions = adminUser?.email === 'admin@xavef.com';
 
-  const handlePermissionToggle = async (checked: boolean) => {
-      const currentUserId = params.userId as string;
+  const handlePermissionToggle = React.useCallback(async (checked: boolean) => {
+    if (!userId || !firestore || !canTogglePermissions) {
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Cannot update permission. Required info is missing or you lack permissions.",
+        });
+        return;
+    }
 
-      if (!currentUserId || !firestore || !canTogglePermissions) {
-          toast({
-              variant: "destructive",
-              title: "Update Failed",
-              description: `Cannot update permission at this time. Required info is missing. User ID: ${currentUserId}`,
-          });
-          return;
-      }
-
-      setIsUpdating(true);
-      try {
-          const userToUpdateDocRef = doc(firestore, "users", currentUserId);
-          await updateDoc(userToUpdateDocRef, { canGenerateReferralCode: checked });
-          toast({
-              title: "Permission Updated",
-              description: `${userData?.firstName || 'User'} can ${checked ? 'now' : 'no longer'} generate referral codes.`,
-          });
-      } catch (error: any) {
-          console.error("Failed to update permission", error);
-          toast({
-              variant: "destructive",
-              title: "Update Failed",
-              description: error.message || "An unknown error occurred.",
-          });
-      } finally {
-          setIsUpdating(false);
-      }
-  }
+    setIsUpdating(true);
+    try {
+        const userToUpdateDocRef = doc(firestore, "users", userId);
+        await updateDoc(userToUpdateDocRef, { canGenerateReferralCode: checked });
+        toast({
+            title: "Permission Updated",
+            description: `${userData?.firstName || 'User'} can ${checked ? 'now' : 'no longer'} generate referral codes.`,
+        });
+    } catch (error: any) {
+        console.error("Failed to update permission", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: error.message || "An unknown error occurred.",
+        });
+    } finally {
+        setIsUpdating(false);
+    }
+  }, [userId, firestore, canTogglePermissions, userData]);
 
 
   const formatCurrency = (amount: number | null | undefined) => {
@@ -97,7 +95,7 @@ export default function UserDetailPage() {
     </div>
   )
 
-  if (loading || !userId) {
+  if (loading || !userId || !userData) {
     return <PageSkeleton />;
   }
 
