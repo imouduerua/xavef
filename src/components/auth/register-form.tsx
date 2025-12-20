@@ -80,9 +80,19 @@ export function RegisterForm() {
 
         if (!profileResult.success) {
             // This is a critical failure, likely an invalid referral code.
-            // Throw an error that will be caught by the `catch` block below.
-            // This ensures the orphaned auth user is deleted.
-            throw new Error(profileResult.error || "Failed to create user profile.");
+            // We must delete the orphaned auth user and show the error to the user.
+            await deleteUser(user).catch(deleteError => {
+                console.error("Failed to clean up orphaned auth user:", deleteError);
+            });
+
+            toast({
+                variant: "destructive",
+                title: "Registration Failed",
+                description: profileResult.error || "Failed to create user profile.",
+                duration: 10000,
+            });
+            setIsLoading(false);
+            return; // Stop execution here.
         }
         
         toast({
@@ -96,10 +106,10 @@ export function RegisterForm() {
     } catch (error: any) {
         console.error("Registration Error:", error);
         
-        // If profile creation failed after auth user was created, delete the auth user
+        // This catch block will now primarily handle auth errors like "email-already-in-use"
         if (userCredential) {
             await deleteUser(userCredential.user).catch(deleteError => {
-                console.error("Failed to clean up orphaned auth user:", deleteError);
+                console.error("Failed to clean up orphaned auth user during general error:", deleteError);
             });
         }
         
@@ -107,10 +117,8 @@ export function RegisterForm() {
         if (error.code === 'auth/email-already-in-use') {
             errorMessage = "This email address is already in use. Please log in instead.";
         } else if (error.message) {
-            // This will catch the error thrown from the profile creation failure
             errorMessage = error.message;
         }
-
 
         toast({
             variant: "destructive",
@@ -120,7 +128,9 @@ export function RegisterForm() {
         });
 
     } finally {
-        setIsLoading(false);
+        if (router.pathname === '/register') { // Ensure we only set loading to false if we haven't navigated away
+            setIsLoading(false);
+        }
     }
   }
 
