@@ -35,7 +35,6 @@ export default function AdminPendingTransactionsPage() {
 
       setLoading(true);
       try {
-        // CORRECTED: Use collectionGroup and order by date. This will require a composite index.
         const transactionsQuery = query(
           collectionGroup(firestore, 'transactions'),
           where('status', '==', 'Pending'),
@@ -47,7 +46,6 @@ export default function AdminPendingTransactionsPage() {
         
         for (const txDoc of querySnapshot.docs) {
             const txData = txDoc.data() as Transaction;
-            // The parent of a subcollection document is the document that contains it (e.g., /users/{userId})
             const userId = txDoc.ref.parent.parent!.id;
             
             const userDocRef = doc(firestore, 'users', userId);
@@ -68,7 +66,7 @@ export default function AdminPendingTransactionsPage() {
         if (error.code === 'permission-denied') {
           errorMessage = "Permission denied. You must be an admin to view this page.";
         } else if (error.code === 'failed-precondition') {
-            errorMessage = `Query requires an index. Please create it in the Firebase console. The error contains the direct link. Details: ${error.message}`;
+            errorMessage = `Query requires an index. Please create it in the Firebase console. The error message in your terminal contains the direct link to create the index. Details: ${error.message}`;
         }
         setData({
           transactions: null,
@@ -99,7 +97,7 @@ export default function AdminPendingTransactionsPage() {
         </CardHeader>
         <CardContent>
           {loading && <Skeleton className="h-40 w-full" />}
-          {data.error && <p className="text-destructive">{data.error}</p>}
+          {data.error && <p className="text-destructive p-4 bg-destructive/10 rounded-md">{data.error}</p>}
           {!loading && data.transactions && (
             <PendingTransactionsTable initialTransactions={data.transactions} />
           )}
