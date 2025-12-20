@@ -31,7 +31,10 @@ export default function AdminPendingTransactionsPage() {
 
   useEffect(() => {
     async function getPendingTransactions() {
-      if (!firestore) return;
+      if (!firestore) {
+          setLoading(true);
+          return;
+      };
 
       setLoading(true);
       try {
@@ -63,7 +66,7 @@ export default function AdminPendingTransactionsPage() {
           });
         }
         
-        // 3. Sort the combined list by date
+        // 3. Sort the combined list by date client-side
         const sortedTransactions = allPendingTransactions.sort((a, b) => {
             const dateA = a.date ? new Date(a.date).getTime() : 0;
             const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -77,16 +80,6 @@ export default function AdminPendingTransactionsPage() {
         let errorMessage = "Could not fetch pending transactions.";
         if (error.code === 'permission-denied') {
           errorMessage = "Permission denied. You must be an admin to view this page.";
-        } else if (error.code === 'failed-precondition' && error.message.includes('index')) {
-            const urlRegex = /(https?:\/\/[^\s]+)/;
-            const match = error.message.match(urlRegex);
-            const indexUrl = match ? match[0] : null;
-
-            errorMessage = `Query requires a Firestore index. Please create it in the Firebase console.`;
-            
-            if (indexUrl) {
-                errorMessage += ` You can click this link to create it automatically: <a href="${indexUrl}" target="_blank" rel="noopener noreferrer" class="underline font-semibold">${indexUrl}</a>. After the index is built (a few minutes), please refresh this page.`;
-            }
         }
         setData({
           transactions: null,
@@ -94,8 +87,8 @@ export default function AdminPendingTransactionsPage() {
         });
         toast({
           variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch data. Check the error message on the page.",
+          title: "Error Fetching Data",
+          description: "Could not fetch pending transactions. You may not have the required permissions.",
         });
       } finally {
         setLoading(false);
@@ -123,7 +116,7 @@ export default function AdminPendingTransactionsPage() {
               dangerouslySetInnerHTML={{ __html: data.error }}
             />
           )}
-          {!loading && data.transactions && (
+          {!loading && !data.error && data.transactions && (
             <PendingTransactionsTable initialTransactions={data.transactions} />
           )}
         </CardContent>
@@ -131,3 +124,4 @@ export default function AdminPendingTransactionsPage() {
     </div>
   );
 }
+
