@@ -41,9 +41,13 @@ export default function AdminPendingTransactionsPage() {
 
   useEffect(() => {
     async function attachUserDetails() {
+      if (rawLoading) {
+        setLoading(true);
+        return;
+      }
       if (!rawTransactions || !firestore) {
         setTransactions(null);
-        setLoading(rawLoading);
+        setLoading(false);
         return;
       }
       
@@ -62,6 +66,7 @@ export default function AdminPendingTransactionsPage() {
             const userEmail = userSnap.exists() ? (userSnap.data() as UserData).email : 'Unknown User';
             const xavefId = userSnap.exists() ? (userSnap.data() as UserData).xavefId : 'N/A';
 
+            // Ensure all fields from tx are carried over
             return { ...tx, userId, userEmail, xavefId };
           })
         );
