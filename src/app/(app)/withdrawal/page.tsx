@@ -1,14 +1,19 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useUserData } from "@/hooks/use-user-data";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { UserData } from "@/lib/types";
+import type { UserData, Transaction } from "@/lib/types";
 import { WithdrawalForm } from "@/components/withdrawal/withdrawal-form";
+import { useCollection, useFirestore, useUser } from "@/firebase";
+import React from "react";
+import { collection, query, where } from "firebase/firestore";
+import { PendingWithdrawalCard } from "@/components/withdrawal/pending-withdrawal-card";
 
 function isProfileComplete(userData: UserData | null) {
     if (!userData) return false;
@@ -47,27 +52,63 @@ function CompleteProfilePrompt() {
     )
 }
 
+function PageSkeleton() {
+    return (
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-full max-w-md" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-24 w-full" />
+              </CardContent>
+            </Card>
+        </div>
+    )
+}
+
 
 export default function WithdrawalPage() {
     const { userData, loading: userDataLoading } = useUserData();
+    const { user } = useUser();
+    const firestore = useFirestore();
 
-    if (userDataLoading) {
-        return (
-            <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <Skeleton className="h-8 w-48" />
-                    <Skeleton className="h-4 w-full max-w-md" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-24 w-full" />
-                  </CardContent>
-                </Card>
-            </div>
-        )
+    const pendingWithdrawalQuery = React.useMemo(() => {
+        if (!user) return null;
+        return query(
+            collection(firestore, 'users', user.uid, 'transactions'),
+            where('status', '==', 'Pending'),
+            where('type', '==', 'Withdrawal'),
+            where('targetAccount', '==', 'solidara')
+        );
+    }, [user, firestore]);
+
+    const { data: pendingWithdrawals, loading: pendingWithdrawalsLoading } = useCollection<Transaction>(pendingWithdrawalQuery);
+
+    const pendingSolidaraWithdrawal = pendingWithdrawals?.[0];
+
+    if (userDataLoading || pendingWithdrawalsLoading) {
+        return <PageSkeleton />;
     }
 
     const profileComplete = isProfileComplete(userData);
+
+    const renderContent = () => {
+        if (!profileComplete) {
+            return <CompleteProfilePrompt />;
+        }
+        if (pendingSolidaraWithdrawal) {
+            return <PendingWithdrawalCard transaction={pendingSolidaraWithdrawal} />;
+        }
+        if (userData) {
+             return <WithdrawalForm 
+                solidaraBalance={userData.solidaraBalance} 
+                bankAccounts={userData.bankAccounts} 
+            />;
+        }
+        return <CompleteProfilePrompt />; // Fallback
+    }
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -75,18 +116,14 @@ export default function WithdrawalPage() {
                 <CardHeader>
                     <CardTitle>Withdrawal</CardTitle>
                     <CardDescription>
-                        Request a withdrawal from your Solidara savings account. Requests are processed by an admin.
+                       {pendingSolidaraWithdrawal 
+                            ? "You have a pending withdrawal request from your Solidara savings account."
+                            : "Request a withdrawal from your Solidara savings account. Requests are processed by an admin."
+                       }
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {profileComplete && userData ? (
-                        <WithdrawalForm 
-                            solidaraBalance={userData.solidaraBalance} 
-                            bankAccounts={userData.bankAccounts} 
-                        />
-                    ) : (
-                        <CompleteProfilePrompt />
-                    )}
+                    {renderContent()}
                 </CardContent>
             </Card>
         </div>
