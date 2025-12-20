@@ -66,7 +66,7 @@ export default function AdminPendingTransactionsPage() {
             const userEmail = userSnap.exists() ? (userSnap.data() as UserData).email : 'Unknown User';
             const xavefId = userSnap.exists() ? (userSnap.data() as UserData).xavefId : 'N/A';
 
-            // Ensure all fields from tx are carried over
+            // Ensure all fields from tx are carried over, including payoutAmount
             return { ...tx, userId, userEmail, xavefId };
           })
         );
