@@ -22,6 +22,9 @@ export interface UserData {
   createdAt: any;
   solidaraBalance: number;
   annualBalance: number;
+  bankName: string;
+  accountName: string;
+  bankAccountNumber: string;
   id?: string;
 }
 

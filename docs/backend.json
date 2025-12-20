@@ -63,6 +63,18 @@
         "annualBalance": {
           "type": "number",
           "description": "The user's balance for the Annual savings account."
+        },
+        "bankName": {
+          "type": "string",
+          "description": "The name of the user's bank."
+        },
+        "accountName": {
+          "type": "string",
+          "description": "The name on the user's bank account."
+        },
+        "bankAccountNumber": {
+          "type": "string",
+          "description": "The user's bank account number."
         }
       },
       "required": [
