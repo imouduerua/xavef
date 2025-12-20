@@ -37,16 +37,9 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       (snapshot: QuerySnapshot<T>) => {
         const resultData = snapshot.docs.map((doc) => {
              const docData = doc.data();
-             // Attempt to get userId from path if not in data
-             const pathParts = doc.ref.path.split('/');
-             const hasUserId = pathParts.includes('users') && pathParts.indexOf('users') + 1 < pathParts.length;
-             const userId = hasUserId ? pathParts[pathParts.indexOf('users') + 1] : undefined;
-
             return {
                 id: doc.id,
                 ...docData,
-                // Add userId if it's not already in the document data
-                ...(userId && !(docData as any).userId && { userId: userId }),
             } as T;
         });
         setData(resultData);
