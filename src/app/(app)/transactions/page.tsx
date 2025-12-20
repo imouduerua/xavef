@@ -101,19 +101,22 @@ function TransactionsTable({ transactions, isLoading, indexCreationUrl }: { tran
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactions.map((tx) => (
-              <TableRow key={tx.id}>
-                <TableCell className="font-medium">{tx.description}</TableCell>
-                <TableCell>{tx.type}</TableCell>
-                <TableCell>
-                  <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
-                </TableCell>
-                <TableCell>{formatDate(tx.date)}</TableCell>
-                <TableCell className={`text-right font-semibold ${tx.amount > 0 ? 'text-green-600' : ''}`}>
-                  {tx.amount > 0 ? `+₦${tx.amount.toFixed(2)}` : `-₦${Math.abs(tx.amount).toFixed(2)}`}
-                </TableCell>
-              </TableRow>
-            ))}
+            {transactions.map((tx) => {
+              const amount = Number(tx.amount);
+              return (
+                <TableRow key={tx.id}>
+                  <TableCell className="font-medium">{tx.description}</TableCell>
+                  <TableCell>{tx.type}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
+                  </TableCell>
+                  <TableCell>{formatDate(tx.date)}</TableCell>
+                  <TableCell className={`text-right font-semibold ${amount > 0 ? 'text-green-600' : ''}`}>
+                    {amount > 0 ? `+₦${amount.toFixed(2)}` : `-₦${Math.abs(amount).toFixed(2)}`}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </CardContent>

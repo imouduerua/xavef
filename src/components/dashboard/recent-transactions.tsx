@@ -111,19 +111,22 @@ export function RecentTransactions() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {transactions.map((tx) => (
-                    <TableRow key={tx.id}>
-                        <TableCell className="font-medium">{tx.description}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{tx.type}</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                            <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">{formatDate(tx.date)}</TableCell>
-                        <TableCell className={`text-right font-semibold ${tx.amount > 0 ? 'text-green-600' : ''}`}>
-                            {tx.amount > 0 ? `+₦${tx.amount.toFixed(2)}` : `-₦${Math.abs(tx.amount).toFixed(2)}`}
-                        </TableCell>
-                    </TableRow>
-                    ))}
+                    {transactions.map((tx) => {
+                      const amount = Number(tx.amount);
+                      return (
+                        <TableRow key={tx.id}>
+                            <TableCell className="font-medium">{tx.description}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{tx.type}</TableCell>
+                            <TableCell className="hidden md:table-cell">
+                                <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell">{formatDate(tx.date)}</TableCell>
+                            <TableCell className={`text-right font-semibold ${amount > 0 ? 'text-green-600' : ''}`}>
+                                {amount > 0 ? `+₦${amount.toFixed(2)}` : `-₦${Math.abs(amount).toFixed(2)}`}
+                            </TableCell>
+                        </TableRow>
+                      )
+                    })}
                 </TableBody>
             </Table>
       </CardContent>
