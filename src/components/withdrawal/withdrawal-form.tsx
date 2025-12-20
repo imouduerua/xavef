@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,6 +5,7 @@ import { Loader2, Wallet } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,8 +27,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import type { BankAccount } from '@/lib/types';
-import { requestWithdrawal } from '@/app/(app)/withdrawal/actions';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 
 interface WithdrawalFormProps {
   solidaraBalance: number;
@@ -38,6 +37,7 @@ interface WithdrawalFormProps {
 export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { user } = useUser();
+  const firestore = useFirestore();
 
   const withdrawalSchema = z.object({
     amount: z.coerce
@@ -58,6 +58,16 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
   async function onSubmit(values: z.infer<typeof withdrawalSchema>) {
     setIsSubmitting(true);
     
+    if (!user || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'User or database is not available. Please try again.',
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     const selectedAccount = bankAccounts.find(
       (acc) => acc.bankAccountNumber === values.bankAccountId
     );
@@ -72,37 +82,35 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
       return;
     }
 
-    if (!user) {
-        toast({
-            variant: 'destructive',
-            title: 'Not Authenticated',
-            description: 'You must be logged in to make a withdrawal.',
-        });
-        setIsSubmitting(false);
-        return;
-    }
-
     try {
-      const result = await requestWithdrawal({
-          amount: values.amount,
-          destinationBank: selectedAccount,
-          uid: user.uid,
-      });
+      const transactionRef = collection(firestore, 'users', user.uid, 'transactions');
+      
+      const newTransaction = {
+        date: serverTimestamp(),
+        amount: -values.amount,
+        description: `Withdrawal to ${selectedAccount.bankName}`,
+        type: 'Withdrawal',
+        status: 'Pending',
+        targetAccount: 'solidara',
+        destinationBankName: selectedAccount.bankName,
+        destinationAccountName: selectedAccount.accountName,
+        destinationAccountNumber: selectedAccount.bankAccountNumber,
+      };
 
-      if (result.success) {
-        toast({
-          title: 'Withdrawal Request Submitted',
-          description: `Your request for ₦${values.amount.toFixed(2)} is pending approval.`,
-        });
-        form.reset();
-      } else {
-        throw new Error(result.error || 'An unknown error occurred.');
-      }
+      await addDoc(transactionRef, newTransaction);
+      
+      toast({
+        title: 'Withdrawal Request Submitted',
+        description: `Your request for ₦${values.amount.toFixed(2)} is pending approval.`,
+      });
+      form.reset();
+
     } catch (error: any) {
+      console.error('Error requesting withdrawal:', error);
       toast({
         variant: 'destructive',
         title: 'Request Failed',
-        description: error.message,
+        description: error.message || 'An unexpected client-side error occurred.',
       });
     } finally {
       setIsSubmitting(false);
