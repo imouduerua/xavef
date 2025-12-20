@@ -16,6 +16,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
 import { collectionGroup, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import Link from 'next/link';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { ExternalLink } from 'lucide-react';
 
 type TransactionWithUserDetails = Transaction & {
   userId: string;
@@ -27,6 +30,7 @@ export default function AdminPendingTransactionsPage() {
     transactions: TransactionWithUserDetails[] | null;
     error?: string;
     errorCode?: string
+    indexCreationUrl?: string;
   }>({ transactions: null });
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
@@ -82,10 +86,15 @@ export default function AdminPendingTransactionsPage() {
       } catch (error: any) {
         console.error("Error fetching pending transactions:", error);
         let errorMessage = "Could not fetch pending transactions.";
+        let indexCreationUrl: string | undefined;
 
-        // Handle the specific error for a missing index
         if (error.code === 'failed-precondition' && error.message.includes('index')) {
-          errorMessage = "A database index is required for this query. Please check the Firestore documentation to create the necessary composite index for the 'transactions' collection group.";
+          errorMessage = "A database index is required for this query. Please create the necessary composite index and then refresh this page.";
+          // Extract URL from the error message
+          const urlMatch = error.message.match(/https?:\/\/[^\s]+/);
+          if (urlMatch) {
+            indexCreationUrl = urlMatch[0];
+          }
         } else if (error.code === 'permission-denied') {
           errorMessage = "Permission denied. You must be an admin to view this page.";
         }
@@ -94,13 +103,16 @@ export default function AdminPendingTransactionsPage() {
           transactions: null,
           error: errorMessage,
           errorCode: error.code,
+          indexCreationUrl: indexCreationUrl,
         });
         
-        toast({
-            variant: "destructive",
-            title: "Error Fetching Data",
-            description: errorMessage,
-        });
+        if (!indexCreationUrl) {
+            toast({
+                variant: "destructive",
+                title: "Error Fetching Data",
+                description: errorMessage,
+            });
+        }
 
       } finally {
         setLoading(false);
@@ -116,10 +128,28 @@ export default function AdminPendingTransactionsPage() {
   const renderErrorContent = () => {
     if (!data.error) return null;
     
+    if (data.indexCreationUrl) {
+        return (
+            <Alert variant="destructive">
+                <AlertTitle>Database Index Required</AlertTitle>
+                <AlertDescription>
+                    {data.error}
+                    <Button asChild className="mt-4">
+                        <a href={data.indexCreationUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Create Index in Firebase Console
+                        </a>
+                    </Button>
+                </AlertDescription>
+            </Alert>
+        )
+    }
+
     return (
-        <div className="text-destructive p-4 bg-destructive/10 rounded-md">
-            {data.error}
-        </div>
+        <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{data.error}</AlertDescription>
+        </Alert>
     );
   };
 
