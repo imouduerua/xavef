@@ -1,3 +1,4 @@
+
 'use client';
 
 import { UserTransactions } from '@/components/admin/user-transactions';
@@ -35,16 +36,26 @@ export default function UserDetailPage() {
     () => (userId && firestore ? doc(firestore, 'users', userId) : null),
     [userId, firestore]
   );
+  
   const { data: userData, loading } = useDoc<UserData>(userDocRef);
 
   const canTogglePermissions = adminUser?.email === 'admin@xavef.com';
 
   const handlePermissionToggle = async (checked: boolean) => {
-      if (!userDocRef || !canTogglePermissions) return;
+      // Add a more robust guard to ensure userId is present
+      if (!userId || !firestore || !canTogglePermissions) {
+          toast({
+              variant: "destructive",
+              title: "Update Failed",
+              description: "Cannot update permission at this time. User ID is missing.",
+          });
+          return;
+      }
 
       setIsUpdating(true);
       try {
-          await updateDoc(userDocRef, { canGenerateReferralCode: checked });
+          const userToUpdateDocRef = doc(firestore, "users", userId);
+          await updateDoc(userToUpdateDocRef, { canGenerateReferralCode: checked });
           toast({
               title: "Permission Updated",
               description: `${userData?.firstName || 'User'} can ${checked ? 'now' : 'no longer'} generate referral codes.`,
@@ -54,12 +65,13 @@ export default function UserDetailPage() {
           toast({
               variant: "destructive",
               title: "Update Failed",
-              description: error.message,
+              description: error.message || "An unknown error occurred.",
           });
       } finally {
           setIsUpdating(false);
       }
   }
+
 
   const formatCurrency = (amount: number | null | undefined) => {
     if (amount === undefined || amount === null) {
@@ -84,7 +96,7 @@ export default function UserDetailPage() {
     </div>
   )
 
-  if (!userId || loading) {
+  if (loading || !userId) {
     return <PageSkeleton />;
   }
 
