@@ -65,14 +65,9 @@ export async function createUserProfile(
                 throw new Error("The referral code is invalid.");
             }
 
-            const userDoc = await transaction.get(userDocRef);
-            if (userDoc.exists()) {
-                // This case should ideally not happen in a normal registration flow.
-                // If it does, it means an auth account exists without a profile, and they are trying to create one again.
-                // We'll allow the transaction to complete without erroring, assuming the profile is what we want.
-                console.warn("User profile already exists, skipping creation.");
-                return;
-            }
+            // We don't need to check for userDoc existence, because the set operation will either create it
+            // or overwrite it, and this flow should only happen once on registration.
+            // Security rules will prevent a user from creating a doc if they are not the owner.
 
             const xavefId = await generateUniqueXavefId(firestore);
             
@@ -118,7 +113,11 @@ export async function createUserProfile(
             }
 
             // 3. Mark the referral code as used
-            transaction.update(referralDocRef, { used: true, usedBy: user.uid, usedAt: serverTimestamp() });
+            transaction.update(referralDocRef, { 
+                used: true, 
+                usedBy: user.uid, 
+                usedAt: serverTimestamp() 
+            });
         });
 
         return { success: true };
