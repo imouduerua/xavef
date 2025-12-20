@@ -1,7 +1,7 @@
 'use client';
 
 import type { Transaction } from '@/lib/types';
-import React, { startTransition } from 'react';
+import React from 'react';
 import {
   Table,
   TableBody,
@@ -12,7 +12,6 @@ import {
 } from '../ui/table';
 import { Button } from '../ui/button';
 import { Check, Loader2, X } from 'lucide-react';
-import { updateTransactionStatus } from '@/app/(admin)/admin/actions';
 import { toast } from '@/hooks/use-toast';
 
 type TransactionWithUserDetails = Transaction & { userId: string, userEmail: string };
@@ -23,34 +22,6 @@ interface PendingTransactionsTableProps {
 
 export function PendingTransactionsTable({ initialTransactions }: PendingTransactionsTableProps) {
   const [transactions, setTransactions] = React.useState<TransactionWithUserDetails[]>(initialTransactions);
-  const [updatingIds, setUpdatingIds] = React.useState<string[]>([]);
-
-  const handleUpdateStatus = (userId: string, transactionId: string, newStatus: 'Completed' | 'Failed') => {
-    setUpdatingIds(prev => [...prev, transactionId]);
-    
-    startTransition(() => {
-      // Optimistically update the UI
-      setTransactions(prev => prev.filter(tx => tx.id !== transactionId));
-
-      // Perform the server action in the background
-      updateTransactionStatus({ userId, transactionId, newStatus }).then(result => {
-        if (result.success) {
-          toast({
-            title: `Transaction ${newStatus === 'Completed' ? 'Approved' : 'Declined'}`,
-          });
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Update Failed',
-            description: result.error,
-          });
-          // Revert the optimistic update on failure by re-fetching or adding the item back
-          // For this app, we'll rely on a page refresh or re-navigation to see the failed item again.
-        }
-        setUpdatingIds(prev => prev.filter(id => id !== transactionId));
-      });
-    });
-  };
 
   if (transactions.length === 0) {
     return <p>No pending transactions found.</p>;
@@ -65,12 +36,11 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
           <TableHead>Description</TableHead>
           <TableHead>Type</TableHead>
           <TableHead className="text-right">Amount</TableHead>
-          <TableHead className="text-center">Actions</TableHead>
+          <TableHead className="text-center">Status</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {initialTransactions.map((tx) => {
-          const isUpdating = updatingIds.includes(tx.id);
           const isRemoved = !transactions.some(t => t.id === tx.id);
 
           if (isRemoved) return null;
@@ -91,18 +61,7 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                   : `-₦${Math.abs(tx.amount).toFixed(2)}`}
               </TableCell>
               <TableCell className="text-center space-x-2">
-                {isUpdating ? (
-                    <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                ) : (
-                    <>
-                        <Button variant="outline" size="icon" className="h-8 w-8 bg-green-50 hover:bg-green-100 text-green-700" onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Completed')}>
-                            <Check className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8 bg-red-50 hover:bg-red-100 text-red-700" onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Failed')}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </>
-                )}
+                Pending
               </TableCell>
             </TableRow>
           );
