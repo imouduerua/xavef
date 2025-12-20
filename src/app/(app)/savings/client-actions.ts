@@ -8,6 +8,8 @@ import {
   doc,
   serverTimestamp,
   Firestore,
+  runTransaction,
+  increment,
 } from 'firebase/firestore';
 
 interface SavingGoalData {
@@ -53,4 +55,42 @@ export async function deleteSavingGoal(
     console.error('Error deleting saving goal:', error);
     return { success: false, error: 'Failed to delete saving goal.' };
   }
+}
+
+
+export async function addFundsToGoal(
+  firestore: Firestore,
+  userId: string,
+  goalId: string,
+  amount: number
+): Promise<{ success: boolean; error?: string }> {
+    const userDocRef = doc(firestore, 'users', userId);
+    const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
+
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            const userDoc = await transaction.get(userDocRef);
+            const goalDoc = await transaction.get(goalDocRef);
+
+            if (!userDoc.exists()) {
+                throw new Error("User data not found.");
+            }
+            if (!goalDoc.exists()) {
+                throw new Error("Saving goal not found.");
+            }
+
+            const userData = userDoc.data();
+            if (userData.solidaraBalance < amount) {
+                throw new Error("Insufficient Solidara balance.");
+            }
+
+            // Perform the updates
+            transaction.update(userDocRef, { solidaraBalance: increment(-amount) });
+            transaction.update(goalDocRef, { currentAmount: increment(amount) });
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error adding funds to goal:", error);
+        return { success: false, error: error.message || "An unexpected error occurred." };
+    }
 }

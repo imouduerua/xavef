@@ -29,6 +29,9 @@ import { toast } from '@/hooks/use-toast';
 import type { SavingGoal } from '@/lib/types';
 import { useUser, useFirestore } from '@/firebase';
 import { deleteSavingGoal } from '@/app/(app)/savings/client-actions';
+import { AddFundsDialog } from './add-funds-dialog';
+import { useUserData } from '@/hooks/use-user-data';
+
 
 interface GoalCardProps {
   goal: SavingGoal;
@@ -37,6 +40,7 @@ interface GoalCardProps {
 export function GoalCard({ goal }: GoalCardProps) {
   const { user } = useUser();
   const firestore = useFirestore();
+  const { userData } = useUserData();
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const progress = (goal.currentAmount / goal.targetAmount) * 100;
@@ -128,9 +132,14 @@ export function GoalCard({ goal }: GoalCardProps) {
         )}
       </CardContent>
       <CardFooter className="gap-2">
-        <Button variant="outline" className="w-full">
-          Add Funds
-        </Button>
+        <AddFundsDialog 
+            goal={goal} 
+            solidaraBalance={userData?.solidaraBalance ?? 0}
+        >
+            <Button variant="outline" className="w-full">
+                Add Funds
+            </Button>
+        </AddFundsDialog>
       </CardFooter>
     </Card>
   );
