@@ -48,7 +48,11 @@ export async function updateTransactionStatus(values: z.infer<typeof updateStatu
           throw new Error("User profile not found for balance update.");
         }
 
-        const amount = txData.amount;
+        const amount = Number(txData.amount);
+        if (isNaN(amount) || amount <= 0) {
+          throw new Error('Invalid transaction amount.');
+        }
+
         const targetAccount = txData.targetAccount;
 
         if (!targetAccount || (targetAccount !== 'solidara' && targetAccount !== 'annual')) {
