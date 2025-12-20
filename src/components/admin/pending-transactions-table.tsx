@@ -66,82 +66,86 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>User Email</TableHead>
-          <TableHead>Date</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead className="text-right">Amount</TableHead>
-          <TableHead className="text-center">Proof</TableHead>
-          <TableHead className="text-center">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {transactions.map((tx) => {
-          const isUpdating = updatingId === tx.id;
-          const amount = Number(tx.amount);
+    <div className="w-full overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="min-w-[150px]">User Email</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+            <TableHead className="text-center">Proof</TableHead>
+            <TableHead className="text-center min-w-[220px]">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {transactions.map((tx) => {
+            const isUpdating = updatingId === tx.id;
+            const amount = Number(tx.amount);
 
-          return (
-            <TableRow key={tx.id}>
-              <TableCell className="font-medium truncate max-w-[150px]">{tx.userEmail}</TableCell>
-              <TableCell>{tx.date ? new Date(tx.date).toLocaleDateString() : 'N/A'}</TableCell>
-              <TableCell>{tx.description}</TableCell>
-              <TableCell>{tx.type}</TableCell>
-              <TableCell
-                className={`text-right font-semibold ${
-                  amount > 0 ? 'text-green-600' : ''
-                }`}
-              >
-                {amount > 0
-                  ? `+₦${amount.toFixed(2)}`
-                  : `-₦${Math.abs(amount).toFixed(2)}`}
-              </TableCell>
-               <TableCell className="text-center">
-                {tx.proofOfPaymentUrl ? (
-                  <Button variant="outline" size="icon" className="h-8 w-8" asChild>
-                    <a href={tx.proofOfPaymentUrl} target="_blank" rel="noopener noreferrer">
-                      <Eye className="h-4 w-4" />
-                    </a>
-                  </Button>
-                ) : (
-                  <span className="text-xs text-muted-foreground">N/A</span>
-                )}
-              </TableCell>
-              <TableCell className="text-center space-x-2">
-                 {isUpdating ? (
-                  <Button variant="outline" size="sm" disabled>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating...
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
-                      onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Completed')}
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      Approve
+            return (
+              <TableRow key={tx.id}>
+                <TableCell className="font-medium truncate max-w-[180px]">{tx.userEmail}</TableCell>
+                <TableCell>{tx.date ? new Date(tx.date).toLocaleDateString() : 'N/A'}</TableCell>
+                <TableCell className="truncate max-w-[200px]">{tx.description}</TableCell>
+                <TableCell>{tx.type}</TableCell>
+                <TableCell
+                  className={`text-right font-semibold ${
+                    amount > 0 ? 'text-green-600' : ''
+                  }`}
+                >
+                  {amount > 0
+                    ? `+₦${amount.toFixed(2)}`
+                    : `-₦${Math.abs(amount).toFixed(2)}`}
+                </TableCell>
+                <TableCell className="text-center">
+                  {tx.proofOfPaymentUrl ? (
+                    <Button variant="outline" size="icon" className="h-8 w-8" asChild>
+                      <a href={tx.proofOfPaymentUrl} target="_blank" rel="noopener noreferrer">
+                        <Eye className="h-4 w-4" />
+                      </a>
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700"
-                      onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Failed')}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Decline
-                    </Button>
-                  </>
-                )}
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">N/A</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-center">
+                  {isUpdating ? (
+                    <div className="flex justify-center">
+                      <Button variant="outline" size="sm" disabled className="w-[200px]">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+                        onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Completed')}
+                      >
+                        <Check className="mr-2 h-4 w-4" />
+                        Approve
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Failed')}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Decline
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
