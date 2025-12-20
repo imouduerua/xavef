@@ -19,12 +19,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
 import {
   collectionGroup,
-  getDocs,
   doc,
+  getDoc,
   orderBy,
   query,
-  collection,
-  where,
 } from 'firebase/firestore';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 import { SuperAdminAuthGuard } from '@/components/admin/super-admin-auth-guard';
@@ -47,12 +45,10 @@ function AllTransactionsPageContent() {
   const {
     data: rawTransactions,
     loading: rawLoading,
-    error,
     indexCreationUrl,
   } = useCollection<Transaction>(allTxsQuery);
 
   useEffect(() => {
-    // Don't run if loading, or if an index is required, or if data is not yet available.
     if (rawLoading || indexCreationUrl || !rawTransactions) {
       return;
     }
@@ -67,7 +63,7 @@ function AllTransactionsPageContent() {
             const userId = pathParts[pathParts.indexOf('users') + 1];
             let user: UserData | undefined = userCache.get(userId);
 
-            if (!user) {
+            if (!user && firestore) {
               const userRef = doc(firestore, 'users', userId);
               const userSnap = await getDoc(userRef);
               if (userSnap.exists()) {
@@ -113,7 +109,6 @@ function AllTransactionsPageContent() {
     if (transactions) {
       return <AllTransactionsTable transactions={transactions} />;
     }
-    // This state can happen briefly between rawTransactions loading and transactions being set
     return <Skeleton className="h-40 w-full" />;
   };
 

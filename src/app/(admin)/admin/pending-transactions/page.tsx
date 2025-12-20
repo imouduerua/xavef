@@ -31,7 +31,7 @@ export default function AdminPendingTransactionsPage() {
     );
   }, [firestore]);
 
-  const { data: rawTransactions, loading: rawLoading, error, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
+  const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
 
   useEffect(() => {
     // Don't run if loading, or if an index is required, or if data is not yet available.
@@ -48,7 +48,7 @@ export default function AdminPendingTransactionsPage() {
             const userId = pathParts[pathParts.indexOf('users') + 1];
             let user: UserData | undefined = userCache.get(userId);
             
-            if (!user) {
+            if (!user && firestore) {
               const userRef = doc(firestore, 'users', userId);
               const userSnap = await getDoc(userRef);
               if (userSnap.exists()) {
