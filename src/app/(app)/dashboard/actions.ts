@@ -59,6 +59,8 @@ export async function createUserProfile(uid: string, email: string, displayName:
 
     const userDocRef = firestoreAdmin.collection("users").doc(uid);
     const referralDocRef = firestoreAdmin.collection('referralCodes').doc(referralCode);
+    const goalsCollectionRef = userDocRef.collection('goals');
+
 
     try {
         const result = await firestoreAdmin.runTransaction(async (transaction) => {
@@ -108,6 +110,25 @@ export async function createUserProfile(uid: string, email: string, displayName:
 
             console.log(`[createUserProfile] Creating user document for ${uid} within transaction.`);
             transaction.set(userDocRef, newUser);
+
+            // Create default saving goals
+            const defaultGoals = [
+                { name: 'House Rent', targetAmount: 0 },
+                { name: 'School Fees', targetAmount: 0 },
+            ];
+
+            for (const goal of defaultGoals) {
+                const newGoalRef = goalsCollectionRef.doc();
+                transaction.set(newGoalRef, {
+                    userId: uid,
+                    name: goal.name,
+                    targetAmount: goal.targetAmount,
+                    currentAmount: 0,
+                    targetDate: null,
+                    createdAt: FieldValue.serverTimestamp(),
+                });
+                 console.log(`[createUserProfile] Queued creation of default goal: ${goal.name}`);
+            }
 
             console.log(`[createUserProfile] Marking referral code ${referralCode} as used within transaction.`);
             transaction.update(referralDocRef, { used: true });
