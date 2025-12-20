@@ -95,7 +95,6 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
             <TableHead>Date</TableHead>
             <TableHead>Type</TableHead>
             <TableHead className="text-right">Amount</TableHead>
-            <TableHead className="text-right">Fee</TableHead>
             <TableHead className="text-right">Payout</TableHead>
             <TableHead className="text-center">Proof</TableHead>
             <TableHead className="text-center">Actions</TableHead>
@@ -118,9 +117,6 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                   }`}
                 >
                   {formatCurrency(amount)}
-                </TableCell>
-                 <TableCell className="text-right text-muted-foreground">
-                  {tx.fee !== undefined ? `₦${tx.fee.toFixed(2)}` : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right font-semibold">
                   {tx.payoutAmount !== undefined ? `₦${tx.payoutAmount.toFixed(2)}` : 'N/A'}
