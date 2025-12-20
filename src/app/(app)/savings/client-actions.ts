@@ -113,7 +113,7 @@ export async function addFundsToGoal(
             transaction.update(goalDocRef, { currentAmount: increment(amount) });
         });
         return { success: true };
-    } catch (error: any)
+    } catch (error: any) {
         console.error("Error adding funds to goal:", error);
         return { success: false, error: error.message || "An unexpected error occurred." };
     }
