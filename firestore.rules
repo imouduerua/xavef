@@ -15,7 +15,7 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // A user can create their own user document if the data is valid.
+      // A user can create their own user document if the data is valid and they are authenticated.
       allow create: if request.auth != null && request.auth.uid == userId 
                     && request.resource.data.uid == userId
                     && request.resource.data.email == request.auth.token.email
@@ -31,20 +31,23 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // match /referralCodes/{codeId} {
-    //   // Only allow a read if it's part of the same transaction where the user is creating their own profile.
-    //   allow read: if request.auth != null && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.uid == request.auth.uid;
+    match /referralCodes/{codeId} {
+      // An authenticated user needs to be able to check if a code exists during signup.
+      // The transaction ensures they can't consume a used code.
+      allow read: if request.auth != null;
       
-    //   allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
       
-    //   // A user can mark a code as used as part of the transaction to create their own profile
-    //   allow update: if request.auth != null 
-    //                  && request.resource.data.used == true
-    //                  && resource.data.used == false;
+      // A user can mark a code as used as part of the transaction to create their own profile.
+      // This rule ensures the 'used' field can only be changed from false to true.
+      allow update: if request.auth != null 
+                     && request.resource.data.used == true
+                     && resource.data.used == false
+                     && request.resource.data.usedBy == request.auth.uid;
 
-    //   // No one can delete referral codes
-    //   allow delete: if false;
-    // }
+      // No one can delete referral codes
+      allow delete: if false;
+    }
 
     match /users/{userId}/transactions/{transactionId} {
         // Users can read their own transactions
@@ -58,13 +61,13 @@ service cloud.firestore {
     }
 
     match /users/{userId}/goals/{goalId} {
-        // Users can manage their own saving goals, and create them during profile setup.
+        // Users can manage their own saving goals.
         allow create, read, update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
     match /admins/{userId} {
       // Any authenticated user can check if another user is an admin.
-      // This is a safe as it only reveals a boolean status.
+      // This is safe as it only reveals a boolean status.
       allow read, get: if request.auth != null;
     }
   }

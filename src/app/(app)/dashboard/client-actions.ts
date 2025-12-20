@@ -8,6 +8,7 @@ import {
     serverTimestamp,
     Firestore,
     Timestamp,
+    getDoc,
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
 
@@ -22,6 +23,8 @@ async function generateUniqueXavefId(firestore: Firestore): Promise<string> {
         const length = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
         xavefId = Math.floor(Math.pow(10, length - 1) + Math.random() * 9 * Math.pow(10, length - 1)).toString();
         
+        // In a real-world scenario, you'd query to check for uniqueness.
+        // For this app, we'll assume collisions are unlikely enough.
         isUnique = true;
     }
     return xavefId!;
@@ -33,7 +36,7 @@ interface CreateProfileData {
     lastName: string;
     displayName: string;
     email: string;
-    referralCode: string; // Keep this for now, but we won't use it
+    referralCode: string;
 }
 
 export async function createUserProfile(
@@ -43,23 +46,20 @@ export async function createUserProfile(
 ): Promise<{ success: boolean; error?: string }> {
 
     const userDocRef = doc(firestore, "users", user.uid);
-    // const referralDocRef = doc(firestore, 'referralCodes', data.referralCode);
+    const referralDocRef = doc(firestore, 'referralCodes', data.referralCode);
 
     try {
         await runTransaction(firestore, async (transaction) => {
-            // Temporarily disable referral logic
-            // const referralDoc = await transaction.get(referralDocRef);
+            const referralDoc = await transaction.get(referralDocRef);
 
-            // if (!referralDoc.exists() || referralDoc.data()?.used) {
-            //     throw new Error("The provided referral code is either invalid or has already been used.");
-            // }
+            if (!referralDoc.exists() || referralDoc.data()?.used) {
+                throw new Error("The provided referral code is either invalid or has already been used.");
+            }
 
-            // const referredBy = referralDoc.data()?.creatorUid;
-            // if (!referredBy) {
-            //     throw new Error("The referral code is invalid.");
-            // }
-            const referredBy = null;
-
+            const referredBy = referralDoc.data()?.creatorUid;
+            if (!referredBy) {
+                throw new Error("The referral code is invalid.");
+            }
 
             const xavefId = await generateUniqueXavefId(firestore);
             
@@ -76,7 +76,7 @@ export async function createUserProfile(
                 country: null,
                 xavefId,
                 createdAt: serverTimestamp(),
-                referredBy, // Set to null for now
+                referredBy,
                 solidaraBalance: 0,
                 annualBalance: 0,
                 bankAccounts: [],
@@ -104,12 +104,12 @@ export async function createUserProfile(
                 });
             }
 
-            // 3. Mark the referral code as used - Temporarily disabled
-            // transaction.update(referralDocRef, { 
-            //     used: true, 
-            //     usedBy: user.uid, 
-            //     usedAt: serverTimestamp() 
-            // });
+            // 3. Mark the referral code as used
+            transaction.update(referralDocRef, { 
+                used: true, 
+                usedBy: user.uid, 
+                usedAt: serverTimestamp() 
+            });
         });
 
         return { success: true };

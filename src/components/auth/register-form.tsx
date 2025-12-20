@@ -31,7 +31,7 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
-  // referralCode: z.string().min(1, { message: "Referral code is required." }),
+  referralCode: z.string().min(1, { message: "Referral code is required." }),
 });
 
 export function RegisterForm() {
@@ -47,7 +47,7 @@ export function RegisterForm() {
       lastName: "",
       email: "",
       password: "",
-      // referralCode: "",
+      referralCode: "",
     },
   });
 
@@ -75,7 +75,7 @@ export function RegisterForm() {
             lastName: values.lastName,
             displayName: displayName,
             email: user.email!,
-            referralCode: "NOT_USED" // Pass a placeholder
+            referralCode: values.referralCode,
         });
 
         if (!profileResult.success) {
@@ -106,7 +106,7 @@ export function RegisterForm() {
         if (error.code === 'auth/email-already-in-use') {
             errorMessage = "This email address is already in use. Please log in instead.";
         } else if (error.message.includes("referral code")) {
-            errorMessage = "The referral code is invalid or has already been used. Please try another."
+            errorMessage = error.message;
         } else if (error.message) {
             errorMessage = error.message;
         }
@@ -181,7 +181,7 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
-        {/* <FormField
+        <FormField
           control={form.control}
           name="referralCode"
           render={({ field }) => (
@@ -193,7 +193,7 @@ export function RegisterForm() {
               <FormMessage />
             </FormItem>
           )}
-        /> */}
+        />
         <Button type="submit" className="w-full" disabled={isLoading}>
            {isLoading ? "Creating Account..." : "Create Account"}
         </Button>
