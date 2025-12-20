@@ -13,6 +13,8 @@ import {
 import { Button } from '../ui/button';
 import { Check, Loader2, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useFirestore } from '@/firebase';
+import { updateTransactionStatus } from './actions';
 
 type TransactionWithUserDetails = Transaction & { userId: string, userEmail: string };
 
@@ -22,6 +24,42 @@ interface PendingTransactionsTableProps {
 
 export function PendingTransactionsTable({ initialTransactions }: PendingTransactionsTableProps) {
   const [transactions, setTransactions] = React.useState<TransactionWithUserDetails[]>(initialTransactions);
+  const [updatingId, setUpdatingId] = React.useState<string | null>(null);
+  const firestore = useFirestore();
+
+  const handleUpdateStatus = async (
+    userId: string,
+    transactionId: string,
+    newStatus: 'Completed' | 'Failed'
+  ) => {
+    setUpdatingId(transactionId);
+    try {
+        const result = await updateTransactionStatus(firestore, userId, transactionId, newStatus);
+        if (result.success) {
+            toast({
+                title: 'Transaction Updated',
+                description: `Transaction has been marked as ${newStatus}.`,
+            });
+            // Remove the processed transaction from the local state to update the UI
+            setTransactions(prev => prev.filter(tx => tx.id !== transactionId));
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Update Failed',
+                description: result.error || 'An unknown error occurred.',
+            });
+        }
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: error.message || 'An unexpected server error occurred.',
+        });
+    } finally {
+        setUpdatingId(null);
+    }
+  };
+
 
   if (transactions.length === 0) {
     return <p>No pending transactions found.</p>;
@@ -36,14 +74,12 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
           <TableHead>Description</TableHead>
           <TableHead>Type</TableHead>
           <TableHead className="text-right">Amount</TableHead>
-          <TableHead className="text-center">Status</TableHead>
+          <TableHead className="text-center">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {initialTransactions.map((tx) => {
-          const isRemoved = !transactions.some(t => t.id === tx.id);
-
-          if (isRemoved) return null;
+        {transactions.map((tx) => {
+          const isUpdating = updatingId === tx.id;
 
           return (
             <TableRow key={tx.id}>
@@ -61,7 +97,33 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                   : `-₦${Math.abs(tx.amount).toFixed(2)}`}
               </TableCell>
               <TableCell className="text-center space-x-2">
-                Pending
+                 {isUpdating ? (
+                  <Button variant="outline" size="sm" disabled>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+                      onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Completed')}
+                    >
+                      <Check className="mr-2 h-4 w-4" />
+                      Approve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => handleUpdateStatus(tx.userId, tx.id, 'Failed')}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Decline
+                    </Button>
+                  </>
+                )}
               </TableCell>
             </TableRow>
           );
