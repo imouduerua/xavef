@@ -10,12 +10,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import { UserData } from '@/lib/types';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ArrowLeft, Landmark, PiggyBank, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
@@ -32,16 +31,16 @@ export default function UserDetailPage() {
   const { isAdmin } = useAdminStatus();
   const [isUpdating, setIsUpdating] = React.useState(false);
 
-  const userDocRef = React.useMemo(
+  const userDocRef = useMemo(
     () => (userId && firestore ? doc(firestore, 'users', userId) : null),
     [userId, firestore]
   );
   
-  const { data: userData, loading } = useDoc<UserData>(userDocRef);
+  const { data: userData, loading } = useDoc(userDocRef);
 
   const canTogglePermissions = adminUser?.email === 'admin@xavef.com';
 
-  const handlePermissionToggle = React.useCallback(async (checked: boolean) => {
+  const handlePermissionToggle = useCallback(async (checked: boolean) => {
     if (!userId || !firestore || !canTogglePermissions) {
         toast({
             variant: "destructive",

@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/layout/header";
 import { SidebarProvider, useSidebar, SidebarInset } from "@/components/ui/sidebar";
 import { UserDataProvider } from "@/context/user-data-provider";
 import { AdminAuthGuard } from "@/components/admin/admin-auth-guard";
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AppSidebar } from "@/components/layout/app-sidebar";
 import { cn } from "@/lib/utils";
 
 
@@ -18,7 +18,7 @@ function AdminLayoutContent({
 
   return (
     <AdminAuthGuard>
-      <AdminSidebar />
+      <AppSidebar />
        <SidebarInset>
         <AppHeader />
         <main className="flex-1 overflow-y-auto">
