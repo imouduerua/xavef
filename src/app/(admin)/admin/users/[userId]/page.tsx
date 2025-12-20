@@ -9,27 +9,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useDoc, useFirestore, useUser } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
-import { ArrowLeft, Landmark, PiggyBank, Loader2 } from 'lucide-react';
+import { useDoc, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { ArrowLeft, Landmark, PiggyBank } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { toast } from '@/hooks/use-toast';
-import { useAdminStatus } from '@/hooks/use-admin-status';
-
 
 export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
   const firestore = useFirestore();
-  const { user: adminUser } = useUser();
-  const { isAdmin } = useAdminStatus();
-  const [isUpdating, setIsUpdating] = React.useState(false);
 
   const userDocRef = useMemo(
     () => (userId && firestore ? doc(firestore, 'users', userId) : null),
@@ -37,39 +29,6 @@ export default function UserDetailPage() {
   );
   
   const { data: userData, loading } = useDoc(userDocRef);
-
-  const canTogglePermissions = adminUser?.email === 'admin@xavef.com';
-
-  const handlePermissionToggle = useCallback(async (checked: boolean) => {
-    if (!userId || !firestore || !canTogglePermissions) {
-        toast({
-            variant: "destructive",
-            title: "Update Failed",
-            description: "Cannot update permission. Required info is missing or you lack permissions.",
-        });
-        return;
-    }
-
-    setIsUpdating(true);
-    try {
-        const userToUpdateDocRef = doc(firestore, "users", userId);
-        await updateDoc(userToUpdateDocRef, { canGenerateReferralCode: checked });
-        toast({
-            title: "Permission Updated",
-            description: `${userData?.firstName || 'User'} can ${checked ? 'now' : 'no longer'} generate referral codes.`,
-        });
-    } catch (error: any) {
-        console.error("Failed to update permission", error);
-        toast({
-            variant: "destructive",
-            title: "Update Failed",
-            description: error.message || "An unknown error occurred.",
-        });
-    } finally {
-        setIsUpdating(false);
-    }
-  }, [userId, firestore, canTogglePermissions, userData]);
-
 
   const formatCurrency = (amount: number | null | undefined) => {
     if (amount === undefined || amount === null) {
@@ -140,37 +99,6 @@ export default function UserDetailPage() {
                   </Card>
                 </div>
             </div>
-
-            {isAdmin && canTogglePermissions && (
-                 <div>
-                    <h3 className="text-lg font-medium">Permissions</h3>
-                    <Separator className="my-4" />
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <Label htmlFor="referral-permission" className="font-medium">
-                                        Generate Referral Codes
-                                    </Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Allow this user to generate one-time codes for new user sign-ups.
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
-                                    <Switch
-                                        id="referral-permission"
-                                        checked={!!userData?.canGenerateReferralCode}
-                                        onCheckedChange={handlePermissionToggle}
-                                        disabled={isUpdating}
-                                    />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-
 
              <div>
                 <h3 className="text-lg font-medium">Transaction History</h3>

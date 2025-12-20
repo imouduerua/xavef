@@ -139,14 +139,12 @@ export function AppHeader() {
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                {userData?.canGenerateReferralCode && (
-                  <ReferralCodeDialog userId={user.uid}>
-                      <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
-                          <Gift className="mr-2 h-4 w-4" />
-                          <span>Generate Referral Code</span>
-                      </button>
-                  </ReferralCodeDialog>
-                )}
+                <ReferralCodeDialog userId={user.uid}>
+                    <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
+                        <Gift className="mr-2 h-4 w-4" />
+                        <span>Generate Referral Code</span>
+                    </button>
+                </ReferralCodeDialog>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />

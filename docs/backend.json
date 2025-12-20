@@ -83,10 +83,6 @@
                 },
                 "required": ["bankName", "accountName", "bankAccountNumber"]
             }
-        },
-        "canGenerateReferralCode": {
-          "type": "boolean",
-          "description": "Whether the user is permitted to generate referral codes."
         }
       },
       "required": [
