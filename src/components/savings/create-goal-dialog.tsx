@@ -33,8 +33,8 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useUser } from '@/firebase';
-import { createSavingGoal } from '@/app/(app)/savings/actions';
+import { useUser, useFirestore } from '@/firebase';
+import { createSavingGoal } from '@/app/(app)/savings/client-actions';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Goal name is required.'),
@@ -45,6 +45,7 @@ const formSchema = z.object({
 export function CreateGoalDialog() {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useUser();
+  const firestore = useFirestore();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -56,7 +57,7 @@ export function CreateGoalDialog() {
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
@@ -64,7 +65,7 @@ export function CreateGoalDialog() {
       });
       return;
     }
-    const result = await createSavingGoal(user.uid, values);
+    const result = await createSavingGoal(firestore, user.uid, values);
     if (result.success) {
       toast({
         title: 'Goal Created!',

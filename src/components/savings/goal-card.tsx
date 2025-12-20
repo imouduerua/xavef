@@ -27,8 +27,8 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import type { SavingGoal } from '@/lib/types';
-import { useUser } from '@/firebase';
-import { deleteSavingGoal } from '@/app/(app)/savings/actions';
+import { useUser, useFirestore } from '@/firebase';
+import { deleteSavingGoal } from '@/app/(app)/savings/client-actions';
 
 interface GoalCardProps {
   goal: SavingGoal;
@@ -36,6 +36,7 @@ interface GoalCardProps {
 
 export function GoalCard({ goal }: GoalCardProps) {
   const { user } = useUser();
+  const firestore = useFirestore();
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const progress = (goal.currentAmount / goal.targetAmount) * 100;
@@ -48,9 +49,9 @@ export function GoalCard({ goal }: GoalCardProps) {
     })}`;
 
   const handleDelete = async () => {
-    if (!user) return;
+    if (!user || !firestore) return;
     setIsDeleting(true);
-    const result = await deleteSavingGoal(user.uid, goal.id);
+    const result = await deleteSavingGoal(firestore, user.uid, goal.id);
     if (result.success) {
       toast({
         title: 'Goal Deleted',
