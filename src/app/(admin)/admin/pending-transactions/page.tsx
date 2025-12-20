@@ -50,7 +50,7 @@ export default function AdminPendingTransactionsPage() {
       try {
         const transactionsWithUserDetails: TransactionWithUserDetails[] = await Promise.all(
           rawTransactions.map(async (tx) => {
-            const userId = tx.userId || doc(firestore, tx.id).parent.parent?.id;
+            const userId = tx.userId;
             if (!userId) {
                 // This case should ideally not happen if data structure is correct
                 return { ...tx, userId: 'unknown', userEmail: 'Unknown User' };
