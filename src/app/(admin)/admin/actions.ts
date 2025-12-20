@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { firestoreAdmin } from '@/firebase/admin';
 import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { AccountType, Transaction, UserData } from '@/lib/types';
+import type { Transaction, UserData } from '@/lib/types';
 
 const updateStatusSchema = z.object({
   userId: z.string().min(1),
@@ -33,40 +33,44 @@ export async function updateTransactionStatus(values: z.infer<typeof updateStatu
       }
       
       const txData = txDoc.data() as Transaction;
-      if (txData?.status !== 'Pending') {
-        throw new Error(`Transaction is already ${txData?.status}.`);
+
+      // Only allow updates on pending transactions
+      if (txData.status !== 'Pending') {
+        // This is not a fatal error, just a state mismatch. We can ignore it.
+        console.log(`Transaction ${transactionId} is already ${txData.status}.`);
+        return;
       }
 
-      // If approving a deposit, update the user's balance.
+      // If we are approving a pending deposit, update the user's balance.
       if (newStatus === 'Completed' && txData.type === 'Deposit') {
         const userDoc = await t.get(userRef);
         if (!userDoc.exists) {
-          throw new Error("User not found to update balance.");
+          throw new Error("User profile not found for balance update.");
         }
 
         const amount = txData.amount;
         const targetAccount = txData.targetAccount;
 
         if (!targetAccount || (targetAccount !== 'solidara' && targetAccount !== 'annual')) {
-          throw new Error(`Invalid target account on transaction: ${targetAccount}`);
+          throw new Error(`Invalid target account '${targetAccount}' on transaction.`);
         }
         
         const balanceFieldToUpdate = `${targetAccount}Balance`;
         
-        // Use FieldValue.increment for atomic updates
+        // Use FieldValue.increment for a safe, atomic update.
         t.update(userRef, {
           [balanceFieldToUpdate]: FieldValue.increment(amount)
         });
       }
       
-      // Update the transaction status for both 'Completed' and 'Failed'
+      // Finally, update the transaction's status itself.
       t.update(transactionRef, { status: newStatus });
     });
 
-    // Revalidate paths to ensure data is refreshed on the client
-    revalidatePath('/admin/pending-transactions');
-    revalidatePath('/dashboard');
-    revalidatePath('/transactions');
+    // Revalidate paths to ensure data is refreshed on the client-side
+    revalidatePath('/admin/pending-transactions', 'page');
+    revalidatePath('/dashboard', 'page');
+    revalidatePath('/transactions', 'page');
 
     return { success: true };
 
