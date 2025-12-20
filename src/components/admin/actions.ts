@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc, getDoc, updateDoc, writeBatch, Firestore, increment } from 'firebase/firestore';
@@ -41,9 +42,11 @@ export async function updateTransactionStatus(
           throw new Error("User associated with transaction not found.");
       }
 
-      const targetAccount = txData.targetAccount;
-      if (!targetAccount || (targetAccount !== 'solidara' && targetAccount !== 'annual')) {
-        throw new Error('Invalid or missing target account on the transaction.');
+      // Default to 'solidara' if targetAccount is missing for backward compatibility
+      const targetAccount = txData.targetAccount || 'solidara';
+
+      if (targetAccount !== 'solidara' && targetAccount !== 'annual') {
+        throw new Error('Invalid target account on the transaction.');
       }
 
       const balanceFieldToUpdate = `${targetAccount}Balance` as keyof UserData;
