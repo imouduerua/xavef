@@ -108,6 +108,7 @@ export function RegisterForm() {
         
         // This catch block will now primarily handle auth errors like "email-already-in-use"
         if (userCredential) {
+            // If profile creation failed after auth user was created, clean up.
             await deleteUser(userCredential.user).catch(deleteError => {
                 console.error("Failed to clean up orphaned auth user during general error:", deleteError);
             });
@@ -128,7 +129,8 @@ export function RegisterForm() {
         });
 
     } finally {
-        if (router.pathname === '/register') { // Ensure we only set loading to false if we haven't navigated away
+        // Only set loading to false if we haven't navigated away
+        if (router.asPath === '/register') { 
             setIsLoading(false);
         }
     }
