@@ -34,22 +34,12 @@ export default function AdminPendingTransactionsPage() {
   const { data: rawTransactions, loading: rawLoading, error, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
 
   useEffect(() => {
+    // Don't run if loading, or if an index is required, or if data is not yet available.
+    if (rawLoading || indexCreationUrl || !rawTransactions) {
+        return;
+    };
+    
     const processTransactions = async () => {
-      if (!rawTransactions || !firestore) {
-        setTransactions(null);
-        return;
-      }
-      
-      if (error && !indexCreationUrl) {
-        toast({
-            variant: "destructive",
-            title: "Error Loading Data",
-            description: "Could not load pending transactions.",
-        });
-        setTransactions([]);
-        return;
-      }
-
       try {
         const userCache = new Map<string, UserData>();
         const transactionsWithDetails = await Promise.all(
@@ -93,7 +83,21 @@ export default function AdminPendingTransactionsPage() {
 
     processTransactions();
 
-  }, [rawTransactions, firestore, error, indexCreationUrl]);
+  }, [rawTransactions, firestore, rawLoading, indexCreationUrl]);
+
+  const renderContent = () => {
+    if (rawLoading) {
+        return <Skeleton className="h-40 w-full" />;
+    }
+    if (indexCreationUrl) {
+        return <MissingIndexAlert url={indexCreationUrl} />;
+    }
+    if (transactions) {
+        return <PendingTransactionsTable transactions={transactions} />;
+    }
+    // This state can happen briefly between rawTransactions loading and transactions being set
+    return <Skeleton className="h-40 w-full" />;
+  }
   
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -106,13 +110,7 @@ export default function AdminPendingTransactionsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {rawLoading ? (
-            <Skeleton className="h-40 w-full" />
-          ) : indexCreationUrl ? (
-            <MissingIndexAlert url={indexCreationUrl} />
-          ) : (
-             transactions && <PendingTransactionsTable transactions={transactions} />
-          )}
+            {renderContent()}
         </CardContent>
       </Card>
     </div>
