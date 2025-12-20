@@ -67,6 +67,26 @@ export default function UserDetailPage() {
     }
     return `₦${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
+  
+  const PageSkeleton = () => (
+     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+       <Skeleton className="h-6 w-32" />
+        <Card>
+          <CardHeader>
+             <Skeleton className="h-8 w-48" />
+             <Skeleton className="h-4 w-64" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+          </CardContent>
+        </Card>
+    </div>
+  )
+
+  if (!userId || loading) {
+    return <PageSkeleton />;
+  }
 
   const fullName = userData?.firstName || userData?.lastName ? `${userData.firstName} ${userData.lastName}`.trim() : (userData?.displayName || 'User');
 
@@ -79,22 +99,16 @@ export default function UserDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {loading ? <Skeleton className="h-8 w-48" /> : `User Profile: ${fullName}`}
+            User Profile: {fullName}
           </CardTitle>
           <CardDescription>
-             {loading ? <Skeleton className="h-4 w-64" /> : `Viewing details and transactions for ${userData?.email || '...'}`}
+            Viewing details and transactions for {userData?.email || '...'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
             <div>
               <h3 className="text-lg font-medium">Account Balances</h3>
               <Separator className="my-4" />
-              {loading ? (
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Skeleton className="h-24 w-full" />
-                  <Skeleton className="h-24 w-full" />
-                </div>
-              ) : (
                 <div className="grid md:grid-cols-2 gap-4">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -115,38 +129,35 @@ export default function UserDetailPage() {
                     </CardContent>
                   </Card>
                 </div>
-              )}
             </div>
 
             {isAdmin && canTogglePermissions && (
                  <div>
                     <h3 className="text-lg font-medium">Permissions</h3>
                     <Separator className="my-4" />
-                    {loading ? <Skeleton className="h-10 w-48" /> : (
-                        <Card>
-                            <CardContent className="pt-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label htmlFor="referral-permission" className="font-medium">
-                                            Generate Referral Codes
-                                        </Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Allow this user to generate one-time codes for new user sign-ups.
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
-                                        <Switch
-                                            id="referral-permission"
-                                            checked={!!userData?.canGenerateReferralCode}
-                                            onCheckedChange={handlePermissionToggle}
-                                            disabled={isUpdating}
-                                        />
-                                    </div>
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <Label htmlFor="referral-permission" className="font-medium">
+                                        Generate Referral Codes
+                                    </Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Allow this user to generate one-time codes for new user sign-ups.
+                                    </p>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    )}
+                                <div className="flex items-center gap-2">
+                                    {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    <Switch
+                                        id="referral-permission"
+                                        checked={!!userData?.canGenerateReferralCode}
+                                        onCheckedChange={handlePermissionToggle}
+                                        disabled={isUpdating}
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             )}
 
