@@ -27,3 +27,4 @@ const firestoreAdmin = getFirestore(app);
 const authAdmin = getAuth(app);
 
 export { app, firestoreAdmin, authAdmin };
+
