@@ -83,12 +83,24 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
 
     setIsSubmitting(true);
     const values = getValues();
+    const amountAsNumber = Number(values.amount);
+
+    if (isNaN(amountAsNumber) || amountAsNumber <= 0) {
+        toast({
+            variant: "destructive",
+            title: "Invalid Amount",
+            description: "The deposit amount is not valid.",
+        });
+        setIsSubmitting(false);
+        return;
+    }
+
     const transactionRef = collection(firestore, `users/${user.uid}/transactions`);
 
     try {
       const newTransaction = {
         date: serverTimestamp(),
-        amount: values.amount,
+        amount: amountAsNumber,
         description: `Deposit to ${accountName}`,
         status: 'Pending',
         type: 'Deposit',
@@ -99,7 +111,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
 
       toast({
         title: 'Deposit Submitted',
-        description: `Your deposit of ₦${values.amount.toFixed(
+        description: `Your deposit of ₦${amountAsNumber.toFixed(
           2
         )} is pending approval.`,
       });
@@ -188,7 +200,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
 
         {step === 'details' && (
             <div className='space-y-4'>
-                <BankDetailsCard amount={getValues("amount")} />
+                <BankDetailsCard amount={Number(getValues("amount"))} />
                  <DialogFooter className="gap-2 sm:justify-end pt-4">
                     <Button type="button" variant="outline" onClick={() => setStep('amount')}>
                         Back
