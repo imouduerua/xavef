@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/firebase";
-import { createUserProfile } from "@/app/(app)/dashboard/actions";
+import { useAuth, useFirestore } from "@/firebase";
+import { createUserProfile } from "@/app/(app)/dashboard/client-actions";
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
@@ -37,6 +37,7 @@ const formSchema = z.object({
 export function RegisterForm() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const [isLoading, setIsLoading] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -68,8 +69,14 @@ export function RegisterForm() {
             description: "Finalizing your profile setup...",
         });
 
-        // Step 3: Create the Firestore user profile document and default goals
-        const profileResult = await createUserProfile(user.uid, user.email!, displayName, values.referralCode);
+        // Step 3: Create the Firestore user profile document using the new client-side action
+        const profileResult = await createUserProfile(firestore, user, {
+            firstName: values.firstName,
+            lastName: values.lastName,
+            displayName: displayName,
+            email: user.email!,
+            referralCode: values.referralCode
+        });
 
         if (!profileResult.success) {
             // This is a critical failure. The profile could not be created.

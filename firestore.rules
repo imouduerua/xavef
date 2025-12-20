@@ -15,10 +15,16 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // A user can create their own user document.
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // A user can create their own user document if the data is valid.
+      allow create: if request.auth != null && request.auth.uid == userId 
+                    && request.resource.data.uid == userId
+                    && request.resource.data.email == request.auth.token.email
+                    && request.resource.data.solidaraBalance == 0
+                    && request.resource.data.annualBalance == 0;
+
       // An authenticated user can read and update their own document.
       allow read, update: if request.auth != null && request.auth.uid == userId;
+
       // Admins can read and update any user document.
       allow get, list, update: if isAdmin(); 
       // No one can delete user documents for now.
@@ -27,8 +33,14 @@ service cloud.firestore {
 
     match /referralCodes/{codeId} {
       allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
-      // No one can read or update a referral code after it's created, except to mark it as used by the createUserProfile action.
-      allow read, update, delete: if false;
+      
+      // A user can mark a code as used as part of the transaction to create their own profile
+      allow update: if request.auth != null 
+                     && request.resource.data.used == true
+                     && resource.data.used == false;
+
+      // No one can read a referral code after it's created.
+      allow read, delete: if false;
     }
 
     match /users/{userId}/transactions/{transactionId} {
@@ -43,8 +55,8 @@ service cloud.firestore {
     }
 
     match /users/{userId}/goals/{goalId} {
-        // Users can manage their own saving goals
-        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+        // Users can manage their own saving goals, and create them during profile setup.
+        allow create, read, update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
     match /admins/{userId} {
