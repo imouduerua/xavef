@@ -14,8 +14,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Transaction, TransactionStatus, TransactionType } from "@/lib/types";
 import { useUser, useCollection, useFirestore } from "@/firebase";
 import { collection, query, where, orderBy } from "firebase/firestore";
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destructive"> = {
   Completed: "default",
@@ -23,7 +26,28 @@ const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destru
   Failed: "destructive",
 };
 
-function TransactionsTable({ transactions, isLoading }: { transactions: Transaction[], isLoading: boolean }) {
+function MissingIndexAlert({ url }: { url: string }) {
+    return (
+        <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Database Index Required</AlertTitle>
+            <AlertDescription>
+                <p className="mb-4">
+                    To display and sort transactions efficiently, a database index is needed.
+                    Please click the button below to create the index in the Firebase console.
+                    It may take a few minutes to build.
+                </p>
+                <Button asChild>
+                    <a href={url} target="_blank" rel="noopener noreferrer">
+                        Create Database Index
+                    </a>
+                </Button>
+            </AlertDescription>
+        </Alert>
+    )
+}
+
+function TransactionsTable({ transactions, isLoading, indexCreationUrl }: { transactions: Transaction[] | null, isLoading: boolean, indexCreationUrl?: string | null }) {
   if (isLoading) {
     return (
       <Card>
@@ -38,7 +62,11 @@ function TransactionsTable({ transactions, isLoading }: { transactions: Transact
     );
   }
 
-  if (transactions.length === 0) {
+  if (indexCreationUrl) {
+      return <MissingIndexAlert url={indexCreationUrl} />;
+  }
+
+  if (!transactions || transactions.length === 0) {
     return (
         <Card>
             <CardContent className="pt-6">
@@ -96,9 +124,21 @@ export default function TransactionsPage() {
     );
   }, [user, firestore]);
 
-  const { data: transactions, loading } = useCollection<Transaction>(transactionsQuery);
+  const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 
-  const all = transactions ?? [];
+  // Client-side sorting is no longer the primary method, but can be a fallback
+  const sortedTransactions = useMemo(() => {
+    if (!transactions) return [];
+    // The query now handles sorting, but we can keep this in case the query changes
+    return [...transactions].sort((a, b) => {
+        const dateA = a.date ? new Date(a.date).getTime() : 0;
+        const dateB = b.date ? new Date(b.date).getTime() : 0;
+        return dateB - dateA;
+    });
+  }, [transactions]);
+
+
+  const all = sortedTransactions ?? [];
   const deposits = all.filter((tx) => tx.type === "Deposit" || tx.type === "Interest");
   const withdrawals = all.filter((tx) => tx.type === "Withdrawal");
   const payments = all.filter((tx) => tx.type === "Loan Payment");
@@ -115,11 +155,11 @@ export default function TransactionsPage() {
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="deposits">Deposits</TabsTrigger>
-          <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+          <TabsTrigger value="withdrawals">Withdrawals</T riggers>
           <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
         <TabsContent value="all">
-          <TransactionsTable transactions={all} isLoading={loading} />
+          <TransactionsTable transactions={all} isLoading={loading} indexCreationUrl={indexCreationUrl} />
         </TabsContent>
         <TabsContent value="deposits">
           <TransactionsTable transactions={deposits} isLoading={loading} />
