@@ -61,15 +61,16 @@ export async function createUserProfile(
 
             const referredBy = referralDoc.data()?.creatorUid;
             if (!referredBy) {
+                // This case should be covered by the existence check, but is a good safeguard.
                 throw new Error("The referral code is invalid.");
             }
 
             const userDoc = await transaction.get(userDocRef);
             if (userDoc.exists()) {
                 // This case should ideally not happen in a normal registration flow.
-                // If it does, it means an auth account exists without a profile, and they are trying to create one.
+                // If it does, it means an auth account exists without a profile, and they are trying to create one again.
                 // We'll allow the transaction to complete without erroring, assuming the profile is what we want.
-                console.log("User profile already exists, skipping creation.");
+                console.warn("User profile already exists, skipping creation.");
                 return;
             }
 
@@ -124,6 +125,7 @@ export async function createUserProfile(
 
     } catch (error: any) {
         console.error("[createUserProfile] Error during profile creation transaction:", error);
+        // The error message from the transaction (e.g., from the 'throw' statement) will be in error.message
         return { success: false, error: error.message || `An unexpected error occurred.` };
     }
 }
