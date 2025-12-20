@@ -11,6 +11,7 @@ import {
 import type {
   Transaction,
   TransactionWithUserDetails,
+  UserData,
 } from '@/lib/types';
 import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
@@ -18,10 +19,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
 import {
   collectionGroup,
-  getDoc,
+  getDocs,
   doc,
   orderBy,
   query,
+  collection,
 } from 'firebase/firestore';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 import { SuperAdminAuthGuard } from '@/components/admin/super-admin-auth-guard';
@@ -31,7 +33,6 @@ function AllTransactionsPageContent() {
   const [transactions, setTransactions] = useState<
     TransactionWithUserDetails[] | null
   >(null);
-  const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
 
   const allTxsQuery = React.useMemo(() => {
@@ -51,46 +52,47 @@ function AllTransactionsPageContent() {
 
   useEffect(() => {
     const processTransactions = async () => {
-      if (rawLoading) {
-        setLoading(true);
-        return;
-      }
-
       if (!rawTransactions || !firestore) {
         setTransactions(null);
-        setLoading(false);
         return;
       }
 
-      if (error) {
-        console.error('Error fetching transactions:', error);
-        // Let the UI handle the indexCreationUrl alert
-        if (!indexCreationUrl) {
-          toast({
-            variant: 'destructive',
-            title: 'Error Loading Data',
-            description: 'Could not load transaction history.',
-          });
-        }
+      if (error && !indexCreationUrl) {
+        toast({
+          variant: 'destructive',
+          title: 'Error Loading Data',
+          description: 'Could not load transaction history.',
+        });
         setTransactions([]);
-        setLoading(false);
         return;
       }
 
-      setLoading(true);
       try {
+        const userCache = new Map<string, UserData>();
+
         const transactionsWithDetails = await Promise.all(
           rawTransactions.map(async (tx) => {
             const pathParts = tx.path.split('/');
             const userId = pathParts[pathParts.indexOf('users') + 1];
+            let user: UserData | undefined = userCache.get(userId);
 
-            const userRef = doc(firestore, 'users', userId);
-            const userSnap = await getDoc(userRef);
+            if (!user) {
+              const userRef = doc(firestore, 'users', userId);
+              const userSnap = await getDocs(
+                query(collection(firestore, 'users'), where('uid', '==', userId))
+              );
+              if (!userSnap.empty) {
+                const fetchedUser = {
+                  id: userSnap.docs[0].id,
+                  ...userSnap.docs[0].data(),
+                } as UserData;
+                userCache.set(userId, fetchedUser);
+                user = fetchedUser;
+              }
+            }
 
-            const userEmail = userSnap.exists()
-              ? userSnap.data().email
-              : 'Unknown User';
-            const xavefId = userSnap.exists() ? userSnap.data().xavefId : 'N/A';
+            const userEmail = user?.email || 'Unknown User';
+            const xavefId = user?.xavefId || 'N/A';
 
             return {
               ...tx,
@@ -109,13 +111,11 @@ function AllTransactionsPageContent() {
           description: 'Could not process transaction details.',
         });
         setTransactions([]);
-      } finally {
-        setLoading(false);
       }
     };
 
     processTransactions();
-  }, [rawTransactions, firestore, rawLoading, indexCreationUrl]);
+  }, [rawTransactions, firestore, error, indexCreationUrl]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -127,7 +127,7 @@ function AllTransactionsPageContent() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {rawLoading ? (
             <Skeleton className="h-40 w-full" />
           ) : indexCreationUrl ? (
             <MissingIndexAlert url={indexCreationUrl} />

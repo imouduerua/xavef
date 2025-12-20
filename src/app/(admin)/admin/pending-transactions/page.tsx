@@ -14,13 +14,12 @@ import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
-import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy } from 'firebase/firestore';
+import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy, collection } from 'firebase/firestore';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 
 
 export default function AdminPendingTransactionsPage() {
   const [transactions, setTransactions] = useState<TransactionWithUserDetails[] | null>(null);
-  const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
 
   const pendingTxsQuery = React.useMemo(() => {
@@ -36,43 +35,44 @@ export default function AdminPendingTransactionsPage() {
 
   useEffect(() => {
     const processTransactions = async () => {
-      if (rawLoading) {
-        setLoading(true);
-        return;
-      }
-
       if (!rawTransactions || !firestore) {
         setTransactions(null);
-        setLoading(false);
         return;
       }
       
-      if (error) {
-        console.error("Error fetching transactions:", error);
+      if (error && !indexCreationUrl) {
         toast({
             variant: "destructive",
             title: "Error Loading Data",
             description: "Could not load pending transactions.",
         });
         setTransactions([]);
-        setLoading(false);
         return;
       }
 
-      setLoading(true);
       try {
+        const userCache = new Map<string, UserData>();
         const transactionsWithDetails = await Promise.all(
           rawTransactions.map(async (tx) => {
-            const userId = tx.userId!;
-            const userRef = doc(firestore, 'users', userId);
-            const userSnap = await getDoc(userRef);
+            const pathParts = tx.path.split('/');
+            const userId = pathParts[pathParts.indexOf('users') + 1];
+            let user: UserData | undefined = userCache.get(userId);
             
-            const userEmail = userSnap.exists() ? (userSnap.data() as UserData).email : 'Unknown User';
-            const xavefId = userSnap.exists() ? (userSnap.data() as UserData).xavefId : 'N/A';
+            if (!user) {
+              const userRef = doc(firestore, 'users', userId);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists()) {
+                 const fetchedUser = { id: userSnap.id, ...userSnap.data() } as UserData;
+                 userCache.set(userId, fetchedUser);
+                 user = fetchedUser;
+              }
+            }
+            
+            const userEmail = user ? user.email : 'Unknown User';
+            const xavefId = user ? user.xavefId : 'N/A';
 
-            // Correctly merge the original transaction data with the new user details
             return {
-                ...tx, // This preserves all original fields, including payoutAmount
+                ...tx,
                 userId,
                 userEmail,
                 xavefId,
@@ -88,14 +88,12 @@ export default function AdminPendingTransactionsPage() {
             description: "Could not process transaction details.",
         });
         setTransactions([]);
-      } finally {
-        setLoading(false);
       }
     };
 
     processTransactions();
 
-  }, [rawTransactions, firestore, rawLoading, error]);
+  }, [rawTransactions, firestore, error, indexCreationUrl]);
   
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -108,7 +106,7 @@ export default function AdminPendingTransactionsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {rawLoading ? (
             <Skeleton className="h-40 w-full" />
           ) : indexCreationUrl ? (
             <MissingIndexAlert url={indexCreationUrl} />
