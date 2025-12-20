@@ -50,10 +50,7 @@ async function generateUniqueXavefId(): Promise<string> {
 }
 
 export async function createUserProfile(uid: string, email: string, displayName: string, referralCode: string | null): Promise<{ success: boolean, error?: string }> {
-    console.log(`[createUserProfile] Starting profile creation for uid: ${uid}`);
-    
     if (!referralCode) {
-        console.error("[createUserProfile] CRITICAL ERROR: No referral code provided.");
         return { success: false, error: "A referral code is required to create a profile." };
     }
 
@@ -64,25 +61,20 @@ export async function createUserProfile(uid: string, email: string, displayName:
 
     try {
         const result = await firestoreAdmin.runTransaction(async (transaction) => {
-            console.log("[createUserProfile] Running transaction...");
-
             const userDoc = await transaction.get(userDocRef);
             if (userDoc.exists) {
-                console.log(`[createUserProfile] Profile for user ${uid} already exists. Aborting transaction.`);
+                // This case should ideally not be hit if called right after registration,
+                // but it's a good safeguard.
                 return { success: true }; 
             }
 
-            console.log(`[createUserProfile] Processing referral code: ${referralCode}`);
             const referralDoc = await transaction.get(referralDocRef);
 
             if (!referralDoc.exists || referralDoc.data()?.used) {
-                console.log("[createUserProfile] Referral code not found, is invalid, or has already been used.");
                 throw new Error("The provided referral code is either invalid or has already been used.");
             }
             
             const referredBy = referralDoc.data()?.creatorUid;
-            console.log(`[createUserProfile] Referral code is valid. Referred by: ${referredBy}.`);
-
             const xavefId = await generateUniqueXavefId();
 
             const nameParts = displayName.split(' ');
@@ -108,10 +100,8 @@ export async function createUserProfile(uid: string, email: string, displayName:
                 bankAccounts: [],
             };
 
-            console.log(`[createUserProfile] Creating user document for ${uid} within transaction.`);
             transaction.set(userDocRef, newUser);
 
-            // Create default saving goals
             const defaultGoals = [
                 { name: 'House Rent', targetAmount: 0 },
                 { name: 'School Fees', targetAmount: 0 },
@@ -127,17 +117,13 @@ export async function createUserProfile(uid: string, email: string, displayName:
                     targetDate: null,
                     createdAt: FieldValue.serverTimestamp(),
                 });
-                 console.log(`[createUserProfile] Queued creation of default goal: ${goal.name}`);
             }
 
-            console.log(`[createUserProfile] Marking referral code ${referralCode} as used within transaction.`);
             transaction.update(referralDocRef, { used: true });
 
-            console.log("[createUserProfile] Transaction operations queued.");
             return { success: true };
         });
 
-        console.log(`[createUserProfile] Transaction successful for user ${uid}.`);
         revalidatePath('/dashboard');
         return result;
 

@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase";
+import { createUserProfile } from "@/app/(app)/dashboard/actions";
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
@@ -52,22 +53,43 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
+        // 1. Create the Firebase Auth user
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        const user = userCredential.user;
         
+        // 2. Update their Auth profile display name
         const displayName = `${values.firstName} ${values.lastName}`;
-        await updateProfile(userCredential.user, { displayName });
+        await updateProfile(user, { displayName });
 
         toast({
             title: "Account Created",
-            description: "Welcome! Redirecting to your dashboard...",
+            description: "Finalizing your profile setup...",
         });
 
-        const queryParams = new URLSearchParams();
-        queryParams.append('referralCode', values.referralCode);
-        queryParams.append('displayName', displayName);
+        // 3. Create the Firestore user profile document and default goals
+        const profileResult = await createUserProfile(user.uid, user.email!, displayName, values.referralCode);
 
-        const redirectUrl = `/dashboard?${queryParams.toString()}`;
-        router.push(redirectUrl);
+        if (!profileResult.success) {
+            // This is a critical failure, the user has an auth account but no profile.
+            // Advise them to contact support or try logging in again.
+             toast({
+                variant: "destructive",
+                title: "Profile Creation Failed",
+                description: `${profileResult.error} Please try logging out and back in, or contact support if the problem persists.`,
+                duration: 10000,
+            });
+            // Still redirect to dashboard, where they might be prompted again or can see an error state.
+             router.push("/dashboard");
+             return;
+        }
+        
+        toast({
+            title: "Setup Complete!",
+            description: "Welcome! Redirecting to your dashboard...",
+        });
+        
+        // 4. Redirect to the dashboard
+        router.push("/dashboard");
 
     } catch (error: any) {
         console.error("Registration Error:", error);

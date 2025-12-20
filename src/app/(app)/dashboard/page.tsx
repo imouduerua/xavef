@@ -15,7 +15,6 @@ import { useUserData } from '@/hooks/use-user-data';
 import { useUser, useCollection, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ProfileInitializer } from '@/components/dashboard/profile-initializer';
 import type { AccountType, Transaction } from '@/lib/types';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { collection, query, where } from 'firebase/firestore';
@@ -117,10 +116,20 @@ function DashboardContent() {
     return <PageSkeleton />
   }
 
-  if (!userData) {
+  if (!user || !userData) {
     return (
        <div className="space-y-6">
-           <ProfileInitializer />
+           <Card>
+             <CardHeader>
+                <CardTitle>Welcome to XAVEF</CardTitle>
+                <CardDescription>
+                    It looks like you're new here. If you just registered, your profile is being created. This page will reload shortly.
+                </CardDescription>
+             </CardHeader>
+             <CardContent>
+                <p>If this message persists, please try logging out and logging back in.</p>
+             </CardContent>
+           </Card>
            <PageSkeleton />
         </div>
     )
@@ -129,7 +138,6 @@ function DashboardContent() {
 
   return (
     <div className="space-y-6">
-      <ProfileInitializer />
        <Card>
             <CardHeader>
                 <CardTitle>Welcome, {userData?.firstName || userData?.displayName || 'User'}</CardTitle>
