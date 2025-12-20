@@ -16,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogClose
 } from '@/components/ui/dialog';
 import {
@@ -29,7 +28,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useAuth, useFirestore } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { SavingGoal } from '@/lib/types';
 
@@ -42,7 +41,7 @@ interface AddFundsDialogProps {
 
 export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: AddFundsDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
-  const { user } = useAuth();
+  const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -70,7 +69,7 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Could not process request. Please try again.',
+        description: 'Could not process request. Please try again later.',
       });
       return;
     }
