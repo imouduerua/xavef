@@ -15,6 +15,7 @@ import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import Link from 'next/link';
 
 type TransactionWithUserDetails = Transaction & {
   userId: string;
@@ -25,6 +26,7 @@ export default function AdminPendingTransactionsPage() {
   const [data, setData] = useState<{
     transactions: TransactionWithUserDetails[] | null;
     error?: string;
+    errorCode?: string
   }>({ transactions: null });
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
@@ -38,13 +40,11 @@ export default function AdminPendingTransactionsPage() {
 
       setLoading(true);
       try {
-        // 1. Get all users
         const usersQuery = query(collection(firestore, 'users'));
         const usersSnapshot = await getDocs(usersQuery);
 
         const allPendingTransactions: TransactionWithUserDetails[] = [];
 
-        // 2. For each user, get their pending transactions
         for (const userDoc of usersSnapshot.docs) {
           const userData = userDoc.data() as UserData;
           const userId = userDoc.id;
@@ -66,7 +66,7 @@ export default function AdminPendingTransactionsPage() {
           });
         }
         
-        // 3. Sort the combined list by date client-side
+        // Sort the combined list by date client-side
         const sortedTransactions = allPendingTransactions.sort((a, b) => {
             const dateA = a.date ? new Date(a.date).getTime() : 0;
             const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -84,19 +84,63 @@ export default function AdminPendingTransactionsPage() {
         setData({
           transactions: null,
           error: errorMessage,
+          errorCode: error.code,
         });
         toast({
           variant: "destructive",
           title: "Error Fetching Data",
-          description: "Could not fetch pending transactions. You may not have the required permissions.",
+          description: errorMessage,
         });
       } finally {
         setLoading(false);
       }
     }
 
-    getPendingTransactions();
+    if (firestore) {
+        getPendingTransactions();
+    }
   }, [firestore]);
+  
+
+  const renderErrorContent = () => {
+    if (!data.error) return null;
+
+    if (data.errorCode === 'failed-precondition') {
+      const regex = /(https:\/\/[^\s]+)/;
+      const match = data.error.match(regex);
+      const firestoreIndexUrl = match ? match[0] : null;
+
+      return (
+        <div className="text-destructive p-4 bg-destructive/10 rounded-md space-y-4">
+          <p>
+            <b>Action Required:</b> To view pending transactions, a Firestore index must be created. This is a one-time setup.
+          </p>
+          {firestoreIndexUrl ? (
+            <p>
+              Please click the link below, then click &quot;Create&quot; in the Firebase Console. The index will take a few minutes to build.
+              <br />
+              <Link
+                href={firestoreIndexUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-bold"
+              >
+                Create Firestore Index
+              </Link>
+            </p>
+          ) : (
+            <p>Could not extract the index creation URL from the error. Please check the browser console for details.</p>
+          )}
+        </div>
+      );
+    }
+    
+    return (
+        <div className="text-destructive p-4 bg-destructive/10 rounded-md">
+            {data.error}
+        </div>
+    );
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -110,12 +154,7 @@ export default function AdminPendingTransactionsPage() {
         </CardHeader>
         <CardContent>
           {loading && <Skeleton className="h-40 w-full" />}
-          {data.error && (
-            <div 
-              className="text-destructive p-4 bg-destructive/10 rounded-md"
-              dangerouslySetInnerHTML={{ __html: data.error }}
-            />
-          )}
+          {data.error && renderErrorContent()}
           {!loading && !data.error && data.transactions && (
             <PendingTransactionsTable initialTransactions={data.transactions} />
           )}
