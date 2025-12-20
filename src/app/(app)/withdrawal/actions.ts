@@ -15,31 +15,25 @@ const bankAccountSchema = z.object({
 const withdrawalSchema = z.object({
   amount: z.number().positive(),
   destinationBank: bankAccountSchema,
+  uid: z.string().min(1, "User ID is required."),
 });
 
 export async function requestWithdrawal(
-  values: z.infer<typeof withdrawalSchema>,
-  idToken: string
+  values: z.infer<typeof withdrawalSchema>
 ): Promise<{ success: boolean; error?: string }> {
   const validation = withdrawalSchema.safeParse(values);
   if (!validation.success) {
     return { success: false, error: 'Invalid input.' };
   }
 
-  if (!idToken) {
-    return { success: false, error: 'Authentication token is missing.' };
-  }
-
   try {
-    const decodedToken = await authAdmin.verifyIdToken(idToken);
-    const uid = decodedToken.uid;
-    const { amount, destinationBank } = validation.data;
+    const { amount, destinationBank, uid } = validation.data;
 
     const userDocRef = firestoreAdmin.collection('users').doc(uid);
     const transactionRef = userDocRef.collection('transactions');
 
     const userDoc = await userDocRef.get();
-    if (!userDoc.exists) {
+    if (!userDoc.exists()) {
       throw new Error('User profile not found.');
     }
     const userData = userDoc.data();
@@ -70,15 +64,6 @@ export async function requestWithdrawal(
 
   } catch (error: any) {
     console.error('Error requesting withdrawal:', error);
-    if (error.code === 'auth/id-token-expired') {
-        return { success: false, error: 'Your session has expired. Please log in again.' };
-    }
-    if (error.code === 'auth/argument-error' || error.message?.includes('incorrect audience')) {
-        return { success: false, error: 'Authentication failed due to a project configuration mismatch. Please try again.' };
-    }
-    if (error.codePrefix === 'auth/') {
-        return { success: false, error: 'User not authenticated.' };
-    }
     return { success: false, error: error.message || 'An unexpected server error occurred.' };
   }
 }

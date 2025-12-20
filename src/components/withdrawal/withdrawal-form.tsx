@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,7 +28,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import type { BankAccount } from '@/lib/types';
 import { requestWithdrawal } from '@/app/(app)/withdrawal/actions';
-import { useAuth } from '@/firebase';
+import { useUser } from '@/firebase';
 
 interface WithdrawalFormProps {
   solidaraBalance: number;
@@ -36,7 +37,7 @@ interface WithdrawalFormProps {
 
 export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const auth = useAuth();
+  const { user } = useUser();
 
   const withdrawalSchema = z.object({
     amount: z.coerce
@@ -71,21 +72,22 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
       return;
     }
 
+    if (!user) {
+        toast({
+            variant: 'destructive',
+            title: 'Not Authenticated',
+            description: 'You must be logged in to make a withdrawal.',
+        });
+        setIsSubmitting(false);
+        return;
+    }
+
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error('User not authenticated. Please log in again.');
-      }
-
-      const idToken = await currentUser.getIdToken();
-
-      const result = await requestWithdrawal(
-        {
+      const result = await requestWithdrawal({
           amount: values.amount,
           destinationBank: selectedAccount,
-        },
-        idToken
-      );
+          uid: user.uid,
+      });
 
       if (result.success) {
         toast({

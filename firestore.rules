@@ -29,8 +29,10 @@ service cloud.firestore {
     }
 
     match /users/{userId}/transactions/{transactionId} {
-        // Users can read and create their own transactions
-        allow read, create: if request.auth != null && request.auth.uid == userId;
+        // Users can read their own transactions
+        allow read: if request.auth != null && request.auth.uid == userId;
+        // Users can create their own transactions (deposits/withdrawals)
+        allow create: if request.auth != null && request.auth.uid == userId;
         // Admins can read and update transactions (e.g., to change status)
         allow get, list, update: if isAdmin();
         // Users cannot update or delete their own transactions
@@ -39,7 +41,7 @@ service cloud.firestore {
 
     match /admins/{userId} {
       // Any authenticated user can check if another user is an admin.
-      // This is safe as it only reveals a boolean status.
+      // This is a safe as it only reveals a boolean status.
       allow read, get: if request.auth != null;
     }
   }
