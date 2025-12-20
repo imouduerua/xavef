@@ -15,6 +15,7 @@ export interface BankAccount {
 }
 
 export interface UserData {
+  id?: string;
   uid: string;
   email: string;
   displayName: string; // This might become redundant, but let's keep for now
@@ -32,7 +33,6 @@ export interface UserData {
   annualBalance: number;
   bankAccounts: BankAccount[];
   canGenerateReferralCode?: boolean;
-  id?: string;
 }
 
 export interface SavingsAccount {
