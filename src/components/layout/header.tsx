@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Bell, Gift, LogOut, Moon, Sun, User as UserIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -25,11 +25,14 @@ import Link from 'next/link';
 
 export function AppHeader() {
   const router = useRouter();
+  const pathname = usePathname();
   const auth = useAuth();
   const { user } = useUser();
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');
+
+  const isDashboard = pathname === '/dashboard';
 
 
   useEffect(() => {
@@ -67,10 +70,12 @@ export function AppHeader() {
     <>
       <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background px-4">
         <SidebarTrigger />
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => router.back()}>
-            <ArrowLeft />
-            <span className="sr-only">Back</span>
-        </Button>
+        {!isDashboard && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => router.back()}>
+                <ArrowLeft />
+                <span className="sr-only">Back</span>
+            </Button>
+        )}
         <div className="flex-1" />
 
         <div className="flex items-center gap-4">
