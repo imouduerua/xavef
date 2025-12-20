@@ -37,9 +37,10 @@ interface AddFundsDialogProps {
   goal: SavingGoal;
   solidaraBalance: number;
   children: React.ReactNode;
+  disabled?: boolean;
 }
 
-export function AddFundsDialog({ goal, solidaraBalance, children }: AddFundsDialogProps) {
+export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: AddFundsDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useAuth();
   const firestore = useFirestore();
@@ -50,7 +51,9 @@ export function AddFundsDialog({ goal, solidaraBalance, children }: AddFundsDial
       .number()
       .positive('Amount must be positive.')
       .min(1, 'Minimum amount is ₦1.00')
-      .max(solidaraBalance, 'Amount cannot exceed your Solidara balance.'),
+      .refine(amount => typeof solidaraBalance === 'number' ? amount <= solidaraBalance : true, {
+        message: 'Amount cannot exceed your Solidara balance.'
+      }),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -92,7 +95,7 @@ export function AddFundsDialog({ goal, solidaraBalance, children }: AddFundsDial
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger asChild disabled={disabled}>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add Funds to "{goal.name}"</DialogTitle>

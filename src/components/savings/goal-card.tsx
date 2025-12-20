@@ -40,7 +40,7 @@ interface GoalCardProps {
 export function GoalCard({ goal }: GoalCardProps) {
   const { user } = useUser();
   const firestore = useFirestore();
-  const { userData } = useUserData();
+  const { userData, loading: userDataLoading } = useUserData();
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const progress = (goal.currentAmount / goal.targetAmount) * 100;
@@ -135,8 +135,9 @@ export function GoalCard({ goal }: GoalCardProps) {
         <AddFundsDialog 
             goal={goal} 
             solidaraBalance={userData?.solidaraBalance ?? 0}
+            disabled={userDataLoading}
         >
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" disabled={userDataLoading}>
                 Add Funds
             </Button>
         </AddFundsDialog>
