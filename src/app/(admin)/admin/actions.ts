@@ -36,8 +36,7 @@ export async function updateTransactionStatus(values: z.infer<typeof updateStatu
 
       // Only allow updates on pending transactions
       if (txData.status !== 'Pending') {
-        // This is not a fatal error, just a state mismatch. We can ignore it.
-        console.log(`Transaction ${transactionId} is already ${txData.status}.`);
+        console.log(`Transaction ${transactionId} is already ${txData.status}. No action taken.`);
         return;
       }
 
@@ -55,8 +54,9 @@ export async function updateTransactionStatus(values: z.infer<typeof updateStatu
 
         const targetAccount = txData.targetAccount;
 
+        // CRITICAL FIX: Validate targetAccount before using it.
         if (!targetAccount || (targetAccount !== 'solidara' && targetAccount !== 'annual')) {
-          throw new Error(`Invalid target account '${targetAccount}' on transaction.`);
+          throw new Error(`Invalid or missing target account '${targetAccount}' on transaction. Cannot update balance.`);
         }
         
         const balanceFieldToUpdate = `${targetAccount}Balance`;
