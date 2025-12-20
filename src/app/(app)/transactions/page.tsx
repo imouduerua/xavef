@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Transaction, TransactionStatus, TransactionType } from "@/lib/types";
 import { useUser, useCollection, useFirestore } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, orderBy } from "firebase/firestore";
 import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -70,7 +70,7 @@ function TransactionsTable({ transactions, isLoading }: { transactions: Transact
                 <TableCell>
                   <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
                 </TableCell>
-                <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
+                <TableCell>{tx.date ? new Date(tx.date).toLocaleDateString() : 'N/A'}</TableCell>
                 <TableCell className={`text-right font-semibold ${tx.amount > 0 ? 'text-green-600' : ''}`}>
                   {tx.amount > 0 ? `+₦${tx.amount.toFixed(2)}` : `-₦${Math.abs(tx.amount).toFixed(2)}`}
                 </TableCell>
@@ -89,23 +89,16 @@ export default function TransactionsPage() {
 
   const transactionsQuery = useMemo(() => {
     if (!user) return null;
-    // Removed orderBy to prevent index error. Sorting is now done on the client.
     return query(
       collection(firestore, "users", user.uid, "transactions"),
-      where("status", "in", ["Completed", "Failed"])
+      where("status", "in", ["Completed", "Failed"]),
+      orderBy("date", "desc")
     );
   }, [user, firestore]);
 
   const { data: transactions, loading } = useCollection<Transaction>(transactionsQuery);
-  
-  // Sort transactions on the client-side
-  const sortedTransactions = useMemo(() => {
-    if (!transactions) return [];
-    return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions]);
 
-
-  const all = sortedTransactions;
+  const all = transactions ?? [];
   const deposits = all.filter((tx) => tx.type === "Deposit" || tx.type === "Interest");
   const withdrawals = all.filter((tx) => tx.type === "Withdrawal");
   const payments = all.filter((tx) => tx.type === "Loan Payment");
