@@ -13,12 +13,6 @@ interface AnnualSavingsCardProps {
 export function AnnualSavingsCard({ balance, pendingAmount }: AnnualSavingsCardProps) {
   const isDisabled = pendingAmount !== undefined;
 
-  const depositButton = (
-    <DepositDialog accountName="Annual Savings" targetAccount="annual">
-        <Button className="w-full" disabled={isDisabled}>Deposit</Button>
-    </DepositDialog>
-  );
-
   return (
     <Card>
       <CardHeader>
@@ -44,22 +38,6 @@ export function AnnualSavingsCard({ balance, pendingAmount }: AnnualSavingsCardP
             <CardDescription>End of year savings goal</CardDescription>
         )}
       </CardContent>
-      <CardFooter>
-         {isDisabled ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="w-full">{depositButton}</div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>You have a pending deposit for this account.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          depositButton
-        )}
-      </CardFooter>
     </Card>
   );
 }

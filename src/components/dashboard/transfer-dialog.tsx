@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,7 +43,7 @@ const formSchema = z.discriminatedUnion('transferType', [
   z.object({
     transferType: z.literal('toSelf'),
     amount: z.coerce.number().positive('Amount must be a positive number.'),
-    fromAccount: z.literal('solidara'),
+    fromAccount: z.enum(['solidara', 'annual']),
     toAccount: z.enum(['solidara', 'annual']),
   }),
   z.object({
@@ -186,9 +187,16 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
                     </FormItem>
                   )}
                 />
-                 <FormItem>
-                    <FormLabel>From</FormLabel>
-                    <Select defaultValue="solidara" disabled>
+                 <FormField
+                  control={form.control}
+                  name="fromAccount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>From</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select source account" />
@@ -198,9 +206,15 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
                             <SelectItem value="solidara">
                                 Savings (Olidara) (Balance: ₦{balances.solidara.toFixed(2)})
                             </SelectItem>
+                             <SelectItem value="annual" disabled>
+                                Annual Savings (Balance: ₦{balances.annual.toFixed(2)})
+                            </SelectItem>
                         </SelectContent>
-                    </Select>
-                </FormItem>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="toAccount"
