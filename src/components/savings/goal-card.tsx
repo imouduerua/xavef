@@ -2,7 +2,7 @@
 'use client';
 
 import { format, formatDistanceToNow } from 'date-fns';
-import { MoreVertical, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2, Pencil } from 'lucide-react';
 import React from 'react';
 
 import {
@@ -22,6 +22,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
@@ -31,6 +32,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { deleteSavingGoal } from '@/app/(app)/savings/client-actions';
 import { AddFundsDialog } from './add-funds-dialog';
 import { useUserData } from '@/hooks/use-user-data';
+import { EditGoalDialog } from './edit-goal-dialog';
 
 
 interface GoalCardProps {
@@ -43,7 +45,7 @@ export function GoalCard({ goal }: GoalCardProps) {
   const { userData, loading: userDataLoading } = useUserData();
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  const progress = (goal.currentAmount / goal.targetAmount) * 100;
+  const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
   const targetDate = goal.targetDate ? goal.targetDate.toDate() : null;
 
   const formatCurrency = (amount: number) =>
@@ -87,6 +89,13 @@ export function GoalCard({ goal }: GoalCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                 <EditGoalDialog goal={goal}>
+                    <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>Edit</span>
+                    </button>
+                </EditGoalDialog>
+                <DropdownMenuSeparator />
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem className="text-destructive" disabled={isDeleting}>
                     <Trash2 className="mr-2 h-4 w-4" />

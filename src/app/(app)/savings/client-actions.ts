@@ -10,6 +10,7 @@ import {
   Firestore,
   runTransaction,
   increment,
+  updateDoc,
 } from 'firebase/firestore';
 
 interface SavingGoalData {
@@ -41,6 +42,28 @@ export async function createSavingGoal(
     return { success: false, error: 'Failed to create saving goal.' };
   }
 }
+
+export async function updateSavingGoal(
+  firestore: Firestore,
+  userId: string,
+  goalId: string,
+  data: SavingGoalData
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
+        await updateDoc(goalDocRef, {
+            name: data.name,
+            targetAmount: data.targetAmount,
+            targetDate: data.targetDate || null,
+            emoji: data.emoji || '🎯',
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error updating saving goal:", error);
+        return { success: false, error: "Failed to update saving goal." };
+    }
+}
+
 
 export async function deleteSavingGoal(
   firestore: Firestore,
