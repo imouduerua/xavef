@@ -85,7 +85,7 @@ export default function AdminPendingTransactionsPage() {
 
         // Handle the specific error for a missing index
         if (error.code === 'failed-precondition' && error.message.includes('index')) {
-          errorMessage = error.message; // Pass the full error message which includes the creation link
+          errorMessage = "A database index is required for this query. Please check the Firestore documentation to create the necessary composite index for the 'transactions' collection group.";
         } else if (error.code === 'permission-denied') {
           errorMessage = "Permission denied. You must be an admin to view this page.";
         }
@@ -95,14 +95,13 @@ export default function AdminPendingTransactionsPage() {
           error: errorMessage,
           errorCode: error.code,
         });
+        
+        toast({
+            variant: "destructive",
+            title: "Error Fetching Data",
+            description: errorMessage,
+        });
 
-        if (error.code !== 'failed-precondition') {
-            toast({
-              variant: "destructive",
-              title: "Error Fetching Data",
-              description: errorMessage,
-            });
-        }
       } finally {
         setLoading(false);
       }
@@ -116,37 +115,6 @@ export default function AdminPendingTransactionsPage() {
 
   const renderErrorContent = () => {
     if (!data.error) return null;
-
-    if (data.errorCode === 'failed-precondition') {
-      const regex = /(https:\/\/[^\s]+)/;
-      const match = data.error.match(regex);
-      const firestoreIndexUrl = match ? match[0].replace(/%20/g,'') : null;
-
-      return (
-        <div className="text-destructive p-4 bg-destructive/10 rounded-md space-y-4">
-          <p className='font-bold'>Action Required: Firestore Index Missing</p>
-          <p>
-             To query pending transactions efficiently, a special database index is required. This is a one-time setup.
-          </p>
-          {firestoreIndexUrl ? (
-            <p>
-              Please click the link below to go to the Firebase Console, then click &quot;Create&quot; to build the index. It may take a few minutes to become active.
-              <br />
-              <Link
-                href={firestoreIndexUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline font-bold mt-2 inline-block"
-              >
-                Create Firestore Index
-              </Link>
-            </p>
-          ) : (
-            <p>Could not extract the index creation URL from the error. Please check the browser console for details and create the index manually in the Firebase console.</p>
-          )}
-        </div>
-      );
-    }
     
     return (
         <div className="text-destructive p-4 bg-destructive/10 rounded-md">
