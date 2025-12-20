@@ -49,7 +49,10 @@ function AllTransactionsPageContent() {
   } = useCollection<Transaction>(allTxsQuery);
 
   useEffect(() => {
+    // Halt processing if there's no data, it's loading, or an index is needed.
     if (rawLoading || indexCreationUrl || !rawTransactions) {
+      // Also clear stale data if we enter a loading/error state
+      if(transactions) setTransactions(null);
       return;
     }
 
@@ -97,18 +100,23 @@ function AllTransactionsPageContent() {
     };
 
     processTransactions();
-  }, [rawTransactions, firestore, rawLoading, indexCreationUrl]);
+  // We only want to re-run this effect when the raw, unprocessed data changes.
+  }, [rawTransactions, firestore]);
 
   const renderContent = () => {
-    if (rawLoading) {
-      return <Skeleton className="h-40 w-full" />;
-    }
+    // Priority 1: Show index creation alert if needed.
     if (indexCreationUrl) {
       return <MissingIndexAlert url={indexCreationUrl} />;
     }
+    // Priority 2: Show skeleton while the initial query or the detailed processing is happening.
+    if (rawLoading || (rawTransactions && !transactions)) {
+      return <Skeleton className="h-40 w-full" />;
+    }
+    // Priority 3: If we have the fully processed data, show the table.
     if (transactions) {
       return <AllTransactionsTable transactions={transactions} />;
     }
+    // Fallback for any other state (e.g., initial render before first effect run)
     return <Skeleton className="h-40 w-full" />;
   };
 
