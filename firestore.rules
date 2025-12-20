@@ -32,6 +32,9 @@ service cloud.firestore {
     }
 
     match /referralCodes/{codeId} {
+      // Only allow a read if it's part of the same transaction where the user is creating their own profile.
+      allow read: if request.auth != null && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.uid == request.auth.uid;
+      
       allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
       
       // A user can mark a code as used as part of the transaction to create their own profile
@@ -39,8 +42,8 @@ service cloud.firestore {
                      && request.resource.data.used == true
                      && resource.data.used == false;
 
-      // No one can read a referral code after it's created.
-      allow read, delete: if false;
+      // No one can delete referral codes
+      allow delete: if false;
     }
 
     match /users/{userId}/transactions/{transactionId} {
