@@ -105,10 +105,10 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
             Update the details for your "{goal.name}" goal.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="overflow-y-auto">
-          <div className="px-6 py-4">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+            <ScrollArea className="overflow-y-auto h-[60vh]">
+              <div className="px-6 py-4 space-y-4">
                 <FormField
                   control={form.control}
                   name="name"
@@ -201,30 +201,30 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
                     </FormItem>
                   )}
                 />
-              </form>
-            </Form>
-          </div>
-        </ScrollArea>
-        <DialogFooter className="p-6 pt-0 border-t">
-          <DialogClose asChild>
-            <Button type="button" variant="outline">
-              Cancel
-            </Button>
-          </DialogClose>
-          <Button type="submit" disabled={isSubmitting} onClick={form.handleSubmit(onSubmit)}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+              </div>
+            </ScrollArea>
+            <DialogFooter className="p-6 pt-0 border-t">
+              <DialogClose asChild>
+                <Button type="button" variant="outline">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
