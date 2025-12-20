@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { collectionGroup, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 
 type TransactionWithUserDetails = Transaction & {
   userId: string;
@@ -35,8 +35,9 @@ export default function AdminPendingTransactionsPage() {
 
       setLoading(true);
       try {
+        // CORRECTED: Use collectionGroup to query across all 'transactions' subcollections.
         const transactionsQuery = query(
-          collection(firestore, 'transactions'),
+          collectionGroup(firestore, 'transactions'),
           where('status', '==', 'Pending')
         );
         const querySnapshot = await getDocs(transactionsQuery);
@@ -45,6 +46,7 @@ export default function AdminPendingTransactionsPage() {
         
         for (const txDoc of querySnapshot.docs) {
             const txData = txDoc.data() as Transaction;
+            // The parent of a subcollection document is the document that contains it (e.g., /users/{userId})
             const userId = txDoc.ref.parent.parent!.id;
             
             const userDocRef = doc(firestore, 'users', userId);
