@@ -96,6 +96,7 @@ export default function SettingsPage() {
     setIsSubmitting(true);
     try {
       const userDocRef = doc(firestore, "users", user.uid);
+      // We don't want to save firstName and lastName as they are disabled
       const { firstName, lastName, ...updateData } = data;
       await updateDoc(userDocRef, updateData);
       toast({
@@ -222,7 +223,7 @@ export default function SettingsPage() {
                           <FormField control={form.control} name={`bankAccounts.${index}.accountName`} render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Account Holder Name</FormLabel>
-                                <FormControl><Input {...field} /></FormControl>
+                                <FormControl><Input {...field} disabled /></FormControl>
                                 <FormMessage />
                               </FormItem>
                           )} />
