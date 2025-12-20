@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Bell, Gift, LogOut, Moon, Sun, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Bell, LogOut, Moon, Sun, User as UserIcon } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -16,7 +16,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
 import { SidebarTrigger } from '../ui/sidebar';
 import { useAuth, useUser } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
@@ -139,12 +138,6 @@ export function AppHeader() {
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                <ReferralCodeDialog userId={user.uid}>
-                    <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
-                        <Gift className="mr-2 h-4 w-4" />
-                        <span>Generate Referral Code</span>
-                    </button>
-                </ReferralCodeDialog>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
