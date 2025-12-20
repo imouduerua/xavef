@@ -1,3 +1,6 @@
+
+'use client';
+
 import Link from "next/link";
 import {
   Table,
@@ -9,10 +12,13 @@ import {
 } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { mockTransactions } from "@/lib/mock-data";
-import type { TransactionStatus } from "@/lib/types";
+import type { Transaction, TransactionStatus } from "@/lib/types";
 import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
+import { useCollection, useFirestore, useUser } from "@/firebase";
+import { useMemo } from "react";
+import { collection, limit, orderBy, query } from "firebase/firestore";
+import { Skeleton } from "../ui/skeleton";
 
 const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destructive"> = {
     "Completed": "default",
@@ -22,7 +28,51 @@ const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destru
 
 
 export function RecentTransactions() {
-  const recentTransactions = mockTransactions.slice(0, 5);
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const transactionsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(
+      collection(firestore, "users", user.uid, "transactions"),
+      orderBy("date", "desc"),
+      limit(5)
+    );
+  }, [user, firestore]);
+
+  const { data: transactions, loading } = useCollection<Transaction>(transactionsQuery);
+
+  if (loading) {
+      return (
+          <Card>
+              <CardHeader>
+                  <CardTitle>Recent Transactions</CardTitle>
+                  <CardDescription>A summary of your latest account activity.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+              </CardContent>
+          </Card>
+      )
+  }
+
+  if (!transactions || transactions.length === 0) {
+      return (
+           <Card>
+                <CardHeader>
+                    <CardTitle>Recent Transactions</CardTitle>
+                    <CardDescription>A summary of your latest account activity.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p>No transactions found.</p>
+                </CardContent>
+            </Card>
+      )
+  }
 
   return (
     <Card>
@@ -50,7 +100,7 @@ export function RecentTransactions() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {recentTransactions.map((tx) => (
+                    {transactions.map((tx) => (
                     <TableRow key={tx.id}>
                         <TableCell className="font-medium">{tx.description}</TableCell>
                         <TableCell>{tx.type}</TableCell>

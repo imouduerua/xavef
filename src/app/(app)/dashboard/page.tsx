@@ -16,7 +16,8 @@ import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProfileInitializer } from '@/components/dashboard/profile-initializer';
-import { AccountType } from '@/lib/types';
+import type { AccountType } from '@/lib/types';
+import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 
 function DashboardContent() {
   const { loading: userLoading } = useUser();
@@ -89,6 +90,9 @@ function DashboardContent() {
                 <CardSkeleton />
                 <CardSkeleton />
             </div>
+             <div className="mt-6">
+                <Skeleton className="h-64 w-full" />
+            </div>
         </div>
   )
 
@@ -139,7 +143,9 @@ function DashboardContent() {
         <AnnualSavingsCard balance={balances.annual} />
         <TotalSavingsCard balance={totalSavings} />
       </div>
-      <div></div>
+      <div>
+        <RecentTransactions />
+      </div>
     </div>
   );
 }
