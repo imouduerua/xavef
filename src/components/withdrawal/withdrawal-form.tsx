@@ -165,25 +165,6 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
           )}
         />
         
-        {withdrawalAmount > 0 && (
-            <Card className="bg-muted/50">
-                <CardContent className="p-4 space-y-2 text-sm">
-                    <div className="flex justify-between">
-                        <span>Withdrawal Amount:</span>
-                        <span className="font-medium">₦{withdrawalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                     <div className="flex justify-between">
-                        <span>Fee (3.3%):</span>
-                        <span className="font-medium text-destructive">- ₦{fee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                     <div className="flex justify-between font-semibold pt-2 border-t">
-                        <span>You Will Receive:</span>
-                        <span>₦{payoutAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                </CardContent>
-            </Card>
-        )}
-
         <FormField
           control={form.control}
           name="bankAccountId"
