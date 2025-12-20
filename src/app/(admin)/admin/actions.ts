@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { firestoreAdmin } from '@/firebase/admin';
 import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { AccountType } from '@/lib/types';
+import type { AccountType, Transaction, UserData } from '@/lib/types';
 
 const updateStatusSchema = z.object({
   userId: z.string().min(1),
@@ -26,44 +26,47 @@ export async function updateTransactionStatus(values: z.infer<typeof updateStatu
   const userRef = firestoreAdmin.doc(`users/${userId}`);
 
   try {
-    await firestoreAdmin.runTransaction(async (transaction) => {
-        const txDoc = await transaction.get(transactionRef);
-        if (!txDoc.exists) {
-            throw new Error("Transaction not found.");
+    await firestoreAdmin.runTransaction(async (t) => {
+      const txDoc = await t.get(transactionRef);
+      if (!txDoc.exists) {
+        throw new Error("Transaction not found.");
+      }
+      
+      const txData = txDoc.data() as Transaction;
+      if (txData?.status !== 'Pending') {
+        throw new Error(`Transaction is already ${txData?.status}.`);
+      }
+
+      // If approving a deposit, update the user's balance.
+      if (newStatus === 'Completed' && txData.type === 'Deposit') {
+        const userDoc = await t.get(userRef);
+        if (!userDoc.exists) {
+          throw new Error("User not found to update balance.");
+        }
+
+        const amount = txData.amount;
+        const targetAccount = txData.targetAccount;
+
+        if (!targetAccount || (targetAccount !== 'solidara' && targetAccount !== 'annual')) {
+          throw new Error(`Invalid target account on transaction: ${targetAccount}`);
         }
         
-        const txData = txDoc.data();
-        if (txData?.status !== 'Pending') {
-            throw new Error(`Transaction is already ${txData?.status}.`);
-        }
-
-        // If approving a deposit, update the user's balance.
-        if (newStatus === 'Completed' && txData.type === 'Deposit') {
-          const userDoc = await transaction.get(userRef);
-          if (!userDoc.exists) {
-            throw new Error("User not found to update balance.");
-          }
-
-          const amount = txData.amount;
-          const targetAccount = txData.targetAccount as AccountType;
-
-          if (!targetAccount || (targetAccount !== 'solidara' && targetAccount !== 'annual')) {
-            throw new Error(`Invalid target account on transaction: ${targetAccount}`);
-          }
-          
-          const balanceFieldToUpdate = `${targetAccount}Balance`;
-          
-          transaction.update(userRef, {
-            [balanceFieldToUpdate]: FieldValue.increment(amount)
-          });
-        }
+        const balanceFieldToUpdate = `${targetAccount}Balance`;
         
-        // Update the transaction status for both 'Completed' and 'Failed'
-        transaction.update(transactionRef, { status: newStatus });
+        // Use FieldValue.increment for atomic updates
+        t.update(userRef, {
+          [balanceFieldToUpdate]: FieldValue.increment(amount)
+        });
+      }
+      
+      // Update the transaction status for both 'Completed' and 'Failed'
+      t.update(transactionRef, { status: newStatus });
     });
 
-    // Revalidate the path to ensure the admin sees the updated list
+    // Revalidate paths to ensure data is refreshed on the client
     revalidatePath('/admin/pending-transactions');
+    revalidatePath('/dashboard');
+    revalidatePath('/transactions');
 
     return { success: true };
 

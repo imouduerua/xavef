@@ -106,9 +106,12 @@
           "type": "number"
         },
         "targetAccount": {
-            "type": "string",
-            "enum": ["solidara", "annual"],
-            "description": "The target account for the transaction, if applicable."
+          "type": "string",
+          "enum": [
+            "solidara",
+            "annual"
+          ],
+          "description": "The target account for the transaction, if applicable."
         }
       },
       "required": [
