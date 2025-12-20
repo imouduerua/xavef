@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -22,12 +23,14 @@ import { toast } from '@/hooks/use-toast';
 import { mockNotifications } from '@/lib/mock-data';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
+import { useUserData } from '@/hooks/use-user-data';
 
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const auth = useAuth();
   const { user } = useUser();
+  const { userData } = useUserData();
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');
@@ -136,12 +139,14 @@ export function AppHeader() {
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                <ReferralCodeDialog userId={user.uid}>
-                    <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
-                        <Gift className="mr-2 h-4 w-4" />
-                        <span>Generate Referral Code</span>
-                    </button>
-                </ReferralCodeDialog>
+                {userData?.canGenerateReferralCode && (
+                  <ReferralCodeDialog userId={user.uid}>
+                      <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">
+                          <Gift className="mr-2 h-4 w-4" />
+                          <span>Generate Referral Code</span>
+                      </button>
+                  </ReferralCodeDialog>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />

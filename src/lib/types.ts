@@ -1,4 +1,5 @@
 
+
 import type { FieldValue, Timestamp } from "firebase/firestore";
 
 export interface User {
@@ -30,6 +31,7 @@ export interface UserData {
   solidaraBalance: number;
   annualBalance: number;
   bankAccounts: BankAccount[];
+  canGenerateReferralCode?: boolean;
   id?: string;
 }
 
