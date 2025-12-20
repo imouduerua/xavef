@@ -39,6 +39,11 @@ service cloud.firestore {
         allow update, delete: if false;
     }
 
+    match /users/{userId}/goals/{goalId} {
+        // Users can manage their own saving goals
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
     match /admins/{userId} {
       // Any authenticated user can check if another user is an admin.
       // This is a safe as it only reveals a boolean status.

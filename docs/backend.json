@@ -183,6 +183,46 @@
       "required": [
         "isAdmin"
       ]
+    },
+    "savingGoal": {
+      "title": "Saving Goal",
+      "description": "A user-defined saving goal.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this goal."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the saving goal."
+        },
+        "targetAmount": {
+          "type": "number",
+          "description": "The target amount for the goal."
+        },
+        "currentAmount": {
+          "type": "number",
+          "description": "The current amount saved towards the goal."
+        },
+        "targetDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The target date to achieve the goal."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the goal was created."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "targetAmount",
+        "currentAmount",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -202,6 +242,12 @@
         "$ref": "#/entities/transaction"
       },
       "description": "Stores a user's transactions."
+    },
+    "/users/{userId}/goals/{goalId}": {
+      "schema": {
+        "$ref": "#/entities/savingGoal"
+      },
+      "description": "Stores a user's saving goals."
     },
     "/referralCodes/{codeId}": {
       "schema": {

@@ -86,3 +86,13 @@ export interface ReferralCode {
     used: boolean;
     createdAt: any;
 }
+
+export interface SavingGoal {
+    id: string;
+    userId: string;
+    name: string;
+    targetAmount: number;
+    currentAmount: number;
+    targetDate?: any;
+    createdAt: any;
+}
