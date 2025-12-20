@@ -18,6 +18,7 @@ export function ProfileInitializer() {
   const { userData, loading: userDataLoading } = useUserData();
   const searchParams = useSearchParams();
   const referralCode = searchParams.get('referralCode');
+  const displayName = searchParams.get('displayName');
   
   // Use a ref to ensure the creation logic only runs once
   const profileCreationAttempted = useRef(false);
@@ -28,7 +29,7 @@ export function ProfileInitializer() {
     // 2. We have a referral code from the URL.
     // 3. The user's data has finished loading and is confirmed to be missing (null).
     // 4. We haven't already attempted to create a profile in this session.
-    if (user && referralCode && !userData && !userDataLoading && !profileCreationAttempted.current) {
+    if (user && referralCode && displayName && !userData && !userDataLoading && !profileCreationAttempted.current) {
       // Mark that we are attempting to create a profile to prevent re-runs
       profileCreationAttempted.current = true;
 
@@ -39,7 +40,7 @@ export function ProfileInitializer() {
 
       const handleProfileCreation = async () => {
         try {
-          const result = await createUserProfile(user.uid, user.email!, referralCode);
+          const result = await createUserProfile(user.uid, user.email!, displayName, referralCode);
           if (result.success) {
             toast({
               title: 'Account Ready!',
@@ -65,7 +66,7 @@ export function ProfileInitializer() {
 
       handleProfileCreation();
     }
-  }, [user, userData, userDataLoading, referralCode]);
+  }, [user, userData, userDataLoading, referralCode, displayName]);
 
   // This component does not render anything
   return null;

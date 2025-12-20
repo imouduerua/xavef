@@ -49,7 +49,7 @@ async function generateUniqueXavefId(): Promise<string> {
   return xavefId!;
 }
 
-export async function createUserProfile(uid: string, email: string, referralCode: string | null): Promise<{ success: boolean, error?: string }> {
+export async function createUserProfile(uid: string, email: string, displayName: string, referralCode: string | null): Promise<{ success: boolean, error?: string }> {
     console.log(`[createUserProfile] Starting profile creation for uid: ${uid}`);
     
     if (!referralCode) {
@@ -82,12 +82,17 @@ export async function createUserProfile(uid: string, email: string, referralCode
             console.log(`[createUserProfile] Referral code is valid. Referred by: ${referredBy}.`);
 
             const xavefId = await generateUniqueXavefId();
+
+            const nameParts = displayName.split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
             
             const newUser = {
                 uid,
                 email,
-                firstName: "",
-                lastName: "",
+                firstName,
+                lastName,
+                displayName,
                 dateOfBirth: null,
                 phoneNumber: null,
                 address: null,

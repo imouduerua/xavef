@@ -32,8 +32,8 @@ const bankAccountSchema = z.object({
 });
 
 const profileFormSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
+  firstName: z.string(),
+  lastName: z.string(),
   phoneNumber: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
   state: z.string().min(1, "State is required"),
@@ -96,7 +96,8 @@ export default function SettingsPage() {
     setIsSubmitting(true);
     try {
       const userDocRef = doc(firestore, "users", user.uid);
-      await updateDoc(userDocRef, data);
+      const { firstName, lastName, ...updateData } = data;
+      await updateDoc(userDocRef, updateData);
       toast({
         title: "Profile Updated",
         description: "Your information has been saved successfully.",
@@ -156,14 +157,14 @@ export default function SettingsPage() {
                  <FormField control={form.control} name="firstName" render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Name</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
+                      <FormControl><Input {...field} disabled /></FormControl>
                       <FormMessage />
                     </FormItem>
                 )} />
                  <FormField control={form.control} name="lastName" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
+                      <FormControl><Input {...field} disabled /></FormControl>
                       <FormMessage />
                     </FormItem>
                 )} />
@@ -249,7 +250,7 @@ export default function SettingsPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => append({ bankName: "", accountName: "", bankAccountNumber: "" })}
+                  onClick={() => append({ bankName: "", accountName: `${form.getValues("firstName")} ${form.getValues("lastName")}`, bankAccountNumber: "" })}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add Bank Account
