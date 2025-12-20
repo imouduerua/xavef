@@ -143,8 +143,8 @@ export async function withdrawCompletedGoal(
       
       // Add funds back to solidara balance
       transaction.update(userDocRef, { solidaraBalance: increment(amountToWithdraw) });
-      // Delete the goal
-      transaction.delete(goalDocRef);
+      // Reset the goal's current amount to 0 instead of deleting it.
+      transaction.update(goalDocRef, { currentAmount: 0 });
     });
 
     return { success: true };
