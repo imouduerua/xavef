@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
-import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy } from 'firebase/firestore';
+import { collectionGroup, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import Link from 'next/link';
 
 type TransactionWithUserDetails = Transaction & {
@@ -41,11 +41,9 @@ export default function AdminPendingTransactionsPage() {
       setLoading(true);
       try {
         // Use a collection group query to fetch all pending transactions across all users.
-        // This is much more efficient than fetching all users and then their transactions.
         const pendingTxsQuery = query(
           collectionGroup(firestore, 'transactions'), 
-          where('status', '==', 'Pending'),
-          orderBy('date', 'desc')
+          where('status', '==', 'Pending')
         );
 
         const querySnapshot = await getDocs(pendingTxsQuery);
@@ -63,7 +61,7 @@ export default function AdminPendingTransactionsPage() {
         });
 
         // Now, fetch the user details for each transaction
-        const transactionsWithUserDetails: TransactionWithUserDetails[] = await Promise.all(
+        let transactionsWithUserDetails: TransactionWithUserDetails[] = await Promise.all(
           pendingTransactions.map(async (tx) => {
             const userRef = doc(firestore, 'users', tx.userId);
             const userSnap = await getDoc(userRef);
@@ -72,6 +70,9 @@ export default function AdminPendingTransactionsPage() {
           })
         );
         
+        // Sort transactions by date client-side
+        transactionsWithUserDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
         setData({ transactions: transactionsWithUserDetails });
 
       } catch (error: any) {
