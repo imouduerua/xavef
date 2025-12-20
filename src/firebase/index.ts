@@ -19,11 +19,10 @@ export function initializeFirebase(): {
   const firestore = getFirestore(app);
 
   if (process.env.NODE_ENV === 'development') {
-    try {
-        connectFirestoreEmulator(firestore, 'localhost', 8080);
-    } catch (e) {
-        console.warn('Could not connect to Firestore emulator. This is expected if you are not running the emulator.', e);
-    }
+    // connectFirestoreEmulator will not throw an error if the emulator is not running.
+    // It will simply log a warning to the console.
+    // The try/catch is unnecessary and can hide other issues.
+    connectFirestoreEmulator(firestore, 'localhost', 8080);
   }
 
   return { app, auth, firestore };
