@@ -35,10 +35,10 @@ export default function AdminPendingTransactionsPage() {
 
       setLoading(true);
       try {
+        // Query without ordering to avoid needing a composite index
         const transactionsQuery = query(
           collectionGroup(firestore, 'transactions'),
-          where('status', '==', 'Pending'),
-          orderBy('date', 'desc')
+          where('status', '==', 'Pending')
         );
         const querySnapshot = await getDocs(transactionsQuery);
 
@@ -58,7 +58,15 @@ export default function AdminPendingTransactionsPage() {
                 userEmail: userDoc.exists() ? userDoc.data().email : 'Unknown User',
             });
         }
-        setData({ transactions: transactions });
+
+        // Sort the transactions by date on the client side (newest first)
+        const sortedTransactions = transactions.sort((a, b) => {
+            const dateA = a.date ? new Date(a.date).getTime() : 0;
+            const dateB = b.date ? new Date(b.date).getTime() : 0;
+            return dateB - dateA;
+        });
+
+        setData({ transactions: sortedTransactions });
 
       } catch (error: any) {
         console.error("Error fetching pending transactions:", error);
@@ -120,4 +128,3 @@ export default function AdminPendingTransactionsPage() {
     </div>
   );
 }
-
