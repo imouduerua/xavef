@@ -14,12 +14,15 @@ function isProfileComplete(userData: UserData | null) {
     if (!userData) return false;
     const requiredFields: (keyof UserData)[] = [
         'firstName', 'lastName', 'phoneNumber', 'address', 'state', 'country',
-        'bankName', 'accountName', 'bankAccountNumber'
     ];
-    return requiredFields.every(field => {
+    const profileFieldsComplete = requiredFields.every(field => {
         const value = userData[field];
         return typeof value === 'string' && value.trim() !== '';
     });
+    
+    const bankAccountsExist = userData.bankAccounts && userData.bankAccounts.length > 0;
+
+    return profileFieldsComplete && bankAccountsExist;
 }
 
 function WithdrawalForm() {
@@ -39,7 +42,7 @@ function CompleteProfilePrompt() {
             <AlertDescription>
                 <div className="space-y-4">
                     <p>
-                        To withdraw funds, you must first complete your personal and bank details in your profile.
+                        To withdraw funds, you must first complete your personal details and add at least one bank account in your profile.
                     </p>
                     <Button asChild>
                         <Link href="/settings">

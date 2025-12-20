@@ -6,6 +6,12 @@ export interface User {
   avatarUrl: string;
 }
 
+export interface BankAccount {
+    bankName: string;
+    accountName: string;
+    bankAccountNumber: string;
+}
+
 export interface UserData {
   uid: string;
   email: string;
@@ -22,9 +28,7 @@ export interface UserData {
   createdAt: any;
   solidaraBalance: number;
   annualBalance: number;
-  bankName: string;
-  accountName: string;
-  bankAccountNumber: string;
+  bankAccounts: BankAccount[];
   id?: string;
 }
 

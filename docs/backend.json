@@ -64,17 +64,24 @@
           "type": "number",
           "description": "The user's balance for the Annual savings account."
         },
-        "bankName": {
-          "type": "string",
-          "description": "The name of the user's bank."
-        },
-        "accountName": {
-          "type": "string",
-          "description": "The name on the user's bank account."
-        },
-        "bankAccountNumber": {
-          "type": "string",
-          "description": "The user's bank account number."
+        "bankAccounts": {
+            "type": "array",
+            "description": "A list of the user's bank accounts.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "bankName": {
+                        "type": "string"
+                    },
+                    "accountName": {
+                        "type": "string"
+                    },
+                    "bankAccountNumber": {
+                        "type": "string"
+                    }
+                },
+                "required": ["bankName", "accountName", "bankAccountNumber"]
+            }
         }
       },
       "required": [

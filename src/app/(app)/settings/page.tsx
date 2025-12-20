@@ -2,16 +2,15 @@
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 import React from "react";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, PlusCircle, Save, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -26,6 +25,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
+const bankAccountSchema = z.object({
+  bankName: z.string().min(1, "Bank name is required"),
+  accountName: z.string().min(1, "Account name is required"),
+  bankAccountNumber: z.string().min(1, "Account number is required"),
+});
+
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -33,10 +38,17 @@ const profileFormSchema = z.object({
   address: z.string().min(1, "Address is required"),
   state: z.string().min(1, "State is required"),
   country: z.string().min(1, "Country is required"),
-  bankName: z.string().min(1, "Bank name is required"),
-  accountName: z.string().min(1, "Account name is required"),
-  bankAccountNumber: z.string().min(1, "Account number is required"),
+  bankAccounts: z.array(bankAccountSchema),
+}).refine(data => {
+    const fullName = `${data.firstName} ${data.lastName}`.trim().toLowerCase();
+    return data.bankAccounts.every(account => 
+        account.accountName.trim().toLowerCase() === fullName
+    );
+}, {
+    message: "The account holder's name must match your first and last name.",
+    path: ["bankAccounts"],
 });
+
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
@@ -55,10 +67,13 @@ export default function SettingsPage() {
       address: "",
       state: "",
       country: "",
-      bankName: "",
-      accountName: "",
-      bankAccountNumber: "",
+      bankAccounts: [],
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "bankAccounts",
   });
 
   React.useEffect(() => {
@@ -70,9 +85,7 @@ export default function SettingsPage() {
         address: userData.address || "",
         state: userData.state || "",
         country: userData.country || "",
-        bankName: userData.bankName || "",
-        accountName: userData.accountName || "",
-        bankAccountNumber: userData.bankAccountNumber || "",
+        bankAccounts: userData.bankAccounts || [],
       });
     }
   }, [userData, form]);
@@ -189,31 +202,58 @@ export default function SettingsPage() {
               <Separator />
 
                <div>
-                <h3 className="text-lg font-medium">Bank Details</h3>
-                <p className="text-sm text-muted-foreground">Add your bank account for withdrawals.</p>
+                <h3 className="text-lg font-medium">Bank Accounts</h3>
+                <p className="text-sm text-muted-foreground">Add and manage your bank accounts for withdrawals.</p>
               </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <FormField control={form.control} name="bankName" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bank Name</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={form.control} name="accountName" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Account Holder Name</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                )} />
-                 <FormField control={form.control} name="bankAccountNumber" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bank Account Number</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                )} />
+
+               <div className="space-y-6">
+                {fields.map((field, index) => (
+                    <div key={field.id} className="p-4 border rounded-md space-y-4 relative">
+                         <h4 className="font-medium text-md">Account {index + 1}</h4>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           <FormField control={form.control} name={`bankAccounts.${index}.bankName`} render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Bank Name</FormLabel>
+                                <FormControl><Input {...field} /></FormControl>
+                                <FormMessage />
+                              </FormItem>
+                          )} />
+                          <FormField control={form.control} name={`bankAccounts.${index}.accountName`} render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Account Holder Name</FormLabel>
+                                <FormControl><Input {...field} /></FormControl>
+                                <FormMessage />
+                              </FormItem>
+                          )} />
+                           <FormField control={form.control} name={`bankAccounts.${index}.bankAccountNumber`} render={({ field }) => (
+                              <FormItem className="md:col-span-2">
+                                <FormLabel>Bank Account Number</FormLabel>
+                                <FormControl><Input {...field} /></FormControl>
+                                <FormMessage />
+                              </FormItem>
+                          )} />
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => remove(index)}>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ))}
+                
+                {form.formState.errors.bankAccounts?.message && (
+                    <p className="text-sm font-medium text-destructive">
+                        {form.formState.errors.bankAccounts.message}
+                    </p>
+                )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => append({ bankName: "", accountName: "", bankAccountNumber: "" })}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Bank Account
+                </Button>
               </div>
 
               <Button type="submit" disabled={isSubmitting}>
