@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -30,7 +31,8 @@ export async function requestWithdrawal(
   }
 
   try {
-    const decodedToken = await authAdmin.verifyIdToken(idToken);
+    // Setting checkRevoked to false can help in some environments with token validation issues.
+    const decodedToken = await authAdmin.verifyIdToken(idToken, false);
     const uid = decodedToken.uid;
     const { amount, destinationBank } = validation.data;
 
@@ -71,6 +73,9 @@ export async function requestWithdrawal(
     console.error('Error requesting withdrawal:', error);
     if (error.code === 'auth/id-token-expired') {
         return { success: false, error: 'Your session has expired. Please log in again.' };
+    }
+    if (error.code === 'auth/argument-error' || error.message.includes('incorrect audience')) {
+        return { success: false, error: 'Authentication failed due to a project configuration mismatch. Please try again.' };
     }
     if (error.codePrefix === 'auth/') {
         return { success: false, error: 'User not authenticated.' };
