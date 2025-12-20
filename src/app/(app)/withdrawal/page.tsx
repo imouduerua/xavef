@@ -1,14 +1,14 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useUserData } from "@/hooks/use-user-data";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Wallet } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { UserData } from "@/lib/types";
+import { WithdrawalForm } from "@/components/withdrawal/withdrawal-form";
 
 function isProfileComplete(userData: UserData | null) {
     if (!userData) return false;
@@ -25,14 +25,6 @@ function isProfileComplete(userData: UserData | null) {
     return profileFieldsComplete && bankAccountsExist;
 }
 
-function WithdrawalForm() {
-    // Placeholder for the actual withdrawal form
-    return (
-        <div>
-            <p>Withdrawal form will be here.</p>
-        </div>
-    )
-}
 
 function CompleteProfilePrompt() {
     return (
@@ -83,11 +75,18 @@ export default function WithdrawalPage() {
                 <CardHeader>
                     <CardTitle>Withdrawal</CardTitle>
                     <CardDescription>
-                        Withdraw funds from your account.
+                        Request a withdrawal from your Solidara savings account. Requests are processed by an admin.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {profileComplete ? <WithdrawalForm /> : <CompleteProfilePrompt />}
+                    {profileComplete && userData ? (
+                        <WithdrawalForm 
+                            solidaraBalance={userData.solidaraBalance} 
+                            bankAccounts={userData.bankAccounts} 
+                        />
+                    ) : (
+                        <CompleteProfilePrompt />
+                    )}
                 </CardContent>
             </Card>
         </div>
