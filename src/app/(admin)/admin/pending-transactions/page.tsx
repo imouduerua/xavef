@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -25,11 +24,15 @@ type TransactionWithUserDetails = Transaction & {
   userEmail: string;
 };
 
-export default function AdminPendingTransactionsPage() {
-  const [data, setData] = useState<{
+type PageData = {
     transactions: TransactionWithUserDetails[] | null;
     error?: string;
-  }>({ transactions: null });
+    indexCreationUrl?: string;
+    indexStatusUrl?: string;
+}
+
+export default function AdminPendingTransactionsPage() {
+  const [data, setData] = useState<PageData>({ transactions: null });
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
 
@@ -42,7 +45,6 @@ export default function AdminPendingTransactionsPage() {
 
       setLoading(true);
       try {
-        // Use a collection group query to fetch all pending transactions across all users.
         const pendingTxsQuery = query(
           collectionGroup(firestore, 'transactions'), 
           where('status', '==', 'Pending')
@@ -58,12 +60,11 @@ export default function AdminPendingTransactionsPage() {
                 ...data,
                 id: doc.id,
                 userId: userId,
-                userEmail: 'Loading...', // We'll fetch this next
+                userEmail: 'Loading...',
             };
         });
 
-        // Now, fetch the user details for each transaction
-        let transactionsWithUserDetails: TransactionWithUserDetails[] = await Promise.all(
+        const transactionsWithUserDetails: TransactionWithUserDetails[] = await Promise.all(
           pendingTransactions.map(async (tx) => {
             const userRef = doc(firestore, 'users', tx.userId);
             const userSnap = await getDoc(userRef);
@@ -72,7 +73,6 @@ export default function AdminPendingTransactionsPage() {
           })
         );
         
-        // Sort transactions by date client-side
         transactionsWithUserDetails.sort((a, b) => {
             const dateA = a.date ? new Date(a.date).getTime() : 0;
             const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -83,22 +83,37 @@ export default function AdminPendingTransactionsPage() {
 
       } catch (error: any) {
         console.error("Error fetching pending transactions:", error);
-        let errorMessage = "Could not fetch pending transactions.";
         
-        if (error.code === 'permission-denied') {
-          errorMessage = "Permission denied. You must be an admin to view this page.";
+        let pageData: PageData = { transactions: null, error: "Could not fetch pending transactions." };
+
+        if (error.code === 'failed-precondition' && error.message.includes('index')) {
+            const urlMatch = error.message.match(/https?:\/\/[^\s]+/);
+            const url = urlMatch ? urlMatch[0] : null;
+
+            if (error.message.includes('is not ready yet')) {
+                 pageData = {
+                    transactions: null,
+                    error: "The required database index is still being built. This page will be available once the index is ready. This can take a few minutes.",
+                    indexStatusUrl: url,
+                };
+            } else {
+                 pageData = {
+                    transactions: null,
+                    error: "This query requires a Firestore index. To create it, please click the link below.",
+                    indexCreationUrl: url,
+                };
+            }
         }
         
-        setData({
-          transactions: null,
-          error: errorMessage,
-        });
+        setData(pageData);
         
-        toast({
-            variant: "destructive",
-            title: "Error Fetching Data",
-            description: errorMessage,
-        });
+        if (!pageData.indexCreationUrl && !pageData.indexStatusUrl) {
+            toast({
+                variant: "destructive",
+                title: "Error Fetching Data",
+                description: pageData.error,
+            });
+        }
 
       } finally {
         setLoading(false);
@@ -116,8 +131,24 @@ export default function AdminPendingTransactionsPage() {
     
     return (
         <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{data.error}</AlertDescription>
+            <AlertTitle>Action Required</AlertTitle>
+            <AlertDescription className="space-y-4">
+                <p>{data.error}</p>
+                {data.indexCreationUrl && (
+                    <Button asChild>
+                        <Link href={data.indexCreationUrl} target="_blank" rel="noopener noreferrer">
+                            Create Index <ExternalLink className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                )}
+                {data.indexStatusUrl && (
+                    <Button asChild>
+                        <Link href={data.indexStatusUrl} target="_blank" rel="noopener noreferrer">
+                            Check Index Status <ExternalLink className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                )}
+            </AlertDescription>
         </Alert>
     );
   };
