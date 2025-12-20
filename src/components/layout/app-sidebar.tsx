@@ -16,6 +16,7 @@ import {
   Shield,
   PanelLeft,
   History,
+  Clock,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
