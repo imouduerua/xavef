@@ -2,7 +2,7 @@
 'use client';
 
 import { format, formatDistanceToNow } from 'date-fns';
-import { MoreVertical, Trash2, Pencil } from 'lucide-react';
+import { MoreVertical, Trash2, Pencil, PartyPopper } from 'lucide-react';
 import React from 'react';
 
 import {
@@ -29,7 +29,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import type { SavingGoal } from '@/lib/types';
 import { useUser, useFirestore } from '@/firebase';
-import { deleteSavingGoal } from '@/app/(app)/savings/client-actions';
+import { deleteSavingGoal, withdrawCompletedGoal } from '@/app/(app)/savings/client-actions';
 import { AddFundsDialog } from './add-funds-dialog';
 import { useUserData } from '@/hooks/use-user-data';
 import { EditGoalDialog } from './edit-goal-dialog';
@@ -44,7 +44,9 @@ export function GoalCard({ goal }: GoalCardProps) {
   const firestore = useFirestore();
   const { userData, loading: userDataLoading } = useUserData();
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isWithdrawing, setIsWithdrawing] = React.useState(false);
 
+  const isCompleted = goal.targetAmount > 0 && goal.currentAmount >= goal.targetAmount;
   const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
   const targetDate = goal.targetDate ? goal.targetDate.toDate() : null;
 
@@ -71,6 +73,66 @@ export function GoalCard({ goal }: GoalCardProps) {
       });
       setIsDeleting(false);
     }
+  };
+
+  const handleWithdraw = async () => {
+    if (!user || !firestore) return;
+    setIsWithdrawing(true);
+    const result = await withdrawCompletedGoal(firestore, user.uid, goal.id);
+    if (result.success) {
+      toast({
+        title: 'Goal Completed!',
+        description: `Funds from "${goal.name}" have been moved to your Solidara savings account.`,
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Withdrawal Failed',
+        description: result.error,
+      });
+      setIsWithdrawing(false);
+    }
+  };
+
+  const renderFooter = () => {
+    if (isCompleted) {
+      return (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button className="w-full" disabled={isWithdrawing}>
+              <PartyPopper className="mr-2 h-4 w-4" />
+              Withdraw to Savings
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Withdraw Completed Goal?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will move {formatCurrency(goal.currentAmount)} to your main Solidara savings account and delete this goal. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleWithdraw}>
+                Yes, Withdraw
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      );
+    }
+
+    return (
+      <AddFundsDialog
+        goal={goal}
+        solidaraBalance={userData?.solidaraBalance ?? 0}
+        disabled={userDataLoading}
+      >
+        <Button variant="outline" className="w-full" disabled={userDataLoading}>
+          Add Funds
+        </Button>
+      </AddFundsDialog>
+    );
   };
 
   return (
@@ -110,7 +172,7 @@ export function GoalCard({ goal }: GoalCardProps) {
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This action cannot be undone. This will permanently delete your saving goal
-                  named "{goal.name}".
+                  named "{goal.name}". Any funds in this goal will NOT be returned.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -141,15 +203,7 @@ export function GoalCard({ goal }: GoalCardProps) {
         )}
       </CardContent>
       <CardFooter className="gap-2">
-        <AddFundsDialog 
-            goal={goal} 
-            solidaraBalance={userData?.solidaraBalance ?? 0}
-            disabled={userDataLoading}
-        >
-            <Button variant="outline" className="w-full" disabled={userDataLoading}>
-                Add Funds
-            </Button>
-        </AddFundsDialog>
+        {renderFooter()}
       </CardFooter>
     </Card>
   );

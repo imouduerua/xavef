@@ -11,6 +11,7 @@ import {
   runTransaction,
   increment,
   updateDoc,
+  getDoc,
 } from 'firebase/firestore';
 
 interface SavingGoalData {
@@ -112,8 +113,43 @@ export async function addFundsToGoal(
             transaction.update(goalDocRef, { currentAmount: increment(amount) });
         });
         return { success: true };
-    } catch (error: any) {
+    } catch (error: any)
         console.error("Error adding funds to goal:", error);
         return { success: false, error: error.message || "An unexpected error occurred." };
     }
+}
+
+export async function withdrawCompletedGoal(
+  firestore: Firestore,
+  userId: string,
+  goalId: string
+): Promise<{ success: boolean; error?: string }> {
+  const userDocRef = doc(firestore, 'users', userId);
+  const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
+
+  try {
+    await runTransaction(firestore, async (transaction) => {
+      const goalDoc = await transaction.get(goalDocRef);
+      if (!goalDoc.exists()) {
+        throw new Error('Saving goal not found.');
+      }
+
+      const goalData = goalDoc.data();
+      const amountToWithdraw = goalData.currentAmount;
+
+      if (amountToWithdraw <= 0) {
+        throw new Error('Nothing to withdraw.');
+      }
+      
+      // Add funds back to solidara balance
+      transaction.update(userDocRef, { solidaraBalance: increment(amountToWithdraw) });
+      // Delete the goal
+      transaction.delete(goalDocRef);
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error withdrawing completed goal:', error);
+    return { success: false, error: error.message || 'Could not withdraw goal funds.' };
+  }
 }
