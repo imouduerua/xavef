@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, deleteUser, type UserCredential } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -53,7 +53,7 @@ export function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    let userCredential;
+    let userCredential: UserCredential | null = null;
 
     try {
         // Step 1: Create the Firebase Auth user
@@ -105,8 +105,8 @@ export function RegisterForm() {
         let errorMessage = "An unknown error occurred during registration.";
         if (error.code === 'auth/email-already-in-use') {
             errorMessage = "This email address is already in use. Please log in instead.";
-        } else if (error.message.includes("referral code")) {
-            errorMessage = error.message;
+        } else if (error.message.includes("invalid or has already been used")) {
+            errorMessage = "The provided referral code is either invalid or has already been used.";
         } else if (error.message) {
             errorMessage = error.message;
         }
