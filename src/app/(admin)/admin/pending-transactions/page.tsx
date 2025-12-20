@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -55,19 +56,23 @@ export default function AdminPendingTransactionsPage() {
       try {
         const transactionsWithUserDetails: TransactionWithUserDetails[] = await Promise.all(
           rawTransactions.map(async (tx) => {
-            const userId = tx.userId;
-            if (!userId) {
-                // This case should ideally not happen if data structure is correct
-                return { ...tx, userId: 'unknown', userEmail: 'Unknown User', xavefId: 'N/A' };
-            }
+            // The userId is now guaranteed by the useCollection hook
+            const userId = tx.userId!;
 
             const userRef = doc(firestore, 'users', userId);
             const userSnap = await getDoc(userRef);
             const userEmail = userSnap.exists() ? (userSnap.data() as UserData).email : 'Unknown User';
             const xavefId = userSnap.exists() ? (userSnap.data() as UserData).xavefId : 'N/A';
 
-            // Ensure all fields from tx are carried over, including payoutAmount
-            return { ...tx, userId, userEmail, xavefId };
+            // IMPORTANT: Return the entire original transaction object 'tx',
+            // then layer the user details on top. This preserves all fields
+            // from the original transaction, including `payoutAmount`.
+            return {
+                ...tx,
+                userId,
+                userEmail,
+                xavefId,
+            };
           })
         );
         setTransactions(transactionsWithUserDetails);
