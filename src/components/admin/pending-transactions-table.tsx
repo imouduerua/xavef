@@ -70,13 +70,13 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="min-w-[150px]">User Email</TableHead>
+            <TableHead>User Email</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Type</TableHead>
             <TableHead className="text-right">Amount</TableHead>
             <TableHead className="text-center">Proof</TableHead>
-            <TableHead className="text-center min-w-[220px]">Actions</TableHead>
+            <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -86,9 +86,9 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
 
             return (
               <TableRow key={tx.id}>
-                <TableCell className="font-medium truncate max-w-[180px]">{tx.userEmail}</TableCell>
+                <TableCell className="font-medium">{tx.userEmail}</TableCell>
                 <TableCell>{tx.date ? new Date(tx.date).toLocaleDateString() : 'N/A'}</TableCell>
-                <TableCell className="truncate max-w-[200px]">{tx.description}</TableCell>
+                <TableCell>{tx.description}</TableCell>
                 <TableCell>{tx.type}</TableCell>
                 <TableCell
                   className={`text-right font-semibold ${
@@ -110,16 +110,14 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                     <span className="text-xs text-muted-foreground">N/A</span>
                   )}
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell className="text-center space-x-2">
                   {isUpdating ? (
-                    <div className="flex justify-center">
-                      <Button variant="outline" size="sm" disabled className="w-[200px]">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Updating...
-                      </Button>
-                    </div>
+                    <Button variant="outline" size="sm" disabled>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </Button>
                   ) : (
-                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                    <>
                       <Button
                         variant="outline"
                         size="sm"
@@ -138,7 +136,7 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                         <X className="mr-2 h-4 w-4" />
                         Decline
                       </Button>
-                    </div>
+                    </>
                   )}
                 </TableCell>
               </TableRow>
