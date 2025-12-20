@@ -14,7 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { useUserData } from '@/hooks/use-user-data';
 import { useUser, useCollection, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AccountType, Transaction } from '@/lib/types';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { collection, query, where } from 'firebase/firestore';
