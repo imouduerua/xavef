@@ -3,6 +3,8 @@
 import { z } from 'zod';
 import { firestoreAdmin } from '@/firebase/admin';
 import { revalidatePath } from 'next/cache';
+import { FieldValue } from 'firebase-admin/firestore';
+import type { AccountType } from '@/lib/types';
 
 const updateStatusSchema = z.object({
   userId: z.string().min(1),
@@ -21,28 +23,42 @@ export async function updateTransactionStatus(values: z.infer<typeof updateStatu
 
   const { userId, transactionId, newStatus } = validation.data;
   const transactionRef = firestoreAdmin.doc(`users/${userId}/transactions/${transactionId}`);
+  const userRef = firestoreAdmin.doc(`users/${userId}`);
 
   try {
-    // In a real app, you MUST verify admin permissions here before proceeding.
-    // For example: check if the calling user is an admin.
-    // We are trusting the security rules for this demo.
-
     await firestoreAdmin.runTransaction(async (transaction) => {
         const txDoc = await transaction.get(transactionRef);
         if (!txDoc.exists) {
             throw new Error("Transaction not found.");
         }
         
-        const currentStatus = txDoc.data()?.status;
-        if (currentStatus !== 'Pending') {
-            throw new Error(`Transaction is already ${currentStatus}.`);
+        const txData = txDoc.data();
+        if (txData?.status !== 'Pending') {
+            throw new Error(`Transaction is already ${txData?.status}.`);
         }
 
-        // TODO: If the transaction is approved ('Completed'), this is where you would
-        // also update the user's main account balance. This requires careful
-        // handling of balances in a separate document to avoid race conditions.
-        // For this example, we will only update the transaction status.
+        // If approving a deposit, update the user's balance.
+        if (newStatus === 'Completed' && txData.type === 'Deposit') {
+          const userDoc = await transaction.get(userRef);
+          if (!userDoc.exists) {
+            throw new Error("User not found to update balance.");
+          }
 
+          const amount = txData.amount;
+          const targetAccount = txData.targetAccount as AccountType;
+
+          if (!targetAccount || (targetAccount !== 'solidara' && targetAccount !== 'annual')) {
+            throw new Error(`Invalid target account on transaction: ${targetAccount}`);
+          }
+          
+          const balanceFieldToUpdate = `${targetAccount}Balance`;
+          
+          transaction.update(userRef, {
+            [balanceFieldToUpdate]: FieldValue.increment(amount)
+          });
+        }
+        
+        // Update the transaction status for both 'Completed' and 'Failed'
         transaction.update(transactionRef, { status: newStatus });
     });
 

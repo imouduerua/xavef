@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import type { AccountType } from '@/lib/types';
 
 const depositSchema = z.object({
   amount: z.coerce
@@ -41,10 +42,11 @@ type FormValues = z.infer<typeof depositSchema>;
 
 interface DepositDialogProps {
   accountName: string;
+  targetAccount: AccountType;
   children: React.ReactNode;
 }
 
-export function DepositDialog({ accountName, children }: DepositDialogProps) {
+export function DepositDialog({ accountName, targetAccount, children }: DepositDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
@@ -83,6 +85,7 @@ export function DepositDialog({ accountName, children }: DepositDialogProps) {
         description: `Deposit to ${accountName}`,
         status: 'Pending',
         type: 'Deposit',
+        targetAccount: targetAccount,
       };
       
       await addDoc(transactionRef, newTransaction);

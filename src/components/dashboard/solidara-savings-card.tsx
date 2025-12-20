@@ -28,7 +28,7 @@ export function SolidaraSavingsCard({ balance }: SolidaraSavingsCardProps) {
         <CardDescription>Daily savings contributions</CardDescription>
       </CardContent>
       <CardFooter>
-        <DepositDialog accountName="Savings (Olidara)">
+        <DepositDialog accountName="Savings (Olidara)" targetAccount="solidara">
             <Button className="w-full">Deposit</Button>
         </DepositDialog>
       </CardFooter>

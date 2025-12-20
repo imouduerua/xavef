@@ -96,6 +96,8 @@ export async function createUserProfile(uid: string, email: string, referralCode
                 xavefId,
                 createdAt: FieldValue.serverTimestamp(),
                 referredBy,
+                solidaraBalance: 0,
+                annualBalance: 0,
             };
 
             console.log(`[createUserProfile] Creating user document for ${uid} within transaction.`);

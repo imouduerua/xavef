@@ -18,6 +18,8 @@ export interface UserData {
   xavefId: string;
   referredBy: string | null;
   createdAt: string;
+  solidaraBalance: number;
+  annualBalance: number;
   id?: string;
 }
 
@@ -34,6 +36,7 @@ export interface LoanAccount {
   nextPaymentDate: string;
 }
 
+export type AccountType = 'solidara' | 'annual';
 export type TransactionType = "Deposit" | "Withdrawal" | "Loan Payment" | "Interest";
 export type TransactionStatus = "Completed" | "Pending" | "Failed";
 
@@ -44,6 +47,7 @@ export interface Transaction {
   type: TransactionType;
   status: TransactionStatus;
   amount: number;
+  targetAccount?: AccountType;
   userId?: string; // Optional: To link transaction to user when querying collection group
   userEmail?: string; // Optional: To display user email in admin table
 }

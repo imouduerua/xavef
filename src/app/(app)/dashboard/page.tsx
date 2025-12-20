@@ -16,26 +16,27 @@ import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProfileInitializer } from '@/components/dashboard/profile-initializer';
-
-export type AccountType = 'solidara' | 'annual';
+import { AccountType } from '@/lib/types';
 
 function DashboardContent() {
   const { loading: userLoading } = useUser();
   const { userData, loading: userDataLoading } = useUserData();
   
-  const [balances, setBalances] = React.useState({
-    solidara: 0.0,
-    annual: 0.0,
-  });
+  const balances = {
+    solidara: userData?.solidaraBalance ?? 0.0,
+    annual: userData?.annualBalance ?? 0.0,
+  };
 
   const totalSavings = balances.solidara + balances.annual;
 
+  // This function is now a placeholder as we don't have a server action for self-transfers yet.
+  // It demonstrates the client-side logic but will not persist.
   const handleSelfTransfer = (
     amount: number,
     from: AccountType,
     to: AccountType
   ) => {
-    if (balances[from] < amount) {
+     if (balances[from] < amount) {
         toast({
             variant: "destructive",
             title: "Transfer Failed",
@@ -43,12 +44,14 @@ function DashboardContent() {
         });
         return false;
     }
-
-    setBalances((prevBalances) => ({
-      ...prevBalances,
-      [from]: prevBalances[from] - amount,
-      [to]: prevBalances[to] + amount,
-    }));
+    
+    // NOTE: This state update is temporary. A real transfer would involve a server action
+    // and would rely on Firestore to update the data, which would then be reflected
+    // automatically by the useUserData hook.
+    toast({
+        title: "Feature not implemented",
+        description: "Self-transfers will be enabled soon.",
+    });
 
     return true;
   };

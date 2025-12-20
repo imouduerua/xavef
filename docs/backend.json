@@ -55,6 +55,14 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp when the user account was created."
+        },
+        "solidaraBalance": {
+          "type": "number",
+          "description": "The user's balance for the Solidara savings account."
+        },
+        "annualBalance": {
+          "type": "number",
+          "description": "The user's balance for the Annual savings account."
         }
       },
       "required": [
@@ -96,6 +104,11 @@
         },
         "amount": {
           "type": "number"
+        },
+        "targetAccount": {
+            "type": "string",
+            "enum": ["solidara", "annual"],
+            "description": "The target account for the transaction, if applicable."
         }
       },
       "required": [

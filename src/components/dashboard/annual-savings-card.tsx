@@ -28,7 +28,7 @@ export function AnnualSavingsCard({ balance }: AnnualSavingsCardProps) {
         <CardDescription>End of year savings goal</CardDescription>
       </CardContent>
       <CardFooter>
-         <DepositDialog accountName="Annual Savings">
+         <DepositDialog accountName="Annual Savings" targetAccount="annual">
             <Button className="w-full">Deposit</Button>
         </DepositDialog>
       </CardFooter>
