@@ -101,9 +101,9 @@ export function RecentTransactions() {
                 <TableHeader>
                     <TableRow>
                         <TableHead>Description</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Date</TableHead>
+                        <TableHead className="hidden sm:table-cell">Type</TableHead>
+                        <TableHead className="hidden md:table-cell">Status</TableHead>
+                        <TableHead className="hidden lg:table-cell">Date</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -111,11 +111,11 @@ export function RecentTransactions() {
                     {sortedTransactions.map((tx) => (
                     <TableRow key={tx.id}>
                         <TableCell className="font-medium">{tx.description}</TableCell>
-                        <TableCell>{tx.type}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">{tx.type}</TableCell>
+                        <TableCell className="hidden md:table-cell">
                             <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
                         </TableCell>
-                        <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{new Date(tx.date).toLocaleDateString()}</TableCell>
                         <TableCell className={`text-right font-semibold ${tx.amount > 0 ? 'text-green-600' : ''}`}>
                             {tx.amount > 0 ? `+₦${tx.amount.toFixed(2)}` : `-₦${Math.abs(tx.amount).toFixed(2)}`}
                         </TableCell>
