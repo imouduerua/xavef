@@ -17,7 +17,7 @@ import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { useMemo } from "react";
-import { collection, limit, orderBy, query, where } from "firebase/firestore";
+import { collection, limit, query, where } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 
 const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destructive"> = {
@@ -33,15 +33,22 @@ export function RecentTransactions() {
 
   const transactionsQuery = useMemo(() => {
     if (!user) return null;
+    // Removed orderBy to prevent index error. Sorting is now done on the client.
     return query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "in", ["Completed", "Failed"]),
-      orderBy("date", "desc"),
       limit(5)
     );
   }, [user, firestore]);
 
   const { data: transactions, loading } = useCollection<Transaction>(transactionsQuery);
+
+  // Sort transactions on the client-side
+  const sortedTransactions = useMemo(() => {
+    if (!transactions) return [];
+    return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions]);
+
 
   if (loading) {
       return (
@@ -61,7 +68,7 @@ export function RecentTransactions() {
       )
   }
 
-  if (!transactions || transactions.length === 0) {
+  if (!sortedTransactions || sortedTransactions.length === 0) {
       return (
            <Card>
                 <CardHeader>
@@ -101,7 +108,7 @@ export function RecentTransactions() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {transactions.map((tx) => (
+                    {sortedTransactions.map((tx) => (
                     <TableRow key={tx.id}>
                         <TableCell className="font-medium">{tx.description}</TableCell>
                         <TableCell>{tx.type}</TableCell>
