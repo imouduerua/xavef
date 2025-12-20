@@ -48,6 +48,7 @@ export interface Transaction {
   status: TransactionStatus;
   amount: number;
   targetAccount?: AccountType;
+  proofOfPaymentUrl?: string;
   userId?: string; // Optional: To link transaction to user when querying collection group
   userEmail?: string; // Optional: To display user email in admin table
 }

@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '../ui/table';
 import { Button } from '../ui/button';
-import { Check, Loader2, X } from 'lucide-react';
+import { Check, Loader2, X, Eye } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { updateTransactionStatus } from './actions';
@@ -74,6 +74,7 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
           <TableHead>Description</TableHead>
           <TableHead>Type</TableHead>
           <TableHead className="text-right">Amount</TableHead>
+          <TableHead className="text-center">Proof</TableHead>
           <TableHead className="text-center">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -96,6 +97,17 @@ export function PendingTransactionsTable({ initialTransactions }: PendingTransac
                 {amount > 0
                   ? `+₦${amount.toFixed(2)}`
                   : `-₦${Math.abs(amount).toFixed(2)}`}
+              </TableCell>
+               <TableCell className="text-center">
+                {tx.proofOfPaymentUrl ? (
+                  <Button variant="outline" size="icon" className="h-8 w-8" asChild>
+                    <a href={tx.proofOfPaymentUrl} target="_blank" rel="noopener noreferrer">
+                      <Eye className="h-4 w-4" />
+                    </a>
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted-foreground">N/A</span>
+                )}
               </TableCell>
               <TableCell className="text-center space-x-2">
                  {isUpdating ? (

@@ -112,6 +112,10 @@
             "annual"
           ],
           "description": "The target account for the transaction, if applicable."
+        },
+        "proofOfPaymentUrl": {
+          "type": "string",
+          "description": "URL of the uploaded proof of payment image."
         }
       },
       "required": [

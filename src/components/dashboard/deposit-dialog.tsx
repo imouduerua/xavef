@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Banknote, Loader2, CheckCircle } from 'lucide-react';
+import { Banknote, Loader2, CheckCircle, Upload } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -31,6 +31,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import type { AccountType } from '@/lib/types';
 import { BankDetailsCard } from './bank-details-card';
+import Image from 'next/image';
 
 const depositSchema = z.object({
   amount: z.coerce
@@ -47,28 +48,52 @@ interface DepositDialogProps {
   children: React.ReactNode;
 }
 
+const MAX_FILE_SIZE_MB = 1;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 export function DepositDialog({ accountName, targetAccount, children }: DepositDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [step, setStep] = React.useState<'amount' | 'details'>('amount');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [proofOfPayment, setProofOfPayment] = React.useState<{ file: File | null, dataUrl: string | null }>({ file: null, dataUrl: null });
   const { user } = useUser();
   const firestore = useFirestore();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(depositSchema),
     defaultValues: {
-      amount: '' as any,
+      amount: '',
     },
   });
 
   const { reset, handleSubmit, getValues } = form;
 
-  // This function is called when the first form (amount) is submitted
   function handleAmountSubmit() {
     setStep('details');
   }
 
-  // This function is called when the user confirms they've made the transfer
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        toast({
+          variant: 'destructive',
+          title: 'File Too Large',
+          description: `The selected file must be smaller than ${MAX_FILE_SIZE_MB}MB.`,
+        });
+        setProofOfPayment({ file: null, dataUrl: null });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProofOfPayment({ file: file, dataUrl: e.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+
   async function handleConfirmTransfer() {
     if (!user) {
       toast({
@@ -80,6 +105,15 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
     }
     
     if(!firestore) return;
+
+    if (!proofOfPayment.dataUrl) {
+      toast({
+        variant: 'destructive',
+        title: 'Proof of Payment Required',
+        description: 'Please upload a receipt or screenshot to proceed.',
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     const values = getValues();
@@ -105,6 +139,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
         status: 'Pending',
         type: 'Deposit',
         targetAccount: targetAccount,
+        proofOfPaymentUrl: proofOfPayment.dataUrl,
       };
       
       await addDoc(transactionRef, newTransaction);
@@ -131,11 +166,11 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (!open) {
-      // Reset state when dialog is closed
       setTimeout(() => {
-        reset({ amount: '' as any });
+        reset({ amount: '' });
         setStep('amount');
-      }, 300); // Delay to allow animation to finish
+        setProofOfPayment({ file: null, dataUrl: null });
+      }, 300);
     }
   };
 
@@ -152,7 +187,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
           )}
            {step === 'details' && (
              <DialogDescription>
-                Transfer the exact amount to the account below. Your balance will be updated upon admin approval.
+                Transfer the exact amount, then upload your receipt to confirm.
              </DialogDescription>
            )}
         </DialogHeader>
@@ -201,11 +236,27 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
         {step === 'details' && (
             <div className='space-y-4'>
                 <BankDetailsCard amount={Number(getValues("amount"))} />
+
+                 <FormItem>
+                    <FormLabel>Proof of Payment</FormLabel>
+                    <FormControl>
+                      <Input id="receipt" type="file" accept="image/*" onChange={handleFileChange} />
+                    </FormControl>
+                    <FormDescription>
+                        Upload a screenshot or receipt. Max size: {MAX_FILE_SIZE_MB}MB.
+                    </FormDescription>
+                    {proofOfPayment.dataUrl && (
+                        <div className="mt-4 relative w-full h-40 rounded-md overflow-hidden border">
+                            <Image src={proofOfPayment.dataUrl} alt="Receipt preview" layout="fill" objectFit="contain" />
+                        </div>
+                    )}
+                 </FormItem>
+
                  <DialogFooter className="gap-2 sm:justify-end pt-4">
                     <Button type="button" variant="outline" onClick={() => setStep('amount')}>
                         Back
                     </Button>
-                    <Button type="button" onClick={handleConfirmTransfer} disabled={isSubmitting}>
+                    <Button type="button" onClick={handleConfirmTransfer} disabled={isSubmitting || !proofOfPayment.dataUrl}>
                         {isSubmitting ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
