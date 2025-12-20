@@ -58,6 +58,7 @@ export async function createUserProfile(
 
             const referredBy = referralDoc.data()?.creatorUid;
             if (!referredBy) {
+                // This case is unlikely if the above check passes, but good for safety.
                 throw new Error("The referral code is invalid.");
             }
 
