@@ -22,7 +22,7 @@ import { toast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import type { GroupJoinRequest, Notification } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
 
@@ -55,22 +55,54 @@ export function AppHeader() {
       where('status', '==', 'pending')
     );
   }, [user, firestore]);
+  
+  const notificationsQuery = useMemo(() => {
+      if (!user) return null;
+      return query(
+          collection(firestore, `users/${user.uid}/notifications`),
+          orderBy('createdAt', 'desc'),
+          limit(10) // Limit to the 10 most recent notifications
+      )
+  }, [user, firestore]);
 
   const { data: joinRequests, loading: joinRequestsLoading } = useCollection<GroupJoinRequest>(joinRequestsQuery);
+  const { data: notifications, loading: notificationsLoading } = useCollection<Notification>(notificationsQuery);
 
-  const notifications: Notification[] = useMemo(() => {
-    if (!joinRequests) return [];
-    return joinRequests.map(req => ({
-      id: req.id,
-      title: 'Group Join Request',
-      description: `${req.requesterName} wants to join "${req.groupName}".`,
-      date: req.createdAt,
-      read: false, // All pending requests are unread
-      actionUrl: '/groups'
-    }));
-  }, [joinRequests]);
+
+  const combinedNotifications = useMemo(() => {
+    const allNotifs: Notification[] = [];
+
+    if (joinRequests) {
+        joinRequests.forEach(req => {
+            allNotifs.push({
+                id: req.id,
+                title: 'Group Join Request',
+                description: `${req.requesterName} wants to join "${req.groupName}".`,
+                date: req.createdAt,
+                read: false, // All pending requests are "unread" in this context
+                actionUrl: '/groups'
+            });
+        });
+    }
+
+    if (notifications) {
+        notifications.forEach(notif => {
+            allNotifs.push(notif);
+        });
+    }
+
+    // Sort combined notifications by date, most recent first
+    allNotifs.sort((a, b) => {
+        const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+        const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+        return dateB.getTime() - dateA.getTime();
+    });
+
+    return allNotifs;
+  }, [joinRequests, notifications]);
   
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = combinedNotifications.filter((n) => !n.read).length;
+  const isLoading = joinRequestsLoading || notificationsLoading;
 
   const isDashboard = pathname === '/dashboard';
 
@@ -122,7 +154,7 @@ export function AppHeader() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                  <Button variant="ghost" size="icon" className="relative">
-                  {joinRequestsLoading ? (
+                  {isLoading ? (
                     <Skeleton className="h-5 w-5" />
                   ) : (
                     <>
@@ -137,7 +169,7 @@ export function AppHeader() {
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {notifications.length > 0 ? notifications.map((notification) => (
+                {combinedNotifications.length > 0 ? combinedNotifications.map((notification) => (
                   <DropdownMenuItem key={notification.id} asChild className="flex flex-col items-start gap-1 cursor-pointer">
                     <Link href={notification.actionUrl || '#'}>
                       <div className="flex w-full items-center">

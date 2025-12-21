@@ -9,6 +9,18 @@ import type { Group } from '@/lib/types';
 import { Loader2, PlayCircle, UserPlus, Users } from 'lucide-react';
 import React from 'react';
 import { startGroup, requestToJoinGroup } from '@/app/(app)/groups/client-actions';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 
 interface GroupCardProps {
   group: Group;
@@ -64,7 +76,7 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
       if (result.success) {
           toast({
               title: "Group Started!",
-              description: `The group "${group.name}" is now active.`
+              description: `The group "${group.name}" is now active and members have been notified.`
           });
       } else {
           toast({
@@ -82,24 +94,31 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
       }
       if (isOwned && isGroupAdmin) {
           return (
-             <Button className="w-full" disabled={!isGroupFull || isStarting} onClick={handleStartGroup}>
-                {isStarting ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Starting...
-                    </>
-                ) : (
-                    <>
-                        <PlayCircle className="mr-2 h-4 w-4" />
-                        Start Group
-                    </>
-                )}
-            </Button>
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button className="w-full" disabled={!isGroupFull || isStarting}>
+                        {isStarting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                        {isStarting ? 'Starting...' : 'Start Group'}
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to start this group?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will activate the group and notify all members. No new members will be able to join. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleStartGroup}>Yes, Start Group</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+             </AlertDialog>
           )
       }
       if (!isOwned) {
           return (
-             <Button className="w-full" onClick={handleRequestToJoin} disabled={isJoining}>
+             <Button className="w-full" onClick={handleRequestToJoin} disabled={isJoining || isGroupFull}>
                 {isJoining ? (
                    <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -108,7 +127,7 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
                 ) : (
                    <>
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Request to Join
+                    {isGroupFull ? 'Group is Full' : 'Request to Join'}
                    </>
                 )}
             </Button>

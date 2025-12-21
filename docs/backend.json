@@ -259,6 +259,20 @@
             "createdAt": { "type": "string", "format": "date-time" }
         },
         "required": ["groupId", "groupName", "groupCreatorUid", "requesterUid", "requesterEmail", "requesterName", "status", "createdAt"]
+    },
+    "notification": {
+        "title": "Notification",
+        "description": "A notification for a user.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string", "description": "The ID of the user this notification is for." },
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "read": { "type": "boolean" },
+            "actionUrl": { "type": "string", "description": "A URL the user can navigate to from the notification." }
+        },
+        "required": ["userId", "title", "description", "createdAt", "read"]
     }
   },
   "auth": {
@@ -278,6 +292,12 @@
         "$ref": "#/entities/transaction"
       },
       "description": "Stores a user's transactions."
+    },
+     "/users/{userId}/notifications/{notificationId}": {
+      "schema": {
+        "$ref": "#/entities/notification"
+      },
+      "description": "Stores notifications for a specific user."
     },
     "/users/{userId}/goals/{goalId}": {
       "schema": {

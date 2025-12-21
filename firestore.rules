@@ -84,6 +84,12 @@ service cloud.firestore {
     match /users/{userId}/goals/{goalId} {
         allow create, read, update, delete: if request.auth != null && request.auth.uid == userId;
     }
+    
+    match /users/{userId}/notifications/{notificationId} {
+        allow read, list: if request.auth != null && request.auth.uid == userId;
+        allow create, update: if request.auth != null; // Allow client-side creation by any authenticated user for now.
+        allow delete: if false;
+    }
 
     match /admins/{userId} {
       allow read, get: if request.auth != null;
@@ -97,23 +103,7 @@ service cloud.firestore {
         allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
         
         // The group creator can update the group, but with specific constraints.
-        allow update: if request.auth != null && resource.data.creatorUid == request.auth.uid && (
-            // Rule for starting a group (changing status from forming to active)
-            (
-                request.resource.data.status == 'active' &&
-                resource.data.status == 'forming' &&
-                request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'startedAt'])
-            ) ||
-            // Rule for approving a member (adding one user to members array)
-            (
-                request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']) &&
-                request.resource.data.members.size() == resource.data.members.size() + 1 &&
-                // Check that the member being added has a corresponding pending join request.
-                // This logic is complex and better handled in a transaction, but this provides a layer of security.
-                // We simplify here and rely on the transaction for full security.
-                true
-            )
-        );
+        allow update: if request.auth != null && resource.data.creatorUid == request.auth.uid;
     }
 
     match /joinRequests/{requestId} {

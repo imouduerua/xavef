@@ -15,6 +15,7 @@ import {
   arrayUnion,
   getDoc,
   runTransaction,
+  writeBatch,
 } from 'firebase/firestore';
 import type { Group, GroupJoinRequest } from '@/lib/types';
 import type { User } from 'firebase/auth';
@@ -48,20 +49,49 @@ export async function createGroup(
 }
 
 export async function startGroup(
-    firestore: Firestore,
-    groupId: string
-): Promise<{ success: boolean; error?: string; }> {
-    try {
-        const groupDocRef = doc(firestore, 'groups', groupId);
-        await updateDoc(groupDocRef, {
-            status: 'active',
-            startedAt: serverTimestamp(),
-        });
-        return { success: true };
-    } catch (error: any) {
-        console.error('Error starting group:', error);
-        return { success: false, error: 'Failed to start group.' };
+  firestore: Firestore,
+  groupId: string
+): Promise<{ success: boolean; error?: string }> {
+  const groupDocRef = doc(firestore, 'groups', groupId);
+  try {
+    const groupSnap = await getDoc(groupDocRef);
+    if (!groupSnap.exists()) {
+      throw new Error('Group not found.');
     }
+    const groupData = groupSnap.data() as Group;
+
+    // Start a write batch to perform multiple operations atomically
+    const batch = writeBatch(firestore);
+
+    // 1. Update the group status
+    batch.update(groupDocRef, {
+      status: 'active',
+      startedAt: serverTimestamp(),
+    });
+
+    // 2. Create a notification for each member
+    const notificationsCollection = collection(firestore, 'notifications');
+    for (const memberId of groupData.members) {
+        const userNotificationsRef = collection(firestore, `users/${memberId}/notifications`);
+        const newNotification = {
+            userId: memberId,
+            title: "Group Started!",
+            description: `The savings group "${groupData.name}" has officially started.`,
+            createdAt: serverTimestamp(),
+            read: false,
+            actionUrl: `/groups`,
+        };
+        batch.set(doc(userNotificationsRef), newNotification);
+    }
+
+    // Commit the batch
+    await batch.commit();
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error starting group:', error);
+    return { success: false, error: error.message || 'Failed to start group.' };
+  }
 }
 
 export async function requestToJoinGroup(
@@ -81,18 +111,23 @@ export async function requestToJoinGroup(
     );
     const existingRequestSnap = await getDocs(q);
     if (!existingRequestSnap.empty) {
-        const existingRequest = existingRequestSnap.docs[0].data();
-        if (existingRequest.status === 'pending') {
-            return { success: false, error: 'You have already requested to join this group.' };
-        }
-         if (existingRequest.status === 'declined') {
-            return { success: false, error: 'Your previous request to join this group was declined.' };
-        }
-        if (existingRequest.status === 'approved') {
-            return { success: false, error: 'You are already a member of this group.' };
-        }
+      const existingRequest = existingRequestSnap.docs[0].data();
+      if (existingRequest.status === 'pending') {
+        return {
+          success: false,
+          error: 'You have already requested to join this group.',
+        };
+      }
+      if (existingRequest.status === 'declined') {
+        return {
+          success: false,
+          error: 'Your previous request to join this group was declined.',
+        };
+      }
+      if (existingRequest.status === 'approved') {
+        return { success: false, error: 'You are already a member of this group.' };
+      }
     }
-
 
     await addDoc(joinRequestsRef, {
       groupId: group.id,
@@ -111,51 +146,64 @@ export async function requestToJoinGroup(
   }
 }
 
-
 export async function respondToJoinRequest(
   firestore: Firestore,
   requestId: string,
   decision: 'approved' | 'declined'
 ): Promise<{ success: boolean; error?: string }> {
   const requestDocRef = doc(firestore, 'joinRequests', requestId);
-  
+
   try {
     await runTransaction(firestore, async (transaction) => {
-        const requestSnap = await transaction.get(requestDocRef);
-        if (!requestSnap.exists() || requestSnap.data().status !== 'pending') {
-            throw new Error("This join request is no longer valid or has already been actioned.");
-        }
-        
-        const requestData = requestSnap.data() as GroupJoinRequest;
-        const groupDocRef = doc(firestore, 'groups', requestData.groupId);
-        
-        if (decision === 'approved') {
-            const groupSnap = await transaction.get(groupDocRef);
-            if (!groupSnap.exists()) {
-                throw new Error("The associated group could not be found.");
-            }
-            const groupData = groupSnap.data() as Group;
-             if (groupData.members.length >= groupData.numberOfMembers) {
-                throw new Error("This group is already full.");
-            }
+      const requestSnap = await transaction.get(requestDocRef);
+      if (!requestSnap.exists() || requestSnap.data().status !== 'pending') {
+        throw new Error('This join request is no longer valid or has already been actioned.');
+      }
 
-            // Atomically add the new member to the group's member array
-            transaction.update(groupDocRef, {
-                members: arrayUnion(requestData.requesterUid)
-            });
+      const requestData = requestSnap.data() as GroupJoinRequest;
+      const groupDocRef = doc(firestore, 'groups', requestData.groupId);
+
+      // Update the request status to reflect the decision
+      transaction.update(requestDocRef, {
+        status: decision,
+        respondedAt: serverTimestamp(),
+      });
+
+      if (decision === 'approved') {
+        const groupSnap = await transaction.get(groupDocRef);
+        if (!groupSnap.exists()) {
+          throw new Error('The associated group could not be found.');
+        }
+        const groupData = groupSnap.data() as Group;
+        if (groupData.members.length >= groupData.numberOfMembers) {
+          throw new Error('This group is already full.');
         }
 
-        // Update the request status to reflect the decision
-        transaction.update(requestDocRef, {
-            status: decision,
-            respondedAt: serverTimestamp()
+        // Atomically add the new member to the group's member array
+        transaction.update(groupDocRef, {
+          members: arrayUnion(requestData.requesterUid),
         });
+
+        // Create a notification for the accepted user
+        const userNotificationsRef = collection(firestore, `users/${requestData.requesterUid}/notifications`);
+        const newNotification = {
+            userId: requestData.requesterUid,
+            title: "You've been accepted!",
+            description: `You are now a member of the group "${requestData.groupName}".`,
+            createdAt: serverTimestamp(),
+            read: false,
+            actionUrl: `/groups`,
+        };
+        transaction.set(doc(userNotificationsRef), newNotification);
+      }
     });
 
     return { success: true };
-
   } catch (error: any) {
     console.error('Error responding to join request:', error);
-    return { success: false, error: error.message || "Failed to process the request." };
+    return {
+      success: false,
+      error: error.message || 'Failed to process the request.',
+    };
   }
 }
