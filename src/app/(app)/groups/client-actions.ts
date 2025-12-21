@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -230,7 +231,7 @@ export async function respondToJoinRequest(
     });
 
     return { success: true };
-  } catch (error: any)
+  } catch (error: any) {
     console.error('Error responding to join request:', error);
     return {
       success: false,
