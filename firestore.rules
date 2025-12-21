@@ -33,11 +33,7 @@ service cloud.firestore {
       
       // An admin can ONLY update the balances.
       allow update: if isAdmin() &&
-                  (request.resource.data.keys().hasOnly(['solidaraBalance', 'annualBalance', 'uid', 'email', 'firstName', 'lastName', 'displayName', 'dateOfBirth', 'phoneNumber', 'address', 'state', 'country', 'xavefId', 'createdAt', 'referredBy', 'bankAccounts'])) &&
-                  request.resource.data.uid == resource.data.uid &&
-                  request.resource.data.email == resource.data.email &&
-                  request.resource.data.firstName == resource.data.firstName &&
-                  request.resource.data.lastName == resource.data.lastName;
+                  request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
 
 
       allow delete: if false;
