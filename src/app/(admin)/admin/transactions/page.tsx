@@ -49,15 +49,9 @@ function AllTransactionsPageContent() {
   } = useCollection<Transaction>(allTxsQuery);
 
   useEffect(() => {
-    // If an index is needed, there's no point in processing further.
-    // Also, clear any stale data.
-    if (indexCreationUrl) {
-      if (transactions) setTransactions(null);
-      return;
-    }
-    
-    // Halt processing if there's no data, or it's still loading.
-    if (rawLoading || !rawTransactions) {
+    // Halt processing if there's no data, it's loading, or an index is needed.
+    if (rawLoading || indexCreationUrl || !rawTransactions || !firestore) {
+      // Clear stale data if we enter a loading/error state
       if (transactions) setTransactions(null);
       return;
     }
@@ -65,14 +59,13 @@ function AllTransactionsPageContent() {
     const processTransactions = async () => {
       try {
         const userCache = new Map<string, UserData>();
-
         const transactionsWithDetails = await Promise.all(
           rawTransactions.map(async (tx) => {
             const pathParts = tx.path.split('/');
             const userId = pathParts[pathParts.indexOf('users') + 1];
             let user: UserData | undefined = userCache.get(userId);
 
-            if (!user && firestore) {
+            if (!user) {
               const userRef = doc(firestore, 'users', userId);
               const userSnap = await getDoc(userRef);
               if (userSnap.exists()) {
@@ -106,8 +99,8 @@ function AllTransactionsPageContent() {
     };
 
     processTransactions();
-  // Re-run this effect ONLY when the raw, unprocessed data or the index URL changes.
-  }, [rawTransactions, firestore, indexCreationUrl, transactions]);
+  // Re-run this effect ONLY when the raw, unprocessed data changes.
+  }, [rawTransactions, firestore]);
 
   const renderContent = () => {
     // Priority 1: Show index creation alert if needed.
