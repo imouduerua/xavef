@@ -1,8 +1,13 @@
 
 'use client';
 
-import type { TransactionStatus, TransactionWithUserDetails } from '@/lib/types';
-import React from 'react';
+import type {
+  Transaction,
+  TransactionStatus,
+  TransactionWithUserDetails,
+  UserData,
+} from '@/lib/types';
+import React, { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -13,9 +18,13 @@ import {
 } from '../ui/table';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
+import { doc, getDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { toast } from '@/hooks/use-toast';
+import { Skeleton } from '../ui/skeleton';
 
 interface AllTransactionsTableProps {
-  transactions: TransactionWithUserDetails[];
+  transactions: Transaction[];
 }
 
 const statusVariant: Record<
@@ -28,10 +37,80 @@ const statusVariant: Record<
 };
 
 export function AllTransactionsTable({
-  transactions,
+  transactions: rawTransactions,
 }: AllTransactionsTableProps) {
+  const [processedTransactions, setProcessedTransactions] = useState<
+    TransactionWithUserDetails[] | null
+  >(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const firestore = useFirestore();
 
-  if (transactions.length === 0) {
+  useEffect(() => {
+    if (!rawTransactions || !firestore) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const processTransactions = async () => {
+      try {
+        const userCache = new Map<string, UserData>();
+        const processed = await Promise.all(
+          rawTransactions.map(async (tx) => {
+            const pathParts = tx.path.split('/');
+            const userId = pathParts[pathParts.indexOf('users') + 1];
+            let user: UserData | undefined = userCache.get(userId);
+
+            if (!user) {
+              const userRef = doc(firestore, 'users', userId);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists()) {
+                const fetchedUser = {
+                  id: userSnap.id,
+                  ...userSnap.data(),
+                } as UserData;
+                userCache.set(userId, fetchedUser);
+                user = fetchedUser;
+              }
+            }
+
+            return {
+              ...tx,
+              userId,
+              userEmail: user?.email || 'Unknown User',
+              xavefId: user?.xavefId || 'N/A',
+            } as TransactionWithUserDetails;
+          })
+        );
+        setProcessedTransactions(processed);
+      } catch (err) {
+        console.error('Error attaching user details:', err);
+        toast({
+          variant: 'destructive',
+          title: 'Error Processing Data',
+          description: 'Could not process transaction details.',
+        });
+        setProcessedTransactions([]); // Set to empty array on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    processTransactions();
+  }, [rawTransactions, firestore]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
+  }
+
+  if (!processedTransactions || processedTransactions.length === 0) {
     return <p>No transactions found.</p>;
   }
 
@@ -65,7 +144,7 @@ export function AllTransactionsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.map((tx) => {
+          {processedTransactions.map((tx) => {
             const amount = Number(tx.amount);
             return (
               <TableRow key={tx.id}>
