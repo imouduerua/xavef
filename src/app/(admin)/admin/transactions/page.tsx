@@ -34,21 +34,27 @@ function AllTransactionsPageContent() {
     indexCreationUrl,
   } = useCollection<Transaction>(allTxsQuery);
 
+  // This is the core logic that will now be strictly sequential.
   const renderContent = () => {
-    // Priority 1: Show index creation alert if needed.
+    // Priority 1: The most critical check. If an index is required, stop everything
+    // and show the alert.
     if (indexCreationUrl) {
       return <MissingIndexAlert url={indexCreationUrl} />;
     }
-    // Priority 2: Show skeleton while the initial query is loading.
+
+    // Priority 2: If we are still fetching the initial data, show a skeleton loader.
     if (rawLoading) {
       return <Skeleton className="h-64 w-full" />;
     }
-    // Priority 3: If we have the data, show the table.
-    // The table component will now handle its own internal processing state.
+
+    // Priority 3: If we have the data, render the table. The table component itself
+    // is responsible for handling the display of the data, including attaching user details.
     if (rawTransactions) {
       return <AllTransactionsTable transactions={rawTransactions} />;
     }
-    // Fallback for any other state (e.g., initial render before first effect run)
+
+    // Fallback: This will show for a brief moment on initial load before the query is built
+    // or if there's an unhandled error state.
     return <Skeleton className="h-64 w-full" />;
   };
 
