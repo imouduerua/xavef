@@ -49,10 +49,9 @@ function AllTransactionsPageContent() {
   } = useCollection<Transaction>(allTxsQuery);
 
   useEffect(() => {
-    // Halt processing if there's no data, it's loading, or an index is needed.
-    if (rawLoading || indexCreationUrl || !rawTransactions || !firestore) {
-      // Clear stale data if we enter a loading/error state
-      if (transactions) setTransactions(null);
+    // Halt processing if an index is needed, we're loading, or there's no data.
+    if (indexCreationUrl || rawLoading || !rawTransactions || !firestore) {
+      if (transactions) setTransactions(null); // Clear stale data
       return;
     }
 
@@ -99,8 +98,9 @@ function AllTransactionsPageContent() {
     };
 
     processTransactions();
-  // Re-run this effect ONLY when the raw, unprocessed data changes.
-  }, [rawTransactions, firestore]);
+  // We only want this effect to run when the raw, unprocessed data changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawTransactions, firestore, indexCreationUrl, rawLoading]);
 
   const renderContent = () => {
     // Priority 1: Show index creation alert if needed.
