@@ -29,12 +29,6 @@ export default function LoginPage() {
                             <Link href="/register">Sign up</Link>
                         </Button>
                     </p>
-                    <p className="mt-2">
-                        Are you an administrator?{" "}
-                        <Button variant="link" asChild className="p-0">
-                            <Link href="/admin-login">Admin Login</Link>
-                        </Button>
-                    </p>
                 </div>
             </div>
         </div>
