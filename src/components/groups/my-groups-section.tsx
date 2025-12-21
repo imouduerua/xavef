@@ -5,14 +5,12 @@ import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import React from 'react';
 import { Skeleton } from '../ui/skeleton';
-import { Card } from '../ui/card';
-import { UserCheck } from 'lucide-react';
-import type { Group } from '@/lib/types';
-import { GroupCard } from './group-card';
+import type { Group, GroupJoinRequest } from '@/lib/types';
 import { MissingIndexAlert } from '../admin/missing-index-alert';
 import { MyGroupsList } from './my-groups-list';
 import { JoinRequestsList } from './join-requests-list';
 import { Separator } from '../ui/separator';
+import { Card } from '../ui/card';
 
 function SectionSkeleton() {
     return (
@@ -53,18 +51,18 @@ export function MyGroupsSection() {
       );
   }, [user, firestore]);
 
-  const { data: groups, loading, indexCreationUrl } = useCollection<Group>(myGroupsQuery);
-  const { data: joinRequests, loading: requestsLoading, indexCreationUrl: requestsIndexUrl } = useCollection(joinRequestsQuery);
+  const { data: groups, loading: groupsLoading, indexCreationUrl: groupsIndexUrl } = useCollection<Group>(myGroupsQuery);
+  const { data: joinRequests, loading: requestsLoading, indexCreationUrl: requestsIndexUrl } = useCollection<GroupJoinRequest>(joinRequestsQuery);
 
-  if (loading || requestsLoading) {
-    return <SectionSkeleton />;
-  }
-
-  if (indexCreationUrl) {
-    return <MissingIndexAlert url={indexCreationUrl} />;
+  if (groupsIndexUrl) {
+    return <MissingIndexAlert url={groupsIndexUrl} />;
   }
    if (requestsIndexUrl) {
     return <MissingIndexAlert url={requestsIndexUrl} />;
+  }
+
+  if (groupsLoading || requestsLoading) {
+    return <SectionSkeleton />;
   }
 
   const hasGroups = groups && groups.length > 0;
