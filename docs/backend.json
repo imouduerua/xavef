@@ -179,10 +179,18 @@
       "properties": {
         "isAdmin": {
           "type": "boolean"
+        },
+        "promotedBy": {
+          "type": "string",
+          "description": "Email of the admin who granted these privileges."
+        },
+        "promotedAt": {
+          "type": "string",
+          "format": "date-time"
         }
       },
       "required": [
-        "isAdmin"
+        "isAdmin", "promotedBy", "promotedAt"
       ]
     },
     "savingGoal": {
@@ -219,23 +227,6 @@
         "currentAmount",
         "createdAt"
       ]
-    },
-     "referralCodeGenerator": {
-      "title": "Referral Code Generator",
-      "description": "A document indicating a user has permission to generate referral codes.",
-      "type": "object",
-      "properties": {
-        "enabledBy": {
-          "type": "string",
-          "description": "The email of the admin who enabled this permission."
-        },
-        "enabledAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp when the permission was granted."
-        }
-      },
-      "required": ["enabledBy", "enabledAt"]
     }
   },
   "auth": {
@@ -272,13 +263,7 @@
       "schema": {
         "$ref": "#/entities/admin"
       },
-      "description": "Stores a list of admin users."
-    },
-    "/referralCodeGenerators/{userId}": {
-      "schema": {
-        "$ref": "#/entities/referralCodeGenerator"
-      },
-      "description": "A list of user IDs that have permission to generate referral codes."
+      "description": "Stores a list of admin users. Any user in this collection is considered an admin."
     }
   }
 }

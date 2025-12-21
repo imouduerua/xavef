@@ -36,15 +36,17 @@ export default function UserDetailPage() {
     [userId, firestore]
   );
   
-  const generatorDocRef = useMemo(
-    () => (userId && firestore ? doc(firestore, 'referralCodeGenerators', userId) : null),
+  // This ref now points to the /admins collection
+  const adminDocRef = useMemo(
+    () => (userId && firestore ? doc(firestore, 'admins', userId) : null),
     [userId, firestore]
   );
 
-  const { data: userData, loading } = useDoc<UserData>(userDocRef);
-  const { data: generatorData, loading: generatorLoading } = useDoc(generatorDocRef);
+  const { data: userData, loading: userLoading } = useDoc<UserData>(userDocRef);
+  // This hook now checks for the user's admin status from the /admins collection
+  const { data: adminStatusData, loading: adminStatusLoading } = useDoc(adminDocRef);
 
-  const canGenerate = !!generatorData;
+  const isUserAdmin = !!adminStatusData;
 
   const formatCurrency = (amount: number | null | undefined) => {
     if (amount === undefined || amount === null) {
@@ -53,22 +55,26 @@ export default function UserDetailPage() {
     return `₦${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   
-  const handlePermissionChange = async (shouldBeAbleToGenerate: boolean) => {
-    if (!generatorDocRef || !userData || !adminUser?.email) return;
+  const handlePermissionChange = async (isNowAdmin: boolean) => {
+    if (!adminDocRef || !userData || !adminUser?.email) return;
 
     setIsUpdatingPermission(true);
     try {
-        if (shouldBeAbleToGenerate) {
-            await setDoc(generatorDocRef, { enabledBy: adminUser.email, enabledAt: new Date() });
+        if (isNowAdmin) {
+            await setDoc(adminDocRef, { 
+              isAdmin: true,
+              promotedBy: adminUser.email, 
+              promotedAt: new Date() 
+            });
         } else {
-            await deleteDoc(generatorDocRef);
+            await deleteDoc(adminDocRef);
         }
         toast({
-            title: "Permission Updated",
-            description: `${userData.email} can ${shouldBeAbleToGenerate ? 'now' : 'no longer'} generate referral codes.`
+            title: "Permissions Updated",
+            description: `${userData.email} is ${isNowAdmin ? 'now' : 'no longer'} an admin.`
         })
     } catch (error: any) {
-        console.error("Error updating permission:", error);
+        console.error("Error updating admin status:", error);
         toast({
             variant: "destructive",
             title: "Update Failed",
@@ -95,7 +101,7 @@ export default function UserDetailPage() {
     </div>
   )
 
-  if (loading || generatorLoading || !userId || !userData) {
+  if (userLoading || adminStatusLoading || !userId || !userData) {
     return <PageSkeleton />;
   }
 
@@ -142,7 +148,7 @@ export default function UserDetailPage() {
                 </div>
             </div>
 
-            {isSuperAdmin && (
+            {isSuperAdmin && userId !== adminUser?.uid && (
               <div>
                 <h3 className="text-lg font-medium">Permissions</h3>
                 <Separator className="my-4" />
@@ -150,14 +156,14 @@ export default function UserDetailPage() {
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between space-x-2">
                         <div className='space-y-1.5'>
-                            <Label htmlFor="referral-permission" className="font-semibold">Generate Referral Codes</Label>
+                            <Label htmlFor="referral-permission" className="font-semibold">Admin Status</Label>
                             <p className="text-sm text-muted-foreground">
-                                Allow this user to generate new referral codes for others to use during signup.
+                                Grant this user admin privileges, including the ability to generate referral codes and manage transactions.
                             </p>
                         </div>
                         <Switch
                           id="referral-permission"
-                          checked={canGenerate}
+                          checked={isUserAdmin}
                           onCheckedChange={handlePermissionChange}
                           disabled={isUpdatingPermission}
                         />
