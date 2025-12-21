@@ -10,8 +10,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import { doc, updateDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { ArrowLeft, Landmark, PiggyBank, BadgePercent } from 'lucide-react';
+import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { ArrowLeft, Landmark, PiggyBank } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import React, { useMemo } from 'react';
@@ -36,14 +36,12 @@ export default function UserDetailPage() {
     [userId, firestore]
   );
   
-  // This ref now points to the /admins collection
   const adminDocRef = useMemo(
     () => (userId && firestore ? doc(firestore, 'admins', userId) : null),
     [userId, firestore]
   );
 
   const { data: userData, loading: userLoading } = useDoc<UserData>(userDocRef);
-  // This hook now checks for the user's admin status from the /admins collection
   const { data: adminStatusData, loading: adminStatusLoading } = useDoc(adminDocRef);
 
   const isUserAdmin = !!adminStatusData;
@@ -156,13 +154,13 @@ export default function UserDetailPage() {
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between space-x-2">
                         <div className='space-y-1.5'>
-                            <Label htmlFor="referral-permission" className="font-semibold">Admin Status</Label>
+                            <Label htmlFor="admin-permission" className="font-semibold">Admin Status</Label>
                             <p className="text-sm text-muted-foreground">
-                                Grant this user admin privileges. Admins can approve transactions and manage users.
+                                Grant this user admin privileges. Admins can approve transactions.
                             </p>
                         </div>
                         <Switch
-                          id="referral-permission"
+                          id="admin-permission"
                           checked={isUserAdmin}
                           onCheckedChange={handlePermissionChange}
                           disabled={isUpdatingPermission}
