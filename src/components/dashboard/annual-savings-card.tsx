@@ -1,9 +1,6 @@
 
-import { Calendar, Clock, Banknote } from 'lucide-react';
+import { Calendar, Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '../ui/button';
-import { DepositDialog } from './deposit-dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 interface AnnualSavingsCardProps {
     balance: number;
@@ -12,15 +9,6 @@ interface AnnualSavingsCardProps {
 
 export function AnnualSavingsCard({ balance, pendingAmount }: AnnualSavingsCardProps) {
   const isDisabled = pendingAmount !== undefined;
-
-  const depositButton = (
-    <DepositDialog accountName="Annual Savings" targetAccount="annual">
-        <Button className="w-full" disabled={isDisabled}>
-            <Banknote className="mr-2" />
-            Make Contribution
-        </Button>
-    </DepositDialog>
-  );
 
   return (
     <Card>
@@ -47,22 +35,6 @@ export function AnnualSavingsCard({ balance, pendingAmount }: AnnualSavingsCardP
             <CardDescription>Withdrawals are available at the end of the year.</CardDescription>
         )}
       </CardContent>
-       <CardFooter>
-        {isDisabled ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                 <div className="w-full">{depositButton}</div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>You have a pending contribution for this account.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          depositButton
-        )}
-      </CardFooter>
     </Card>
   );
 }

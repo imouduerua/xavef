@@ -1,7 +1,7 @@
 
 'use client';
 
-import { PiggyBank, Clock } from 'lucide-react';
+import { PiggyBank, Clock, Banknote } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '../ui/button';
 import { DepositDialog } from './deposit-dialog';
@@ -18,7 +18,10 @@ export function SolidaraSavingsCard({ balance, pendingAmount }: SolidaraSavingsC
 
   const depositButton = (
      <DepositDialog accountName="Solidara Savings" targetAccount="solidara">
-        <Button className="w-full" disabled={isDisabled}>Make Contribution</Button>
+        <Button className="w-full" disabled={isDisabled}>
+           <Banknote className="mr-2" />
+           Make Contribution
+        </Button>
     </DepositDialog>
   );
 
