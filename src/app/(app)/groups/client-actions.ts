@@ -16,6 +16,7 @@ import {
   getDoc,
   runTransaction,
   writeBatch,
+  increment,
 } from 'firebase/firestore';
 import type { Group, GroupJoinRequest } from '@/lib/types';
 import type { User } from 'firebase/auth';
@@ -54,6 +55,7 @@ export async function createGroup(
       members: [creatorUid], // The creator is the first member
       status: 'forming', // Groups start in a 'forming' state
       createdAt: serverTimestamp(),
+      currentCollectionWeek: 0,
     });
     return { success: true };
   } catch (error: any) {
@@ -85,6 +87,8 @@ export async function startGroup(
       status: 'active',
       startedAt: serverTimestamp(),
       payoutOrder: payoutOrder,
+      currentCollectionWeek: 1, // Start at week 1
+      lastDistributionDate: null,
     });
 
     // 2. Create a notification for each member
@@ -96,7 +100,7 @@ export async function startGroup(
             description: `The savings group "${groupData.name}" has officially started.`,
             createdAt: serverTimestamp(),
             read: false,
-            actionUrl: `/groups`,
+            actionUrl: `/groups/${groupId}`,
         };
         batch.set(doc(userNotificationsRef), newNotification);
     }
@@ -209,7 +213,7 @@ export async function respondToJoinRequest(
             description: `You are now a member of the group "${requestData.groupName}".`,
             createdAt: serverTimestamp(),
             read: false,
-            actionUrl: `/groups`,
+            actionUrl: `/groups/${requestData.groupId}`,
         };
         transaction.set(doc(userNotificationsRef), newNotification);
       }
@@ -222,5 +226,66 @@ export async function respondToJoinRequest(
       success: false,
       error: error.message || 'Failed to process the request.',
     };
+  }
+}
+
+export async function distributeGroupFunds(
+  firestore: Firestore,
+  groupId: string,
+  recipientUid: string,
+  totalPurse: number
+): Promise<{ success: boolean; error?: string }> {
+  const groupRef = doc(firestore, 'groups', groupId);
+  const recipientUserRef = doc(firestore, 'users', recipientUid);
+  
+  try {
+    await runTransaction(firestore, async (transaction) => {
+      const groupSnap = await transaction.get(groupRef);
+      if (!groupSnap.exists()) throw new Error("Group not found.");
+
+      const groupData = groupSnap.data();
+      const currentWeek = groupData.currentCollectionWeek || 1;
+
+      // 1. Credit the recipient's Solidara balance
+      transaction.update(recipientUserRef, {
+        solidaraBalance: increment(totalPurse)
+      });
+      
+      // 2. Create a "Group Payout" transaction for the recipient
+      const recipientTxRef = doc(collection(firestore, `users/${recipientUid}/transactions`));
+      transaction.set(recipientTxRef, {
+        amount: totalPurse,
+        date: serverTimestamp(),
+        description: `Group payout from "${groupData.name}"`,
+        type: 'Group Payout',
+        status: 'Completed',
+        groupId: groupId,
+      });
+
+      // 3. Update the group to the next collection week
+      transaction.update(groupRef, {
+        currentCollectionWeek: increment(1),
+        lastDistributionDate: serverTimestamp(),
+      });
+
+      // 4. Create notifications for all members
+      for (const memberId of groupData.members) {
+        const notificationRef = doc(collection(firestore, `users/${memberId}/notifications`));
+        const recipientName = (await getDoc(recipientUserRef)).data()?.displayName || 'A member';
+        transaction.set(notificationRef, {
+          userId: memberId,
+          title: `Week ${currentWeek} Payout Complete!`,
+          description: `${recipientName} has received the Week ${currentWeek} payout of ₦${totalPurse.toFixed(2)} from group "${groupData.name}".`,
+          createdAt: serverTimestamp(),
+          read: false,
+          actionUrl: `/groups/${groupId}`
+        });
+      }
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error distributing group funds:', error);
+    return { success: false, error: error.message || 'Failed to distribute funds.' };
   }
 }

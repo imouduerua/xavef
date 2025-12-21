@@ -1,19 +1,23 @@
 
 'use client';
 
-import { useDoc, useFirestore } from '@/firebase';
-import type { Group, UserData } from '@/lib/types';
-import { doc, getDoc, collection, getDocs, query, where, documentId } from 'firebase/firestore';
+import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
+import type { Group, Transaction, UserData } from '@/lib/types';
+import { doc, getDoc, collection, getDocs, query, where, documentId, collectionGroup, Timestamp } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Users, Wallet, Calendar, ListOrdered, UserCheck } from 'lucide-react';
+import { ArrowLeft, Users, Wallet, Calendar, ListOrdered, UserCheck, HandCoins } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getFirebase } from 'react-redux-firebase';
+import { Button } from '@/components/ui/button';
+import { distributeGroupFunds } from '../client-actions';
+import { toast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 function PageSkeleton() {
     return (
@@ -44,22 +48,55 @@ const formatCurrency = (amount: number) =>
         maximumFractionDigits: 2,
     })}`;
 
-const getWeekNumber = (startDate: Date) => {
-    const today = new Date();
-    const diff = today.getTime() - startDate.getTime();
-    if (diff < 0) return 1; // If group hasn't started, default to week 1
-    return Math.floor(diff / (1000 * 60 * 60 * 24 * 7)) + 1;
-};
 
 export default function GroupDetailsPage() {
     const params = useParams();
     const groupId = params.groupId as string;
     const firestore = useFirestore();
+    const { user } = useUser();
     const [membersData, setMembersData] = useState<UserData[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(true);
 
     const groupRef = React.useMemo(() => (firestore && groupId ? doc(firestore, 'groups', groupId) : null), [firestore, groupId]);
     const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
+    
+    // Determine the start and end of the current collection week
+    const [weekStart, weekEnd] = React.useMemo(() => {
+        if (!group?.startedAt) return [null, null];
+        const startDate = group.startedAt.toDate();
+        const currentWeek = group.currentCollectionWeek || 1;
+        const weekOffset = (currentWeek - 1) * 7;
+        
+        const start = new Date(startDate);
+        start.setDate(start.getDate() + weekOffset);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(start);
+        end.setDate(end.getDate() + 7);
+        end.setHours(0, 0, 0, 0);
+
+        return [Timestamp.fromDate(start), Timestamp.fromDate(end)];
+    }, [group]);
+
+
+    const weeklyContributionsQuery = React.useMemo(() => {
+        if (!firestore || !group || group.members.length === 0 || !weekStart || !weekEnd) return null;
+        return query(
+            collectionGroup(firestore, 'transactions'),
+            where('groupId', '==', groupId),
+            where('type', '==', 'Group Contribution'),
+            where('date', '>=', weekStart),
+            where('date', '<', weekEnd)
+        );
+    }, [firestore, groupId, group, weekStart, weekEnd]);
+
+    const { data: weeklyContributions, loading: contributionsLoading } = useCollection<Transaction>(weeklyContributionsQuery);
+    
+    const currentWeekDeposits = React.useMemo(() => {
+        if (!weeklyContributions) return 0;
+        return weeklyContributions.reduce((acc, tx) => acc + tx.amount, 0);
+    }, [weeklyContributions]);
+
 
     useEffect(() => {
         if (group && group.members.length > 0 && firestore) {
@@ -67,9 +104,10 @@ export default function GroupDetailsPage() {
                 setLoadingMembers(true);
                 try {
                     const usersRef = collection(firestore, 'users');
-                    const q = query(usersRef, where(documentId(), 'in', group.members));
+                    // Firestore 'in' queries are limited to 10 elements. If groups can be larger, this needs pagination.
+                    const q = query(usersRef, where(documentId(), 'in', group.members.slice(0, 10)));
                     const querySnapshot = await getDocs(q);
-                    const users = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as UserData));
+                    const users = querySnapshot.docs.map(d => ({ ...d.data(), uid: d.id } as UserData));
                     setMembersData(users);
                 } catch (error) {
                     console.error("Error fetching members' data: ", error);
@@ -83,14 +121,30 @@ export default function GroupDetailsPage() {
         }
     }, [group, firestore]);
 
-    if (groupLoading || loadingMembers || !group) {
+    if (groupLoading || loadingMembers || contributionsLoading || !group) {
         return <PageSkeleton />;
     }
 
-    const weeklyPurse = group.contributionAmount * group.members.length;
-    const startDate = group.startedAt?.toDate();
-    const currentWeek = startDate ? getWeekNumber(startDate) : null;
-    const currentPayoutIndex = currentWeek ? (currentWeek - 1) % group.members.length : null;
+    const expectedWeeklyPurse = group.contributionAmount * group.members.length;
+    const isPurseComplete = currentWeekDeposits >= expectedWeeklyPurse;
+    const isGroupCreator = user?.uid === group.creatorUid;
+
+    const currentWeek = group.currentCollectionWeek || 1;
+    const currentPayoutIndex = group.payoutOrder ? (currentWeek - 1) % group.members.length : null;
+    const currentRecipientUid = currentPayoutIndex !== null && group.payoutOrder ? group.payoutOrder[currentPayoutIndex] : null;
+
+    const handleDistribute = async () => {
+        if (!firestore || !currentRecipientUid) {
+            toast({ variant: 'destructive', title: "Error", description: "Cannot determine recipient." });
+            return;
+        }
+        const result = await distributeGroupFunds(firestore, groupId, currentRecipientUid, currentWeekDeposits);
+        if (result.success) {
+            toast({ title: "Funds Distributed!", description: "The weekly purse has been sent to the recipient." });
+        } else {
+            toast({ variant: 'destructive', title: "Distribution Failed", description: result.error });
+        }
+    };
     
     // Map member data for quick lookup
     const memberMap = new Map(membersData.map(m => [m.uid, m]));
@@ -112,16 +166,16 @@ export default function GroupDetailsPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-8">
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                          <Card>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Weekly Group Purse</CardTitle>
+                                <CardTitle className="text-sm font-medium">This Week's Purse</CardTitle>
                                 <Wallet className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{formatCurrency(weeklyPurse)}</div>
+                                <div className="text-2xl font-bold">{formatCurrency(currentWeekDeposits)}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    {formatCurrency(group.contributionAmount)} per member
+                                    Goal: {formatCurrency(expectedWeeklyPurse)}
                                 </p>
                             </CardContent>
                         </Card>
@@ -137,22 +191,49 @@ export default function GroupDetailsPage() {
                                 </p>
                             </CardContent>
                         </Card>
-                        {startDate && (
+                        {group.startedAt && (
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium">Group Start Date</CardTitle>
+                                    <CardTitle className="text-sm font-medium">Current Week</CardTitle>
                                     <Calendar className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">{startDate.toLocaleDateString()}</div>
+                                    <div className="text-2xl font-bold">Week {currentWeek}</div>
                                     <p className="text-xs text-muted-foreground">
-                                       Currently in Week {currentWeek}
+                                       Started on {group.startedAt.toDate().toLocaleDateString()}
                                     </p>
                                 </CardContent>
                             </Card>
                         )}
                     </div>
                     
+                    {isGroupCreator && group.status === 'active' && (
+                         <div className="flex justify-end">
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button disabled={!isPurseComplete}>
+                                        <HandCoins className="mr-2 h-4 w-4" />
+                                        Distribute Purse
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Confirm Distribution</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will transfer {formatCurrency(currentWeekDeposits)} to {memberMap.get(currentRecipientUid!)?.displayName || 'the recipient'} and advance the group to the next week. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDistribute}>
+                                            Yes, Distribute
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    )}
+
                     {group.payoutOrder && group.payoutOrder.length > 0 && (
                          <div>
                             <h3 className="text-lg font-medium flex items-center gap-2 mb-4">

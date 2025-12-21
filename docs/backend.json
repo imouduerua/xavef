@@ -112,7 +112,8 @@
             "Withdrawal",
             "Loan Payment",
             "Interest",
-            "Group Contribution"
+            "Group Contribution",
+            "Group Payout"
           ]
         },
         "status": {
@@ -130,13 +131,18 @@
           "type": "string",
           "enum": [
             "solidara",
-            "annual"
+            "annual",
+            "group"
           ],
           "description": "The target account for the transaction, if applicable."
         },
         "proofOfPaymentUrl": {
           "type": "string",
           "description": "URL of the uploaded proof of payment image."
+        },
+        "groupId": {
+          "type": "string",
+          "description": "The ID of the group for group-related transactions."
         }
       },
       "required": [
@@ -241,7 +247,9 @@
         "creatorUid": { "type": "string" },
         "members": { "type": "array", "items": { "type": "string" } },
         "status": { "type": "string", "enum": ["forming", "active", "closed"], "description": "The current status of the group."},
-        "payoutOrder": { "type": "array", "items": { "type": "string" }, "description": "Shuffled list of member UIDs for weekly payout." }
+        "payoutOrder": { "type": "array", "items": { "type": "string" }, "description": "Shuffled list of member UIDs for weekly payout." },
+        "currentCollectionWeek": { "type": "number", "description": "The current week number for collecting contributions." },
+        "lastDistributionDate": { "type": "string", "format": "date-time", "description": "The timestamp of the last payout distribution." }
       },
       "required": ["name", "contributionAmount", "contributionFrequency", "numberOfMembers", "creatorUid", "members", "status"]
     },

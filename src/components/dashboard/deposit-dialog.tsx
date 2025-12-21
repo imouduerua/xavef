@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -34,26 +35,37 @@ import type { AccountType } from '@/lib/types';
 import { BankDetailsCard } from './bank-details-card';
 import Image from 'next/image';
 import { ScrollArea } from '../ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const depositSchema = z.object({
   amount: z.coerce
     .number()
     .positive('Amount must be a positive number.')
     .min(1, 'Deposit amount must be at least ₦1.00'),
+  targetAccount: z.enum(['solidara', 'annual', 'group']),
+  groupId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof depositSchema>;
 
 interface DepositDialogProps {
   accountName: string;
-  targetAccount: AccountType;
+  targetAccount: AccountType | 'group';
   children: React.ReactNode;
+  groupId?: string; // Optional groupId for group contributions
+  contributionAmount?: number; // Optional fixed amount for group contributions
 }
 
 const MAX_FILE_SIZE_MB = 1;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-export function DepositDialog({ accountName, targetAccount, children }: DepositDialogProps) {
+export function DepositDialog({ 
+    accountName, 
+    targetAccount, 
+    children, 
+    groupId,
+    contributionAmount
+}: DepositDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [step, setStep] = React.useState<'amount' | 'details'>('amount');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -61,10 +73,14 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
   const { user } = useUser();
   const firestore = useFirestore();
 
+  const isGroupContribution = targetAccount === 'group';
+
   const form = useForm<FormValues>({
     resolver: zodResolver(depositSchema),
     defaultValues: {
-      amount: '' as any,
+      amount: contributionAmount || ('' as any),
+      targetAccount: targetAccount,
+      groupId: groupId,
     },
   });
 
@@ -97,7 +113,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
 
 
   async function handleConfirmTransfer() {
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Not Authenticated',
@@ -105,8 +121,6 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
       });
       return;
     }
-    
-    if(!firestore) return;
 
     if (!proofOfPayment.dataUrl) {
       toast({
@@ -137,11 +151,12 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
       const newTransaction = {
         date: Timestamp.now(),
         amount: amountAsNumber,
-        description: `Deposit to ${accountName}`,
-        status: 'Pending',
-        type: 'Deposit',
-        targetAccount: targetAccount,
+        description: isGroupContribution ? `Contribution to ${accountName}` : `Deposit to ${accountName}`,
+        status: 'Pending' as const,
+        type: isGroupContribution ? 'Group Contribution' as const : 'Deposit' as const,
+        targetAccount: values.targetAccount,
         proofOfPaymentUrl: proofOfPayment.dataUrl,
+        ...(isGroupContribution && { groupId: values.groupId }),
       };
       
       await addDoc(transactionRef, newTransaction);
@@ -169,22 +184,28 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
     setIsOpen(open);
     if (!open) {
       setTimeout(() => {
-        reset({ amount: '' as any });
+        reset({ amount: contributionAmount || ('' as any) });
         setStep('amount');
         setProofOfPayment({ file: null, dataUrl: null });
       }, 300);
     }
   };
+  
+  const dialogTitle = isGroupContribution ? `Contribute to ${accountName}` : 'Make a Deposit';
+  const amountLabel = isGroupContribution ? 'Contribution Amount' : 'Amount';
+
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90vh]">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle>Make a Deposit</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
            {step === 'amount' && (
             <DialogDescription>
-              Enter the amount you wish to deposit. You will be shown bank transfer details in the next step.
+              {isGroupContribution
+                ? `The weekly contribution amount is fixed. Proceed to make your payment.`
+                : `Enter the amount you wish to deposit. You will be shown bank transfer details in the next step.`}
             </DialogDescription>
           )}
            {step === 'details' && (
@@ -203,7 +224,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
                     name="amount"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Amount</FormLabel>
+                        <FormLabel>{amountLabel}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
@@ -214,6 +235,7 @@ export function DepositDialog({ accountName, targetAccount, children }: DepositD
                               placeholder="0.00"
                               className="pl-8"
                               {...field}
+                              disabled={isGroupContribution}
                             />
                           </div>
                         </FormControl>

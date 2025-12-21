@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useUser, useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
-import { Loader2, PlayCircle, UserPlus, Users, ArrowRight } from 'lucide-react';
+import { Loader2, PlayCircle, UserPlus, Users, ArrowRight, HandCoins } from 'lucide-react';
 import React from 'react';
 import { startGroup, requestToJoinGroup } from '@/app/(app)/groups/client-actions';
 import {
@@ -21,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import Link from 'next/link';
+import { DepositDialog } from '../dashboard/deposit-dialog';
 
 
 interface GroupCardProps {
@@ -92,6 +93,30 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
   }
 
   const renderFooter = () => {
+      if (group.status === 'active' && isUserMember) {
+        return (
+          <div className="w-full flex gap-2">
+            <Button asChild className="flex-1" variant="secondary">
+                <Link href={`/groups/${group.id}`}>
+                    View Group
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+            </Button>
+            <DepositDialog
+              accountName={group.name}
+              targetAccount="group"
+              groupId={group.id}
+              contributionAmount={group.contributionAmount}
+            >
+              <Button className="flex-1">
+                <HandCoins className="mr-2 h-4 w-4" />
+                Contribute
+              </Button>
+            </DepositDialog>
+          </div>
+        )
+      }
+
       if (group.status !== 'forming') {
           if(isUserMember) {
             return (
@@ -103,7 +128,7 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
                 </Button>
             )
           }
-          return null; // Or show other info for active/closed groups
+          return null;
       }
       if (isOwned && isGroupAdmin) {
           return (
@@ -164,7 +189,7 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-between items-baseline">
-            <span className='text-sm text-muted-foreground'>Contribution</span>
+            <span className='text-sm text-muted-foreground'>Weekly Contribution</span>
             <span className="font-bold text-lg">{formatCurrency(group.contributionAmount)}</span>
         </div>
         <div className="flex justify-between items-center">
