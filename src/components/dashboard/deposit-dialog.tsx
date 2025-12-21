@@ -144,7 +144,7 @@ export function DepositDialog({
       const newTransaction = {
         date: Timestamp.now(),
         amount: amountAsNumber,
-        description: `Deposit to ${accountName}`,
+        description: `Contribution to ${accountName}`,
         status: 'Pending' as const,
         type: 'Deposit' as const,
         targetAccount: values.targetAccount,
@@ -154,8 +154,8 @@ export function DepositDialog({
       await addDoc(transactionRef, newTransaction);
 
       toast({
-        title: 'Deposit Submitted',
-        description: `Your deposit of ₦${amountAsNumber.toFixed(
+        title: 'Contribution Submitted',
+        description: `Your contribution of ₦${amountAsNumber.toFixed(
           2
         )} is pending approval.`,
       });
@@ -183,7 +183,7 @@ export function DepositDialog({
     }
   };
   
-  const dialogTitle = 'Make a Deposit';
+  const dialogTitle = `Contribute to ${accountName}`;
   const amountLabel = 'Amount';
 
 
@@ -195,7 +195,7 @@ export function DepositDialog({
           <DialogTitle>{dialogTitle}</DialogTitle>
            {step === 'amount' && (
             <DialogDescription>
-              Enter the amount you wish to deposit. You will be shown bank transfer details in the next step.
+              Enter the amount you wish to contribute. You will be shown bank transfer details in the next step.
             </DialogDescription>
           )}
            {step === 'details' && (

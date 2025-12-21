@@ -1,4 +1,6 @@
 
+'use client';
+
 import { PiggyBank, Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '../ui/button';
@@ -15,8 +17,8 @@ export function SolidaraSavingsCard({ balance, pendingAmount }: SolidaraSavingsC
   const isDisabled = pendingAmount !== undefined;
 
   const depositButton = (
-     <DepositDialog accountName="Savings (Olidara)" targetAccount="solidara">
-        <Button className="w-full" disabled={isDisabled}>Deposit</Button>
+     <DepositDialog accountName="Solidara Savings & Loan Pool" targetAccount="solidara">
+        <Button className="w-full" disabled={isDisabled}>Make Contribution</Button>
     </DepositDialog>
   );
 
@@ -25,7 +27,7 @@ export function SolidaraSavingsCard({ balance, pendingAmount }: SolidaraSavingsC
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg md:text-xl">Savings (Olidara)</CardTitle>
+            <CardTitle className="text-lg md:text-xl">Solidara Savings &amp; Loan Pool</CardTitle>
           </div>
           <div className="rounded-md bg-transparent text-muted-foreground">
             <PiggyBank className="h-5 w-5" />
@@ -39,10 +41,10 @@ export function SolidaraSavingsCard({ balance, pendingAmount }: SolidaraSavingsC
         {isDisabled ? (
            <div className="flex items-center text-sm text-yellow-600 mt-2">
                 <Clock className="h-4 w-4 mr-2" />
-                <span>Pending deposit: ₦{pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span>Pending contribution: ₦{pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
         ) : (
-             <CardDescription>Daily savings contributions</CardDescription>
+             <CardDescription>Your contribution to the collective loan fund.</CardDescription>
         )}
       </CardContent>
       <CardFooter>
@@ -53,7 +55,7 @@ export function SolidaraSavingsCard({ balance, pendingAmount }: SolidaraSavingsC
                  <div className="w-full">{depositButton}</div>
               </TooltipTrigger>
               <TooltipContent>
-                <p>You have a pending deposit for this account.</p>
+                <p>You have a pending contribution for this account.</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
