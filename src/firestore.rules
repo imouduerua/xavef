@@ -13,14 +13,21 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
+      // Users can create their own profile with specific constraints.
       allow create: if request.auth != null && request.auth.uid == userId 
                     && request.resource.data.uid == userId
                     && request.resource.data.email == request.auth.token.email
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      allow read, update: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow get, list: if isAdmin(); 
+      // A user can read their own document.
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // An admin can get, list, and UPDATE any user document.
+      // This UPDATE permission is the critical fix.
+      allow get, list, update: if isAdmin(); 
+      
+      // Nobody can delete user documents.
       allow delete: if false;
     }
 
