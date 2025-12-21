@@ -5,9 +5,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      // Allow the super admin full access, and check the admins collection for others.
-      return request.auth.token.email == 'admin@xavef.com' || 
-             (request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      // An admin is any user whose UID exists in the /admins collection.
+      // This now becomes the single source of truth for admin status.
+      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
     
     function canGenerateCode(userId) {
@@ -31,6 +31,8 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == userId;
       
       // An authenticated user can update their own document, but not protected fields.
+      // Admins can update a user's document based on the more specific rule below.
+      // This rule is now more secure and clear.
       allow update: if request.auth.uid == userId &&
           request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
           request.resource.data.annualBalance == resource.data.annualBalance;
@@ -43,7 +45,6 @@ service cloud.firestore {
 
     match /referralCodes/{codeId} {
       // An authenticated user needs to be able to check if a code exists during signup.
-      // The transaction ensures they can't consume a used code.
       allow read: if request.auth != null;
       
       allow create: if request.auth != null 
@@ -51,20 +52,17 @@ service cloud.firestore {
                       && canGenerateCode(request.auth.uid);
       
       // A user can mark a code as used as part of the transaction to create their own profile.
-      // This rule ensures the 'used' field can only be changed from false to true.
       allow update: if request.auth != null 
                      && request.resource.data.used == true
                      && resource.data.used == false
                      && request.resource.data.usedBy == request.auth.uid;
 
-      // No one can delete referral codes
       allow delete: if false;
     }
 
-    // New rules for the generators collection
     match /referralCodeGenerators/{userId} {
       allow read, get: if request.auth != null;
-      // Admins (including super admin) can create or delete permission documents.
+      // Admins can create or delete permission documents.
       allow create, delete: if isAdmin();
       allow list, update: if false;
     }
@@ -87,8 +85,10 @@ service cloud.firestore {
 
     match /admins/{userId} {
       // Any authenticated user can check if another user is an admin.
-      // This is safe as it only reveals a boolean status.
       allow read, get: if request.auth != null;
+      // Only other admins can create or delete admin documents.
+      allow create, delete: if isAdmin();
+      allow list, update: if false;
     }
   }
 }
