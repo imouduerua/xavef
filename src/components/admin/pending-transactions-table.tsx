@@ -138,7 +138,7 @@ export function PendingTransactionsTable({ transactions: initialTransactions }: 
                 <TableCell className="text-center">
                   {tx.proofOfPaymentUrl ? (
                     <Button variant="outline" size="icon" className="h-8 w-8" asChild>
-                      <a href={tx.proofOfPaymentUrl} target="_blank" rel="noopener noreferrer">
+                      <a href={tx.proofOfPaymentUrl} download={`receipt-for-${tx.id}.png`} target="_blank" rel="noopener noreferrer">
                         <Download className="h-4 w-4" />
                       </a>
                     </Button>
