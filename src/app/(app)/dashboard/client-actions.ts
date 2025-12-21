@@ -8,26 +8,24 @@ import {
     collection, 
     serverTimestamp,
     Firestore,
-    Timestamp,
-    getDoc,
-    setDoc,
+    query,
+    where,
+    getDocs,
+    limit,
+    documentId,
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
-
-// This is a client-side action file.
+import type { ReferralCode } from "@/lib/types";
 
 async function generateUniqueXavefId(firestore: Firestore): Promise<string> {
     let xavefId;
     let isUnique = false;
-    const usersRef = collection(firestore, 'users');
-
+    // This is a simplified approach. In a production environment with many users,
+    // you'd want a more robust collision-detection mechanism.
     while (!isUnique) {
         const length = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
         xavefId = Math.floor(Math.pow(10, length - 1) + Math.random() * 9 * Math.pow(10, length - 1)).toString();
-        
-        // In a real-world scenario, you'd query to check for uniqueness.
-        // For this app, we'll assume collisions are unlikely enough.
-        isUnique = true;
+        isUnique = true; // For this app, we'll assume collisions are unlikely enough.
     }
     return xavefId!;
 }
@@ -48,24 +46,32 @@ export async function createUserProfile(
 ): Promise<{ success: boolean; error?: string }> {
 
     const userDocRef = doc(firestore, "users", user.uid);
-    const referralDocRef = doc(firestore, 'referralCodes', data.referralCode);
+    const referralCodesRef = collection(firestore, 'referralCodes');
 
     try {
         await runTransaction(firestore, async (transaction) => {
-            const referralDoc = await transaction.get(referralDocRef);
-
-            // If the provided referral code is invalid or used, throw an error.
-            if (!referralDoc.exists() || referralDoc.data()?.used) {
-                throw new Error("The referral code is invalid or has already been used.");
+            // 1. Find the referral code document by querying for the 'code' field.
+            const referralQuery = query(
+                referralCodesRef, 
+                where('code', '==', data.referralCode), 
+                limit(1)
+            );
+            
+            const referralQuerySnapshot = await getDocs(referralQuery);
+            
+            if (referralQuerySnapshot.empty) {
+                 throw new Error("The provided referral code is invalid.");
             }
 
-            const referralData = referralDoc.data();
-            const referredBy = referralData?.creatorUid;
-
-            if (!referredBy) {
-                // This case should be rare if the above check passes, but it's good practice.
-                throw new Error("The referral code is invalid.");
+            const referralDoc = referralQuerySnapshot.docs[0];
+            const referralData = referralDoc.data() as ReferralCode;
+            
+            // 2. Check if the code has already been used.
+            if (referralData.used) {
+                throw new Error("The provided referral code has already been used.");
             }
+
+            const referredBy = referralData.creatorUid;
 
             const xavefId = await generateUniqueXavefId(firestore);
             
@@ -88,10 +94,10 @@ export async function createUserProfile(
                 bankAccounts: [],
             };
 
-            // 1. Create the user's profile document
+            // 3. Create the user's profile document
             transaction.set(userDocRef, newUserProfile);
 
-            // 2. Create default saving goals
+            // 4. Create default saving goals
             const goalsCollectionRef = collection(firestore, `users/${user.uid}/goals`);
             const defaultGoals = [
                 { name: 'House Rent', targetAmount: 0, emoji: '🏠' },
@@ -110,8 +116,8 @@ export async function createUserProfile(
                 });
             }
 
-            // 3. Mark the referral code as used
-            transaction.update(referralDocRef, { 
+            // 5. Mark the referral code as used
+            transaction.update(referralDoc.ref, { 
                 used: true, 
                 usedBy: user.uid, 
                 usedAt: serverTimestamp() 
