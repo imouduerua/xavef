@@ -10,7 +10,6 @@ import {
 
 interface GroupData {
   name: string;
-  description?: string;
   contributionAmount: number;
   contributionFrequency: 'weekly' | 'monthly';
 }

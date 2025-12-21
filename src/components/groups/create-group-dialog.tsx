@@ -27,7 +27,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { createGroup } from '@/app/(app)/groups/client-actions';
@@ -35,7 +34,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 const formSchema = z.object({
   name: z.string().min(3, 'Group name must be at least 3 characters long.'),
-  description: z.string().optional(),
   contributionAmount: z.coerce.number().positive('Contribution amount must be positive.'),
   contributionFrequency: z.enum(['weekly', 'monthly']),
 });
@@ -49,7 +47,6 @@ export function CreateGroupDialog() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      description: '',
       contributionAmount: '' as any,
       contributionFrequency: 'weekly',
     },
@@ -108,19 +105,6 @@ export function CreateGroupDialog() {
                   <FormLabel>Group Name</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Office Contributions" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="A brief description of the group's purpose." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
