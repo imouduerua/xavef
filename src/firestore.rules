@@ -12,10 +12,6 @@ service cloud.firestore {
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
-    
-    function canGenerateCode(userId) {
-      return exists(/databases/$(database)/documents/referralCodeGenerators/$(userId));
-    }
 
     // Admins can perform a collection group query on transactions
     match /{path=**}/transactions/{transactionId} {
@@ -48,7 +44,7 @@ service cloud.firestore {
       
       allow create: if request.auth != null 
       								&& request.resource.data.creatorUid == request.auth.uid
-                      && canGenerateCode(request.auth.uid);
+                      && exists(/databases/$(database)/documents/referralCodeGenerators/$(request.auth.uid));
       
       // A user can update a code to mark it as 'used' by them.
       allow update: if isOwner(request.resource.data.usedBy)
@@ -60,8 +56,8 @@ service cloud.firestore {
 
     match /referralCodeGenerators/{userId} {
       allow read, get: if request.auth != null;
-      // Only admins can grant or revoke the ability to generate referral codes.
-      allow create, delete: if isAdmin();
+      // Only the super admin can grant or revoke the ability to generate referral codes.
+      allow create, delete: if request.auth.token.email == 'admin@xavef.com';
       allow list, update: if false;
     }
 

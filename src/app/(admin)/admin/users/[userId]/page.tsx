@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useDoc, useFirestore } from '@/firebase';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { ArrowLeft, Landmark, PiggyBank, BadgePercent } from 'lucide-react';
 import Link from 'next/link';
@@ -27,6 +27,7 @@ export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
   const firestore = useFirestore();
+  const { user: adminUser } = useUser();
   const { isSuperAdmin } = useAdminStatus();
   const [isUpdatingPermission, setIsUpdatingPermission] = React.useState(false);
 
@@ -53,12 +54,12 @@ export default function UserDetailPage() {
   };
   
   const handlePermissionChange = async (shouldBeAbleToGenerate: boolean) => {
-    if (!generatorDocRef || !userData) return;
+    if (!generatorDocRef || !userData || !adminUser?.email) return;
 
     setIsUpdatingPermission(true);
     try {
         if (shouldBeAbleToGenerate) {
-            await setDoc(generatorDocRef, { enabledBy: 'admin@xavef.com', enabledAt: new Date() });
+            await setDoc(generatorDocRef, { enabledBy: adminUser.email, enabledAt: new Date() });
         } else {
             await deleteDoc(generatorDocRef);
         }
