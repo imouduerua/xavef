@@ -32,13 +32,13 @@ service cloud.firestore {
       // A user can update their own data, except for protected fields.
       // The super admin can update only the permission field.
       allow update: if 
-        // Rule for regular user updates
+        // Rule for regular user updates: User can update their profile, but cannot change protected fields.
         (request.auth.uid == userId &&
           request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
           request.resource.data.annualBalance == resource.data.annualBalance &&
           request.resource.data.canGenerateReferralCode == resource.data.canGenerateReferralCode
         ) ||
-        // Rule for super admin permission updates
+        // Rule for super admin permission updates: Admin can ONLY change the `canGenerateReferralCode` field.
         (request.auth.token.email == 'admin@xavef.com' &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['canGenerateReferralCode'])
         );
