@@ -88,6 +88,9 @@ export async function requestToJoinGroup(
          if (existingRequest.status === 'declined') {
             return { success: false, error: 'Your previous request to join this group was declined.' };
         }
+        if (existingRequest.status === 'approved') {
+            return { success: false, error: 'You are already a member of this group.' };
+        }
     }
 
 
