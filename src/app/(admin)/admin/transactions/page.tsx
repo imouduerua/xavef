@@ -50,6 +50,7 @@ function AllTransactionsPageContent() {
 
   useEffect(() => {
     // If an index is needed, there's no point in processing further.
+    // Also, clear any stale data.
     if (indexCreationUrl) {
       if (transactions) setTransactions(null);
       return;
@@ -105,15 +106,15 @@ function AllTransactionsPageContent() {
     };
 
     processTransactions();
-  // Re-run this effect ONLY when the raw, unprocessed data changes.
-  }, [rawTransactions, firestore, indexCreationUrl]);
+  // Re-run this effect ONLY when the raw, unprocessed data or the index URL changes.
+  }, [rawTransactions, firestore, indexCreationUrl, transactions]);
 
   const renderContent = () => {
     // Priority 1: Show index creation alert if needed.
     if (indexCreationUrl) {
       return <MissingIndexAlert url={indexCreationUrl} />;
     }
-    // Priority 2: Show skeleton while the initial query or the detailed processing is happening.
+    // Priority 2: Show skeleton while the initial query is running OR while the detailed processing is happening.
     if (rawLoading || (rawTransactions && !transactions)) {
       return <Skeleton className="h-40 w-full" />;
     }
