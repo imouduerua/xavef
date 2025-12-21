@@ -6,7 +6,8 @@ service cloud.firestore {
 
     function isAdmin() {
       // Allow the super admin full access, and check the admins collection for others.
-      return request.auth.token.email == 'admin@xavef.com' || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return request.auth.token.email == 'admin@xavef.com' || 
+             (request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
     }
     
     function canGenerateCode(userId) {
