@@ -31,13 +31,8 @@ service cloud.firestore {
       // Admin can read any user profile.
       allow get, list: if isAdmin();
       
-      // Admin can ONLY update the balance fields of a user profile.
-      allow update: if isAdmin()
-                      && request.resource.data.keys().hasAll(['solidaraBalance', 'annualBalance'])
-                      && request.resource.data.keys().size() <= resource.data.keys().size()
-                      && (!('solidaraBalance' in request.resource.data) || request.resource.data.solidaraBalance is number)
-                      && (!('annualBalance' in request.resource.data) || request.resource.data.annualBalance is number);
-
+      // Admin can update a user document.
+      allow update: if isAdmin();
 
       allow delete: if false;
     }
