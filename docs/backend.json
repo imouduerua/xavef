@@ -111,7 +111,8 @@
             "Deposit",
             "Withdrawal",
             "Loan Payment",
-            "Interest"
+            "Interest",
+            "Group Contribution"
           ]
         },
         "status": {
@@ -227,6 +228,21 @@
         "currentAmount",
         "createdAt"
       ]
+    },
+    "group": {
+      "title": "Group",
+      "description": "A rotating savings group (Ajo/Esusu).",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "contributionAmount": { "type": "number" },
+        "contributionFrequency": { "type": "string", "enum": ["weekly", "monthly"] },
+        "creatorUid": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["forming", "active", "closed"], "description": "The current status of the group."}
+      },
+      "required": ["name", "contributionAmount", "contributionFrequency", "creatorUid", "members", "status"]
     }
   },
   "auth": {
@@ -264,6 +280,10 @@
         "$ref": "#/entities/admin"
       },
       "description": "Stores a list of admin users. Any user in this collection is considered an admin."
+    },
+    "/groups/{groupId}": {
+        "schema": { "$ref": "#/entities/group" },
+        "description": "Stores savings group information."
     }
   }
 }

@@ -1,17 +1,29 @@
+
+'use client';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreateGroupDialog } from "@/components/groups/create-group-dialog";
+import { Suspense } from "react";
+// import { GroupsList } from "@/components/groups/groups-list";
 
 export default function GroupsPage() {
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
             <Card>
-                <CardHeader>
-                    <CardTitle>Groups</CardTitle>
-                    <CardDescription>
-                        Manage your savings groups.
-                    </CardDescription>
+                <CardHeader className="flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Savings Groups</CardTitle>
+                        <CardDescription>
+                           Create or join a rotating savings group (Ajo/Esusu).
+                        </CardDescription>
+                    </div>
+                    <CreateGroupDialog />
                 </CardHeader>
                 <CardContent>
-                    <p>Group management features will be implemented here.</p>
+                    <Suspense fallback={<div>Loading groups...</div>}>
+                        {/* <GroupsList /> */}
+                        <p className="text-center text-muted-foreground py-12">You haven't joined any groups yet.</p>
+                    </Suspense>
                 </CardContent>
             </Card>
         </div>
