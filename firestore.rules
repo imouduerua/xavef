@@ -110,8 +110,25 @@ service cloud.firestore {
         allow read: if request.auth != null;
         // Any authenticated user can create a group, as long as they are the creator.
         allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
-        // Group creator can update the group (e.g. to add a member, or change status)
-        allow update: if request.auth != null && resource.data.creatorUid == request.auth.uid;
+        
+        // The group creator can update the group, but with specific constraints for adding members.
+        allow update: if request.auth != null && resource.data.creatorUid == request.auth.uid && (
+            // Rule for starting a group
+            (
+                request.resource.data.status == 'active' &&
+                resource.data.status == 'forming' &&
+                request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'startedAt'])
+            ) ||
+            // Rule for approving a member
+            (
+                request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']) &&
+                request.resource.data.members.size() == resource.data.members.size() + 1 &&
+                exists(/databases/$(database)/documents/joinRequests/{joinRequestId}) &&
+                get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.requesterUid == request.resource.data.members.difference(resource.data.members)[0] &&
+                get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.groupId == groupId &&
+                get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.status == 'pending'
+            )
+        );
     }
 
     match /joinRequests/{requestId} {
