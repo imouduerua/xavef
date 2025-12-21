@@ -9,10 +9,35 @@ import {
     serverTimestamp,
     Firestore,
     Timestamp,
+    getDoc,
+    setDoc,
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
 
 // This is a client-side action file.
+
+const DEFAULT_REFERRAL_CODE = "XAVEFDEFAULT";
+const SUPER_ADMIN_UID = "SUPER_ADMIN_USER"; // A placeholder for the actual super admin UID
+
+async function ensureDefaultReferralCode(firestore: Firestore) {
+    const defaultReferralRef = doc(firestore, "referralCodes", DEFAULT_REFERRAL_CODE);
+    try {
+        const docSnap = await getDoc(defaultReferralRef);
+        if (!docSnap.exists()) {
+            await setDoc(defaultReferralRef, {
+                code: DEFAULT_REFERRAL_CODE,
+                creatorUid: SUPER_ADMIN_UID, 
+                used: false, // This default code is never truly "used"
+                isDefault: true,
+                createdAt: serverTimestamp(),
+            });
+            console.log("Default referral code created.");
+        }
+    } catch (error) {
+        console.error("Error ensuring default referral code exists:", error);
+    }
+}
+
 
 async function generateUniqueXavefId(firestore: Firestore): Promise<string> {
     let xavefId;
@@ -46,20 +71,30 @@ export async function createUserProfile(
 ): Promise<{ success: boolean; error?: string }> {
 
     const userDocRef = doc(firestore, "users", user.uid);
-    const referralDocRef = doc(firestore, 'referralCodes', data.referralCode);
+    let referralDocRef = doc(firestore, 'referralCodes', data.referralCode);
 
     try {
-        await runTransaction(firestore, async (transaction) => {
-            const referralDoc = await transaction.get(referralDocRef);
+        await ensureDefaultReferralCode(firestore); // Make sure the fallback exists
 
+        await runTransaction(firestore, async (transaction) => {
+            let referralDoc = await transaction.get(referralDocRef);
+
+            // If the provided referral code is invalid or used, fall back to the default code
             if (!referralDoc.exists() || referralDoc.data()?.used) {
-                // This error will be caught by the outer catch block
-                throw new Error("The provided referral code is either invalid or has already been used.");
+                console.warn(`Referral code "${data.referralCode}" is invalid or used. Falling back to default.`);
+                referralDocRef = doc(firestore, 'referralCodes', DEFAULT_REFERRAL_CODE);
+                referralDoc = await transaction.get(referralDocRef);
+
+                if (!referralDoc.exists()) {
+                    // This is a critical failure state if the default code doesn't exist
+                    throw new Error("Default referral code is missing. Cannot create user profile.");
+                }
             }
 
-            const referredBy = referralDoc.data()?.creatorUid;
+            const referralData = referralDoc.data();
+            const referredBy = referralData?.creatorUid;
+
             if (!referredBy) {
-                // This case is unlikely if the above check passes, but good for safety.
                 throw new Error("The referral code is invalid.");
             }
 
@@ -95,7 +130,7 @@ export async function createUserProfile(
             ];
 
             for (const goal of defaultGoals) {
-                const newGoalRef = doc(goalsCollectionRef); // Create a new doc reference in the subcollection
+                const newGoalRef = doc(goalsCollectionRef);
                 transaction.set(newGoalRef, {
                     userId: user.uid,
                     name: goal.name,
@@ -106,12 +141,14 @@ export async function createUserProfile(
                 });
             }
 
-            // 3. Mark the referral code as used
-            transaction.update(referralDocRef, { 
-                used: true, 
-                usedBy: user.uid, 
-                usedAt: serverTimestamp() 
-            });
+            // 3. Mark the referral code as used, but NOT if it's the default one
+            if (!referralData?.isDefault) {
+                transaction.update(referralDocRef, { 
+                    used: true, 
+                    usedBy: user.uid, 
+                    usedAt: serverTimestamp() 
+                });
+            }
         });
 
         return { success: true };
