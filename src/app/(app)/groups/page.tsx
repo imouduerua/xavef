@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateGroupDialog } from "@/components/groups/create-group-dialog";
 import { Suspense } from "react";
-// import { GroupsList } from "@/components/groups/groups-list";
+import { GroupsList } from "@/components/groups/groups-list";
 
 export default function GroupsPage() {
     return (
@@ -21,8 +21,7 @@ export default function GroupsPage() {
                 </CardHeader>
                 <CardContent>
                     <Suspense fallback={<div>Loading groups...</div>}>
-                        {/* <GroupsList /> */}
-                        <p className="text-center text-muted-foreground py-12">You haven't joined any groups yet.</p>
+                        <GroupsList />
                     </Suspense>
                 </CardContent>
             </Card>

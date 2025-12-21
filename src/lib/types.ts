@@ -98,3 +98,15 @@ export interface SavingGoal {
     createdAt: any;
     emoji?: string;
 }
+
+export interface Group {
+    id: string;
+    name: string;
+    contributionAmount: number;
+    contributionFrequency: 'weekly';
+    numberOfMembers: number;
+    creatorUid: string;
+    members: string[];
+    status: 'forming' | 'active' | 'closed';
+    createdAt: any;
+}

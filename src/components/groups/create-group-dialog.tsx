@@ -35,7 +35,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 const formSchema = z.object({
   name: z.string().min(3, 'Group name must be at least 3 characters long.'),
   contributionAmount: z.coerce.number().positive('Contribution amount must be positive.'),
-  contributionFrequency: z.enum(['weekly', 'monthly']),
   numberOfMembers: z.coerce.number().min(2, "Group must have at least 2 members.").max(10, "Group can have a maximum of 10 members."),
 });
 
@@ -49,7 +48,6 @@ export function CreateGroupDialog() {
     defaultValues: {
       name: '',
       contributionAmount: '' as any,
-      contributionFrequency: 'weekly',
       numberOfMembers: 2,
     },
   });
@@ -65,7 +63,10 @@ export function CreateGroupDialog() {
       });
       return;
     }
-    const result = await createGroup(firestore, user.uid, values);
+    const result = await createGroup(firestore, user.uid, {
+        ...values,
+        contributionFrequency: 'weekly'
+    });
     if (result.success) {
       toast({
         title: 'Group Created!',
@@ -94,7 +95,7 @@ export function CreateGroupDialog() {
         <DialogHeader>
           <DialogTitle>Create a New Savings Group</DialogTitle>
           <DialogDescription>
-            Fill in the details to start a new Ajo/Esusu group. You will be the group admin.
+            Fill in the details to start a new Ajo/Esusu group. Contribution is weekly. You will be the group admin.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -118,7 +119,7 @@ export function CreateGroupDialog() {
                   name="contributionAmount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contribution Amount</FormLabel>
+                      <FormLabel>Weekly Contribution</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
@@ -154,27 +155,6 @@ export function CreateGroupDialog() {
                   )}
                 />
             </div>
-            <FormField
-              control={form.control}
-              name="contributionFrequency"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contribution Frequency</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select contribution frequency" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                        </SelectContent>
-                    </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <DialogFooter className="gap-2 pt-4">
               <DialogClose asChild>
