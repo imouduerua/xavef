@@ -1,5 +1,5 @@
 
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, Banknote } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '../ui/button';
 import { DepositDialog } from './deposit-dialog';
@@ -13,12 +13,21 @@ interface AnnualSavingsCardProps {
 export function AnnualSavingsCard({ balance, pendingAmount }: AnnualSavingsCardProps) {
   const isDisabled = pendingAmount !== undefined;
 
+  const depositButton = (
+    <DepositDialog accountName="Annual Savings" targetAccount="annual">
+        <Button className="w-full" disabled={isDisabled}>
+            <Banknote className="mr-2" />
+            Make Contribution
+        </Button>
+    </DepositDialog>
+  );
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg md:text-xl">Annual Savings</CardTitle>
+            <CardTitle className="text-lg md:text-xl">Annual Loan & Savings Pool</CardTitle>
           </div>
           <div className="rounded-md bg-transparent text-muted-foreground">
             <Calendar className="h-5 w-5" />
@@ -35,9 +44,25 @@ export function AnnualSavingsCard({ balance, pendingAmount }: AnnualSavingsCardP
                 <span>Pending deposit: ₦{pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
         ) : (
-            <CardDescription>End of year savings goal</CardDescription>
+            <CardDescription>Withdrawals are available at the end of the year. This balance is used to determine loan eligibility.</CardDescription>
         )}
       </CardContent>
+       <CardFooter>
+        {isDisabled ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                 <div className="w-full">{depositButton}</div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>You have a pending contribution for this account.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          depositButton
+        )}
+      </CardFooter>
     </Card>
   );
 }

@@ -42,7 +42,6 @@ const depositSchema = z.object({
     .number()
     .positive('Amount must be a positive number.')
     .min(1, 'Deposit amount must be at least ₦1.00'),
-  targetAccount: z.enum(['solidara', 'annual']),
 });
 
 type FormValues = z.infer<typeof depositSchema>;
@@ -73,7 +72,6 @@ export function DepositDialog({
     resolver: zodResolver(depositSchema),
     defaultValues: {
       amount: '' as any,
-      targetAccount: targetAccount,
     },
   });
 
@@ -147,7 +145,7 @@ export function DepositDialog({
         description: `Contribution to ${accountName}`,
         status: 'Pending' as const,
         type: 'Deposit' as const,
-        targetAccount: values.targetAccount,
+        targetAccount: targetAccount,
         proofOfPaymentUrl: proofOfPayment.dataUrl,
       };
       
