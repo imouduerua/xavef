@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { distributeGroupFunds } from '../client-actions';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 
 
 function PageSkeleton() {
@@ -90,7 +91,7 @@ export default function GroupDetailsPage() {
         );
     }, [firestore, groupId, group, weekStart, weekEnd]);
 
-    const { data: weeklyContributions, loading: contributionsLoading } = useCollection<Transaction>(weeklyContributionsQuery);
+    const { data: weeklyContributions, loading: contributionsLoading, indexCreationUrl } = useCollection<Transaction>(weeklyContributionsQuery);
     
     const currentWeekDeposits = React.useMemo(() => {
         if (!weeklyContributions) return 0;
@@ -173,10 +174,16 @@ export default function GroupDetailsPage() {
                                 <Wallet className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{formatCurrency(currentWeekDeposits)}</div>
-                                <p className="text-xs text-muted-foreground">
-                                    Goal: {formatCurrency(expectedWeeklyPurse)}
-                                </p>
+                                {indexCreationUrl ? (
+                                    <MissingIndexAlert url={indexCreationUrl} />
+                                ) : (
+                                    <>
+                                        <div className="text-2xl font-bold">{formatCurrency(currentWeekDeposits)}</div>
+                                        <p className="text-xs text-muted-foreground">
+                                            Goal: {formatCurrency(expectedWeeklyPurse)}
+                                        </p>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
                         <Card>
