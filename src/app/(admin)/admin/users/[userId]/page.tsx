@@ -59,7 +59,7 @@ export default function UserDetailPage() {
         toast({
             variant: "destructive",
             title: "Update Failed",
-            description: "You do not have permission to perform this action."
+            description: error.message || "You do not have permission to perform this action."
         })
     } finally {
         setIsUpdatingPermission(false);
