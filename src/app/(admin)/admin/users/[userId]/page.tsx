@@ -10,25 +10,32 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useDoc, useFirestore } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import { ArrowLeft, Landmark, PiggyBank } from 'lucide-react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { ArrowLeft, Landmark, PiggyBank, BadgePercent } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import React, { useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
+import type { UserData } from '@/lib/types';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { useAdminStatus } from '@/hooks/use-admin-status';
+import { toast } from '@/hooks/use-toast';
 
 export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
   const firestore = useFirestore();
+  const { isSuperAdmin } = useAdminStatus();
+  const [isUpdatingPermission, setIsUpdatingPermission] = React.useState(false);
 
   const userDocRef = useMemo(
     () => (userId && firestore ? doc(firestore, 'users', userId) : null),
     [userId, firestore]
   );
   
-  const { data: userData, loading } = useDoc(userDocRef);
+  const { data: userData, loading } = useDoc<UserData>(userDocRef);
 
   const formatCurrency = (amount: number | null | undefined) => {
     if (amount === undefined || amount === null) {
@@ -37,6 +44,28 @@ export default function UserDetailPage() {
     return `₦${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   
+  const handlePermissionChange = async (canGenerate: boolean) => {
+    if (!userDocRef) return;
+
+    setIsUpdatingPermission(true);
+    try {
+        await updateDoc(userDocRef, { canGenerateReferralCode: canGenerate });
+        toast({
+            title: "Permission Updated",
+            description: `${userData?.email} can ${canGenerate ? 'now' : 'no longer'} generate referral codes.`
+        })
+    } catch (error: any) {
+        console.error("Error updating permission:", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "You do not have permission to perform this action."
+        })
+    } finally {
+        setIsUpdatingPermission(false);
+    }
+  }
+
   const PageSkeleton = () => (
      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
        <Skeleton className="h-6 w-32" />
@@ -99,6 +128,31 @@ export default function UserDetailPage() {
                   </Card>
                 </div>
             </div>
+
+            {isSuperAdmin && (
+              <div>
+                <h3 className="text-lg font-medium">Permissions</h3>
+                <Separator className="my-4" />
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between space-x-2">
+                        <div className='space-y-1.5'>
+                            <Label htmlFor="referral-permission" className="font-semibold">Generate Referral Codes</Label>
+                            <p className="text-sm text-muted-foreground">
+                                Allow this user to generate new referral codes for others to use during signup.
+                            </p>
+                        </div>
+                        <Switch
+                          id="referral-permission"
+                          checked={userData?.canGenerateReferralCode === true}
+                          onCheckedChange={handlePermissionChange}
+                          disabled={isUpdatingPermission}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+              </div>
+            )}
 
              <div>
                 <h3 className="text-lg font-medium">Transaction History</h3>

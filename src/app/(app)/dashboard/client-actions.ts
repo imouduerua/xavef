@@ -83,6 +83,7 @@ export async function createUserProfile(
                 solidaraBalance: 0,
                 annualBalance: 0,
                 bankAccounts: [],
+                canGenerateReferralCode: false,
             };
 
             // 1. Create the user's profile document

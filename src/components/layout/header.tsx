@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Bell, LogOut, Moon, Sun, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -23,6 +23,7 @@ import { mockNotifications } from '@/lib/mock-data';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import { useUserData } from '@/hooks/use-user-data';
+import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
 
 export function AppHeader() {
   const router = useRouter();
@@ -138,6 +139,14 @@ export function AppHeader() {
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
+                 {userData?.canGenerateReferralCode && (
+                  <ReferralCodeDialog>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <BadgePercent className="mr-2 h-4 w-4" />
+                      <span>Generate Referral Code</span>
+                    </DropdownMenuItem>
+                  </ReferralCodeDialog>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
