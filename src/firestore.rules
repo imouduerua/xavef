@@ -41,10 +41,15 @@ service cloud.firestore {
           ) ||
           // Rule for super admin permission updates: Admin can ONLY change the `canGenerateReferralCode` field.
           (request.auth.token.email == 'admin@xavef.com' &&
+            request.resource.data.keys().hasOnly(['firstName', 'lastName', 'phoneNumber', 'address', 'state', 'country', 'bankAccounts', 'canGenerateReferralCode', 'uid', 'email', 'displayName', 'dateOfBirth', 'xavefId', 'createdAt', 'referredBy', 'solidaraBalance', 'annualBalance']) &&
             request.resource.data.uid == resource.data.uid &&
             request.resource.data.email == resource.data.email &&
             request.resource.data.firstName == resource.data.firstName &&
             request.resource.data.lastName == resource.data.lastName &&
+            request.resource.data.phoneNumber == resource.data.phoneNumber &&
+            request.resource.data.address == resource.data.address &&
+            request.resource.data.state == resource.data.state &&
+            request.resource.data.country == resource.data.country &&
             request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
             request.resource.data.annualBalance == resource.data.annualBalance
           );
