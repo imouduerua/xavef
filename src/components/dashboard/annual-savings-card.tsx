@@ -27,7 +27,7 @@ export function AnnualSavingsCard({ balance, pendingAmount }: AnnualSavingsCardP
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg md:text-xl">Annual Loan & Savings Pool</CardTitle>
+            <CardTitle className="text-lg md:text-xl">Annual Savings</CardTitle>
           </div>
           <div className="rounded-md bg-transparent text-muted-foreground">
             <Calendar className="h-5 w-5" />
@@ -44,7 +44,7 @@ export function AnnualSavingsCard({ balance, pendingAmount }: AnnualSavingsCardP
                 <span>Pending deposit: ₦{pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
         ) : (
-            <CardDescription>Withdrawals are available at the end of the year. This balance is used to determine loan eligibility.</CardDescription>
+            <CardDescription>Withdrawals are available at the end of the year.</CardDescription>
         )}
       </CardContent>
        <CardFooter>
