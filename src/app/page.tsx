@@ -26,7 +26,7 @@ export default function LoginPage() {
                     <p>
                         Don&apos;t have an account?{" "}
                         <Button variant="link" asChild className="p-0">
-                            <Link href="/register">Sign up</Link>
+                            <Link href="/register">Register</Link>
                         </Button>
                     </p>
                 </div>
