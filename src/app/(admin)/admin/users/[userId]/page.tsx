@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import { doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ArrowLeft, Landmark, PiggyBank, BadgePercent } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -64,7 +64,7 @@ export default function UserDetailPage() {
             await setDoc(adminDocRef, { 
               isAdmin: true,
               promotedBy: adminUser.email, 
-              promotedAt: new Date() 
+              promotedAt: serverTimestamp()
             });
         } else {
             await deleteDoc(adminDocRef);
@@ -158,7 +158,7 @@ export default function UserDetailPage() {
                         <div className='space-y-1.5'>
                             <Label htmlFor="referral-permission" className="font-semibold">Admin Status</Label>
                             <p className="text-sm text-muted-foreground">
-                                Grant this user admin privileges, including the ability to generate referral codes and manage transactions.
+                                Grant this user admin privileges. Admins can approve transactions and manage users.
                             </p>
                         </div>
                         <Switch
