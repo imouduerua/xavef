@@ -18,6 +18,7 @@ import { distributeGroupFunds } from '../client-actions';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
+import { DepositDialog } from '@/components/dashboard/deposit-dialog';
 
 
 function PageSkeleton() {
@@ -129,6 +130,7 @@ export default function GroupDetailsPage() {
     const expectedWeeklyPurse = group.contributionAmount * group.members.length;
     const isPurseComplete = currentWeekDeposits >= expectedWeeklyPurse;
     const isGroupCreator = user?.uid === group.creatorUid;
+    const isUserMember = user ? group.members.includes(user.uid) : false;
 
     const currentWeek = group.currentCollectionWeek || 1;
     const currentPayoutIndex = group.payoutOrder ? (currentWeek - 1) % group.members.length : null;
@@ -214,11 +216,24 @@ export default function GroupDetailsPage() {
                         )}
                     </div>
                     
-                    {isGroupCreator && group.status === 'active' && (
-                         <div className="flex justify-end">
-                            <AlertDialog>
+                    <div className="flex justify-end gap-2">
+                        {isUserMember && group.status === 'active' && (
+                            <DepositDialog
+                                accountName={group.name}
+                                targetAccount="group"
+                                groupId={group.id}
+                                contributionAmount={group.contributionAmount}
+                            >
+                                <Button>
+                                    <HandCoins className="mr-2 h-4 w-4" />
+                                    Contribute to Group
+                                </Button>
+                            </DepositDialog>
+                        )}
+                        {isGroupCreator && group.status === 'active' && (
+                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button disabled={!isPurseComplete}>
+                                    <Button disabled={!isPurseComplete} variant="secondary">
                                         <HandCoins className="mr-2 h-4 w-4" />
                                         Distribute Purse
                                     </Button>
@@ -238,8 +253,8 @@ export default function GroupDetailsPage() {
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     {group.payoutOrder && group.payoutOrder.length > 0 && (
                          <div>
