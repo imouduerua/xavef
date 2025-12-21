@@ -15,9 +15,10 @@ import { useUserData } from '@/hooks/use-user-data';
 import { useUser, useCollection, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { AccountType, Transaction } from '@/lib/types';
+import type { AccountType, SavingGoal, Transaction } from '@/lib/types';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import { addFundsToGoal } from '../savings/client-actions';
 
 function DashboardContent() {
   const { user, loading: userLoading } = useUser();
@@ -32,8 +33,14 @@ function DashboardContent() {
       where("type", "==", "Deposit")
     );
   }, [user, firestore]);
+  
+  const goalsQuery = React.useMemo(() => {
+    if (!user) return null;
+    return query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc'));
+  }, [user, firestore]);
 
   const { data: pendingTransactions, loading: pendingTransactionsLoading } = useCollection<Transaction>(pendingTransactionsQuery);
+  const { data: goals, loading: goalsLoading } = useCollection<SavingGoal>(goalsQuery);
 
   const pendingSolidaraDeposit = useMemo(
     () => pendingTransactions?.find(tx => tx.targetAccount === 'solidara'),
@@ -51,10 +58,10 @@ function DashboardContent() {
 
   const totalSavings = balances.solidara + balances.annual;
 
-  const handleSelfTransfer = (
+  const handleSelfTransfer = async (
     amount: number,
     from: AccountType,
-    to: AccountType
+    to: string // Can be 'annual' or a goal ID
   ) => {
      if (balances[from] < amount) {
         toast({
@@ -65,12 +72,35 @@ function DashboardContent() {
         return false;
     }
     
-    toast({
-        title: "Feature not implemented",
-        description: "Self-transfers will be enabled soon.",
-    });
+    if (to === 'annual') {
+        toast({
+            title: "Feature not implemented",
+            description: "Transfers to the Annual account will be enabled soon.",
+        });
+        return false; // Return false because it's not implemented
+    }
 
-    return true;
+    // Handle transfer to a saving goal
+    if (user && firestore) {
+        const result = await addFundsToGoal(firestore, user.uid, to, amount);
+        if (result.success) {
+            const goalName = goals?.find(g => g.id === to)?.name || 'your goal';
+            toast({
+                title: "Transfer Successful!",
+                description: `You transferred ₦${amount.toFixed(2)} to "${goalName}".`
+            });
+            return true;
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Transfer Failed",
+                description: result.error,
+            });
+            return false;
+        }
+    }
+
+    return false; // Fallback
   };
 
 
@@ -112,7 +142,7 @@ function DashboardContent() {
         </div>
   )
 
-  if (userLoading || userDataLoading || pendingTransactionsLoading) {
+  if (userLoading || userDataLoading || pendingTransactionsLoading || goalsLoading) {
     return <PageSkeleton />
   }
 
@@ -155,7 +185,7 @@ function DashboardContent() {
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <TransferDialog balances={balances} onSelfTransfer={handleSelfTransfer} />
+          <TransferDialog balances={balances} goals={goals || []} onSelfTransfer={handleSelfTransfer} />
           <Button asChild>
             <Link href="/transactions">Transaction History</Link>
           </Button>

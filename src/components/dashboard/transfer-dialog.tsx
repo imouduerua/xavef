@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { makeTransfer } from '@/app/(app)/dashboard/actions';
-import type { AccountType } from '@/lib/types';
+import type { AccountType, SavingGoal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -38,13 +38,14 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
+import { Separator } from '../ui/separator';
 
 const formSchema = z.discriminatedUnion('transferType', [
   z.object({
     transferType: z.literal('toSelf'),
     amount: z.coerce.number().positive('Amount must be a positive number.'),
     fromAccount: z.enum(['solidara', 'annual']),
-    toAccount: z.enum(['solidara', 'annual']),
+    toAccount: z.string().min(1, "Please select a destination."),
   }),
   z.object({
     transferType: z.literal('toOther'),
@@ -66,14 +67,15 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface TransferDialogProps {
   balances: { solidara: number; annual: number };
+  goals: SavingGoal[];
   onSelfTransfer: (
     amount: number,
     from: AccountType,
-    to: AccountType
-  ) => boolean;
+    to: string
+  ) => Promise<boolean>;
 }
 
-export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps) {
+export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<'toSelf' | 'toOther'>(
     'toSelf'
@@ -85,7 +87,7 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
       transferType: 'toSelf',
       amount: '' as any,
       fromAccount: 'solidara',
-      toAccount: 'annual',
+      toAccount: '',
     },
   });
 
@@ -93,20 +95,13 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
 
   async function onSubmit(values: FormValues) {
     if (values.transferType === 'toSelf') {
-      const success = onSelfTransfer(
+      const success = await onSelfTransfer(
         values.amount,
         values.fromAccount,
-        values.toAccount as AccountType
+        values.toAccount
       );
       if (success) {
-        toast({
-          title: 'Transfer Successful!',
-          description: `You transferred ₦${values.amount.toFixed(2)} from your ${
-            values.fromAccount
-          } account to your ${values.toAccount} account.`,
-        });
         setIsOpen(false);
-        reset({ transferType: 'toSelf', amount: '' as any, fromAccount: 'solidara', toAccount: 'annual' });
       }
     } else if (values.transferType === 'toOther') {
       const result = await makeTransfer({
@@ -121,7 +116,6 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
           )} to ID ${values.recipientId}.`,
         });
         setIsOpen(false);
-        reset({ transferType: 'toOther', amount: '' as any, recipientId: '' });
       } else {
         toast({
           variant: 'destructive',
@@ -139,13 +133,22 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
       transferType: tab,
       amount: '' as any,
       ...(tab === 'toSelf'
-        ? { fromAccount: 'solidara', toAccount: 'annual' }
+        ? { fromAccount: 'solidara', toAccount: '' }
         : { recipientId: '' }),
     });
   };
 
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      // Reset form state on close
+       handleTabChange('toSelf');
+    }
+  };
+
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <Repeat className="mr-2 h-4 w-4" />
@@ -227,16 +230,19 @@ export function TransferDialog({ balances, onSelfTransfer }: TransferDialogProps
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select destination account" />
+                            <SelectValue placeholder="Select destination" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                           <SelectItem value="solidara" disabled>
-                            Savings (Olidara) (Balance: ₦{balances.solidara.toFixed(2)})
-                          </SelectItem>
                           <SelectItem value="annual">
                             Annual Savings (Balance: ₦{balances.annual.toFixed(2)})
                           </SelectItem>
+                           {goals.length > 0 && <Separator className="my-2" />}
+                           {goals.map(goal => (
+                              <SelectItem key={goal.id} value={goal.id}>
+                                  Goal: {goal.name} (Balance: ₦{goal.currentAmount.toFixed(2)})
+                              </SelectItem>
+                           ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
