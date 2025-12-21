@@ -29,7 +29,7 @@ import { SuperAdminAuthGuard } from '@/components/admin/super-admin-auth-guard';
 import { AllTransactionsTable } from '@/components/admin/all-transactions-table';
 
 function AllTransactionsPageContent() {
-  const [transactions, setTransactions] = useState<
+  const [transactionsWithDetails, setTransactionsWithDetails] = useState<
     TransactionWithUserDetails[] | null
   >(null);
   const firestore = useFirestore();
@@ -49,16 +49,15 @@ function AllTransactionsPageContent() {
   } = useCollection<Transaction>(allTxsQuery);
 
   useEffect(() => {
-    // Halt processing if an index is needed, we're loading, or there's no data.
-    if (indexCreationUrl || rawLoading || !rawTransactions || !firestore) {
-      if (transactions) setTransactions(null); // Clear stale data
+    if (rawLoading || !rawTransactions || !firestore) {
+      if (transactionsWithDetails) setTransactionsWithDetails(null);
       return;
     }
 
     const processTransactions = async () => {
       try {
         const userCache = new Map<string, UserData>();
-        const transactionsWithDetails = await Promise.all(
+        const processed = await Promise.all(
           rawTransactions.map(async (tx) => {
             const pathParts = tx.path.split('/');
             const userId = pathParts[pathParts.indexOf('users') + 1];
@@ -68,9 +67,9 @@ function AllTransactionsPageContent() {
               const userRef = doc(firestore, 'users', userId);
               const userSnap = await getDoc(userRef);
               if (userSnap.exists()) {
-                 const fetchedUser = { id: userSnap.id, ...userSnap.data() } as UserData;
-                 userCache.set(userId, fetchedUser);
-                 user = fetchedUser;
+                const fetchedUser = { id: userSnap.id, ...userSnap.data() } as UserData;
+                userCache.set(userId, fetchedUser);
+                user = fetchedUser;
               }
             }
 
@@ -85,7 +84,7 @@ function AllTransactionsPageContent() {
             } as TransactionWithUserDetails;
           })
         );
-        setTransactions(transactionsWithDetails);
+        setTransactionsWithDetails(processed);
       } catch (err) {
         console.error('Error attaching user details:', err);
         toast({
@@ -93,29 +92,30 @@ function AllTransactionsPageContent() {
           title: 'Error Processing Data',
           description: 'Could not process transaction details.',
         });
-        setTransactions([]);
+        setTransactionsWithDetails([]); // Set to empty array on error
       }
     };
 
     processTransactions();
-  // We only want this effect to run when the raw, unprocessed data changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawTransactions, firestore, indexCreationUrl, rawLoading]);
+  }, [rawTransactions, firestore, transactionsWithDetails]);
 
   const renderContent = () => {
-    // Priority 1: Show index creation alert if needed.
+    // Highest priority: If an index is needed, show the alert.
     if (indexCreationUrl) {
       return <MissingIndexAlert url={indexCreationUrl} />;
     }
-    // Priority 2: Show skeleton while the initial query is running OR while the detailed processing is happening.
-    if (rawLoading || (rawTransactions && !transactions)) {
+    
+    // Second priority: If we're loading the initial data or processing it, show a skeleton.
+    if (rawLoading || (rawTransactions && !transactionsWithDetails)) {
       return <Skeleton className="h-40 w-full" />;
     }
-    // Priority 3: If we have the fully processed data, show the table.
-    if (transactions) {
-      return <AllTransactionsTable transactions={transactions} />;
+
+    // Third priority: If we have the processed data, show the table.
+    if (transactionsWithDetails) {
+      return <AllTransactionsTable transactions={transactionsWithDetails} />;
     }
-    // Fallback for any other state (e.g., initial render before first effect run)
+
+    // Fallback: If there's no data and we're not loading (initial state), show skeleton.
     return <Skeleton className="h-40 w-full" />;
   };
 
