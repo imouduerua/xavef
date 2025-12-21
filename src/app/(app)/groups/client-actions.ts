@@ -122,6 +122,7 @@ export async function respondToJoinRequest(
         if (!requestSnap.exists() || requestSnap.data().status !== 'pending') {
             throw new Error("This join request is no longer valid or has already been actioned.");
         }
+        
         const requestData = requestSnap.data() as GroupJoinRequest;
         const groupDocRef = doc(firestore, 'groups', requestData.groupId);
         
@@ -135,13 +136,13 @@ export async function respondToJoinRequest(
                 throw new Error("This group is already full.");
             }
 
-            // Add member to the group atomically
+            // Atomically add the new member to the group's member array
             transaction.update(groupDocRef, {
                 members: arrayUnion(requestData.requesterUid)
             });
         }
 
-        // Update the request status
+        // Update the request status to reflect the decision
         transaction.update(requestDocRef, {
             status: decision,
             respondedAt: serverTimestamp()
