@@ -41,15 +41,20 @@ service cloud.firestore {
           ) ||
           // Rule for super admin permission updates: Admin can ONLY change the `canGenerateReferralCode` field.
           (request.auth.token.email == 'admin@xavef.com' &&
-            request.resource.data.keys().hasOnly(['firstName', 'lastName', 'phoneNumber', 'address', 'state', 'country', 'bankAccounts', 'canGenerateReferralCode', 'uid', 'email', 'displayName', 'dateOfBirth', 'xavefId', 'createdAt', 'referredBy', 'solidaraBalance', 'annualBalance']) &&
             request.resource.data.uid == resource.data.uid &&
             request.resource.data.email == resource.data.email &&
             request.resource.data.firstName == resource.data.firstName &&
             request.resource.data.lastName == resource.data.lastName &&
+            request.resource.data.displayName == resource.data.displayName &&
+            request.resource.data.dateOfBirth == resource.data.dateOfBirth &&
             request.resource.data.phoneNumber == resource.data.phoneNumber &&
             request.resource.data.address == resource.data.address &&
             request.resource.data.state == resource.data.state &&
             request.resource.data.country == resource.data.country &&
+            request.resource.data.xavefId == resource.data.xavefId &&
+            request.resource.data.createdAt == resource.data.createdAt &&
+            request.resource.data.referredBy == resource.data.referredBy &&
+            request.resource.data.bankAccounts == resource.data.bankAccounts &&
             request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
             request.resource.data.annualBalance == resource.data.annualBalance
           );
