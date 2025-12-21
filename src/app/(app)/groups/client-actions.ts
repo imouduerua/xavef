@@ -14,6 +14,7 @@ import {
   limit,
   arrayUnion,
   getDoc,
+  runTransaction,
 } from 'firebase/firestore';
 import type { Group, GroupJoinRequest } from '@/lib/types';
 import type { User } from 'firebase/auth';
@@ -114,26 +115,37 @@ export async function respondToJoinRequest(
   decision: 'approved' | 'declined'
 ): Promise<{ success: boolean; error?: string }> {
   const requestDocRef = doc(firestore, 'joinRequests', requestId);
-
+  
   try {
-    const requestSnap = await getDoc(requestDocRef);
-    if (!requestSnap.exists()) {
-      throw new Error("Join request not found.");
-    }
-    const requestData = requestSnap.data() as GroupJoinRequest;
-
-    if (decision === 'approved') {
+    await runTransaction(firestore, async (transaction) => {
+        const requestSnap = await transaction.get(requestDocRef);
+        if (!requestSnap.exists() || requestSnap.data().status !== 'pending') {
+            throw new Error("This join request is no longer valid or has already been actioned.");
+        }
+        const requestData = requestSnap.data() as GroupJoinRequest;
         const groupDocRef = doc(firestore, 'groups', requestData.groupId);
-        // Add member to the group atomically
-        await updateDoc(groupDocRef, {
-            members: arrayUnion(requestData.requesterUid)
-        });
-    }
+        
+        if (decision === 'approved') {
+            const groupSnap = await transaction.get(groupDocRef);
+            if (!groupSnap.exists()) {
+                throw new Error("The associated group could not be found.");
+            }
+            const groupData = groupSnap.data() as Group;
+             if (groupData.members.length >= groupData.numberOfMembers) {
+                throw new Error("This group is already full.");
+            }
 
-    // Update the request status
-    await updateDoc(requestDocRef, {
-      status: decision,
-      respondedAt: serverTimestamp()
+            // Add member to the group atomically
+            transaction.update(groupDocRef, {
+                members: arrayUnion(requestData.requesterUid)
+            });
+        }
+
+        // Update the request status
+        transaction.update(requestDocRef, {
+            status: decision,
+            respondedAt: serverTimestamp()
+        });
     });
 
     return { success: true };
