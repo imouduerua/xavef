@@ -101,7 +101,7 @@ function AllTransactionsPageContent() {
 
     processTransactions();
   // We only want to re-run this effect when the raw, unprocessed data changes.
-  }, [rawTransactions, firestore]);
+  }, [rawTransactions, firestore, transactions]);
 
   const renderContent = () => {
     // Priority 1: Show index creation alert if needed.
