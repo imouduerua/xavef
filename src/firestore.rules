@@ -30,8 +30,7 @@ service cloud.firestore {
       // An authenticated user can read their own document.
       allow read: if request.auth != null && request.auth.uid == userId;
       
-      // A user can update their own data, except for protected fields.
-      // The super admin can update only the permission field.
+      // An authenticated user can update their own document, or an admin can update permissions.
       allow update: if 
           // Rule for regular user updates: User can update their own profile, but cannot change protected fields.
           (request.auth.uid == userId &&
@@ -39,7 +38,7 @@ service cloud.firestore {
             request.resource.data.annualBalance == resource.data.annualBalance &&
             request.resource.data.canGenerateReferralCode == resource.data.canGenerateReferralCode
           ) ||
-          // Rule for super admin permission updates: Admin can ONLY change the `canGenerateReferralCode` field.
+          // Rule for super admin permission updates: Super admin can ONLY change the `canGenerateReferralCode` field.
           (request.auth.token.email == 'admin@xavef.com' &&
             request.resource.data.uid == resource.data.uid &&
             request.resource.data.email == resource.data.email &&
