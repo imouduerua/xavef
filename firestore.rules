@@ -7,6 +7,20 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth.token.email == 'admin@xavef.com' || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
+    
+    // Function to check if a user is the creator of a group that another user has requested to join.
+    function isGroupCreatorForRequester(requesterUid) {
+      // Path to the join requests collection. We need to query it.
+      // This is a simplified check. A more robust way in rules is to check for the existence of a specific document.
+      let joinRequestPath = /databases/$(database)/documents/joinRequests/$(requesterUid);
+      // This is pseudo-code for the logic:
+      // The rule needs to check if there's a join request where the `requesterUid` matches
+      // and the `groupCreatorUid` matches the person making the current request.
+      // Firestore rules don't allow querying documents like this in a function.
+      // The check must be done in the 'allow' statement itself.
+      return true; // This function will be implemented in the rule directly.
+    }
+
 
     match /{path=**}/transactions/{transactionId} {
       allow list: if isAdmin();
@@ -58,6 +72,28 @@ service cloud.firestore {
         allow read, create: if request.auth != null && request.auth.uid == userId;
         allow get, list, update: if isAdmin();
         allow delete: if false;
+        
+        // Allow a group creator to read the transactions of a user who has requested to join their group.
+        allow list: if request.auth != null && 
+                       exists(
+                         /databases/$(database)/documents/joinRequests/
+                         {requestId}
+                       ) where get(
+                         /databases/$(database)/documents/joinRequests/
+                         {requestId}
+                       ).data.groupCreatorUid == request.auth.uid && get(
+                         /databases/$(database)/documents/joinRequests/
+                         {requestId}
+                       ).data.requesterUid == userId;
+    }
+    
+     match /users/{userId}/transactions/{transactionId} {
+        // Allow a group creator to read transactions of a user who has a PENDING join request for one of their groups
+        allow list: if request.auth != null && exists(
+            /databases/$(database)/documents/joinRequests/{joinRequestId}
+        ) && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.groupCreatorUid == request.auth.uid 
+          && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.requesterUid == userId
+          && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.status == 'pending'
     }
 
     match /users/{userId}/goals/{goalId} {
@@ -74,15 +110,17 @@ service cloud.firestore {
         allow read: if request.auth != null;
         // Any authenticated user can create a group, as long as they are the creator.
         allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
+        // Group creator can update the group (e.g. to add a member, or change status)
+        allow update: if request.auth != null && resource.data.creatorUid == request.auth.uid;
     }
 
     match /joinRequests/{requestId} {
         // A user can create a join request for themselves.
         allow create: if request.auth != null && request.resource.data.requesterUid == request.auth.uid;
         // The group creator can read requests for their groups. The requester can read their own requests.
-        allow read: if request.auth != null && (resource.data.groupCreatorUid == request.auth.uid || resource.data.requesterUid == request.auth.uid);
+        allow read, list: if request.auth != null && (resource.data.groupCreatorUid == request.auth.uid || resource.data.requesterUid == request.auth.uid);
         // The group creator can update the status (approve/decline).
-        allow update: if request.auth != null && request.resource.data.groupCreatorUid == request.auth.uid;
+        allow update: if request.auth != null && resource.data.groupCreatorUid == request.auth.uid;
         allow delete: if false;
     }
   }

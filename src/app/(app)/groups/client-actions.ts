@@ -12,8 +12,10 @@ import {
   where,
   getDocs,
   limit,
+  arrayUnion,
+  getDoc,
 } from 'firebase/firestore';
-import type { Group } from '@/lib/types';
+import type { Group, GroupJoinRequest } from '@/lib/types';
 import type { User } from 'firebase/auth';
 
 interface GroupData {
@@ -102,5 +104,42 @@ export async function requestToJoinGroup(
   } catch (error: any) {
     console.error('Error creating join request:', error);
     return { success: false, error: 'Failed to create join request.' };
+  }
+}
+
+
+export async function respondToJoinRequest(
+  firestore: Firestore,
+  requestId: string,
+  decision: 'approved' | 'declined'
+): Promise<{ success: boolean; error?: string }> {
+  const requestDocRef = doc(firestore, 'joinRequests', requestId);
+
+  try {
+    const requestSnap = await getDoc(requestDocRef);
+    if (!requestSnap.exists()) {
+      throw new Error("Join request not found.");
+    }
+    const requestData = requestSnap.data() as GroupJoinRequest;
+
+    if (decision === 'approved') {
+        const groupDocRef = doc(firestore, 'groups', requestData.groupId);
+        // Add member to the group atomically
+        await updateDoc(groupDocRef, {
+            members: arrayUnion(requestData.requesterUid)
+        });
+    }
+
+    // Update the request status
+    await updateDoc(requestDocRef, {
+      status: decision,
+      respondedAt: serverTimestamp()
+    });
+
+    return { success: true };
+
+  } catch (error: any) {
+    console.error('Error responding to join request:', error);
+    return { success: false, error: error.message || "Failed to process the request." };
   }
 }
