@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useUser, useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
-import { Loader2, PlayCircle, UserPlus, Users } from 'lucide-react';
+import { Loader2, PlayCircle, UserPlus, Users, ArrowRight } from 'lucide-react';
 import React from 'react';
 import { startGroup, requestToJoinGroup } from '@/app/(app)/groups/client-actions';
 import {
@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import Link from 'next/link';
 
 
 interface GroupCardProps {
@@ -35,6 +36,8 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
   
   const isGroupAdmin = user?.uid === group.creatorUid;
   const isGroupFull = group.members.length === group.numberOfMembers;
+  const isUserMember = user ? group.members.includes(user.uid) : false;
+
 
   const formatCurrency = (amount: number) =>
     `₦${amount.toLocaleString('en-US', {
@@ -90,6 +93,16 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
 
   const renderFooter = () => {
       if (group.status !== 'forming') {
+          if(isUserMember) {
+            return (
+                <Button asChild className="w-full">
+                    <Link href={`/groups/${group.id}`}>
+                        View Group
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            )
+          }
           return null; // Or show other info for active/closed groups
       }
       if (isOwned && isGroupAdmin) {
