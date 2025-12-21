@@ -36,6 +36,7 @@ const formSchema = z.object({
   name: z.string().min(3, 'Group name must be at least 3 characters long.'),
   contributionAmount: z.coerce.number().positive('Contribution amount must be positive.'),
   contributionFrequency: z.enum(['weekly', 'monthly']),
+  numberOfMembers: z.coerce.number().min(2, "Group must have at least 2 members.").max(10, "Group can have a maximum of 10 members."),
 });
 
 export function CreateGroupDialog() {
@@ -49,6 +50,7 @@ export function CreateGroupDialog() {
       name: '',
       contributionAmount: '' as any,
       contributionFrequency: 'weekly',
+      numberOfMembers: 2,
     },
   });
 
@@ -110,25 +112,48 @@ export function CreateGroupDialog() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="contributionAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contribution Amount</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
-                        ₦
-                      </span>
-                      <Input type="number" placeholder="0.00" className="pl-8" {...field} />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="contributionAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contribution Amount</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
+                            ₦
+                          </span>
+                          <Input type="number" placeholder="0.00" className="pl-8" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="numberOfMembers"
+                  render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Number of Members</FormLabel>
+                        <Select onValueChange={(val) => field.onChange(Number(val))} defaultValue={String(field.value)}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select group size" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {Array.from({ length: 9 }, (_, i) => i + 2).map(num => (
+                                    <SelectItem key={num} value={String(num)}>{num} members</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </div>
             <FormField
               control={form.control}
               name="contributionFrequency"

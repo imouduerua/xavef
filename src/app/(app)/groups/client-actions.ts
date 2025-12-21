@@ -12,6 +12,7 @@ interface GroupData {
   name: string;
   contributionAmount: number;
   contributionFrequency: 'weekly' | 'monthly';
+  numberOfMembers: number;
 }
 
 export async function createGroup(

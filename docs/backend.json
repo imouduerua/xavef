@@ -237,11 +237,12 @@
         "name": { "type": "string" },
         "contributionAmount": { "type": "number" },
         "contributionFrequency": { "type": "string", "enum": ["weekly", "monthly"] },
+        "numberOfMembers": { "type": "number", "description": "The total number of members the group can have." },
         "creatorUid": { "type": "string" },
         "members": { "type": "array", "items": { "type": "string" } },
         "status": { "type": "string", "enum": ["forming", "active", "closed"], "description": "The current status of the group."}
       },
-      "required": ["name", "contributionAmount", "contributionFrequency", "creatorUid", "members", "status"]
+      "required": ["name", "contributionAmount", "contributionFrequency", "numberOfMembers", "creatorUid", "members", "status"]
     }
   },
   "auth": {
