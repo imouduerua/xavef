@@ -8,17 +8,6 @@ service cloud.firestore {
       return request.auth.token.email == 'admin@xavef.com' || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Checks if the incoming write is only updating balance fields.
-    function isBalanceUpdate() {
-      let incomingKeys = request.resource.data.keys();
-      let currentKeys = resource.data.keys();
-      let balanceKeys = ['solidaraBalance', 'annualBalance'];
-      // Ensures no fields are added or removed, only specific ones updated.
-      return incomingKeys.hasAll(currentKeys) &&
-             currentKeys.hasAll(incomingKeys) &&
-             incomingKeys.removeAll(balanceKeys).size() == currentKeys.removeAll(balanceKeys).size();
-    }
-
     match /{path=**}/transactions/{transactionId} {
       allow list: if isAdmin();
     }
@@ -31,15 +20,25 @@ service cloud.firestore {
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      // A user can read and update their own document, but NOT their balances.
-      allow read, update: if request.auth != null && request.auth.uid == userId
-                      && !(isBalanceUpdate());
+      // User can read their own profile.
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // User can update their own profile, but CANNOT change their balance.
+      allow update: if request.auth != null && request.auth.uid == userId
+                      && request.resource.data.solidaraBalance == resource.data.solidaraBalance
+                      && request.resource.data.annualBalance == resource.data.annualBalance;
 
-      // An admin can get/list any user, and can UPDATE a user's document ONLY to change balances.
+      // Admin can read any user profile.
       allow get, list: if isAdmin();
-      allow update: if isAdmin() && isBalanceUpdate();
+      
+      // Admin can ONLY update the balance fields of a user profile.
+      allow update: if isAdmin()
+                      && request.resource.data.keys().hasAll(['solidaraBalance', 'annualBalance'])
+                      && request.resource.data.keys().size() <= resource.data.keys().size()
+                      && (!('solidaraBalance' in request.resource.data) || request.resource.data.solidaraBalance is number)
+                      && (!('annualBalance' in request.resource.data) || request.resource.data.annualBalance is number);
 
-      // Nobody can delete user documents.
+
       allow delete: if false;
     }
 
