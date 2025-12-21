@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,14 +6,16 @@ import { Suspense } from "react";
 import { AvailableGroupsList } from "@/components/groups/available-groups-list";
 import { Separator } from "@/components/ui/separator";
 import { MyGroupsSection } from "@/components/groups/my-groups-section";
+import { XavefLoanPoolCard } from "@/components/groups/xavef-loan-pool-card";
 
 export default function GroupsPage() {
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+             <XavefLoanPoolCard />
             <Card>
                 <CardHeader className="flex-row items-center justify-between">
                     <div>
-                        <CardTitle>Savings Groups</CardTitle>
+                        <CardTitle>Peer-to-Peer Savings Groups</CardTitle>
                         <CardDescription>
                            Create or join a rotating savings group (Ajo/Esusu).
                         </CardDescription>
