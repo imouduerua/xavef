@@ -3,11 +3,11 @@
 
 import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
 import type { Group, Transaction, UserData } from '@/lib/types';
-import { doc, getDoc, collection, getDocs, query, where, documentId, collectionGroup, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where, documentId, collectionGroup, Timestamp, orderBy } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Users, Wallet, Calendar, ListOrdered, UserCheck, HandCoins } from 'lucide-react';
+import { ArrowLeft, Users, Wallet, Calendar, ListOrdered, UserCheck, HandCoins, History } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 import { ContributeDialog } from '@/components/groups/contribute-dialog';
+import { GroupTransactionsTable } from '@/components/groups/group-transactions-table';
 
 
 function PageSkeleton() {
@@ -91,8 +92,19 @@ export default function GroupDetailsPage() {
             where('date', '<', weekEnd)
         );
     }, [firestore, groupId, group, weekStart, weekEnd]);
+    
+    const groupTransactionsQuery = React.useMemo(() => {
+        if (!firestore || !groupId) return null;
+        return query(
+            collectionGroup(firestore, 'transactions'),
+            where('groupId', '==', groupId),
+            orderBy('date', 'desc')
+        );
+    }, [firestore, groupId]);
+
 
     const { data: weeklyContributions, loading: contributionsLoading, indexCreationUrl } = useCollection<Transaction>(weeklyContributionsQuery);
+    const { data: allGroupTransactions, loading: allTxsLoading, indexCreationUrl: allTxsIndexUrl } = useCollection<Transaction>(groupTransactionsQuery);
     
     const currentWeekDeposits = React.useMemo(() => {
         if (!weeklyContributions) return 0;
@@ -106,8 +118,9 @@ export default function GroupDetailsPage() {
                 setLoadingMembers(true);
                 try {
                     const usersRef = collection(firestore, 'users');
-                    // Firestore 'in' queries are limited to 10 elements. If groups can be larger, this needs pagination.
-                    const q = query(usersRef, where(documentId(), 'in', group.members.slice(0, 10)));
+                    // Firestore 'in' queries are limited to 30 elements in a disjunction.
+                    // For larger groups, this would need pagination.
+                    const q = query(usersRef, where(documentId(), 'in', group.members));
                     const querySnapshot = await getDocs(q);
                     const users = querySnapshot.docs.map(d => ({ ...d.data(), uid: d.id } as UserData));
                     setMembersData(users);
@@ -122,8 +135,10 @@ export default function GroupDetailsPage() {
             setLoadingMembers(false);
         }
     }, [group, firestore]);
+    
+    const isLoading = groupLoading || loadingMembers || contributionsLoading || allTxsLoading;
 
-    if (groupLoading || loadingMembers || contributionsLoading || !group) {
+    if (isLoading || !group) {
         return <PageSkeleton />;
     }
 
@@ -250,6 +265,8 @@ export default function GroupDetailsPage() {
                             </AlertDialog>
                         )}
                     </div>
+                    
+                    <Separator />
 
                     {group.payoutOrder && group.payoutOrder.length > 0 && (
                          <div>
@@ -288,6 +305,25 @@ export default function GroupDetailsPage() {
                             </div>
                         </div>
                     )}
+                    
+                    <Separator />
+
+                    <div>
+                        <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
+                            <History />
+                            Group Transaction History
+                        </h3>
+                        {allTxsIndexUrl ? (
+                            <MissingIndexAlert url={allTxsIndexUrl} />
+                        ) : (
+                            <GroupTransactionsTable 
+                                transactions={allGroupTransactions}
+                                membersMap={memberMap}
+                                loading={allTxsLoading}
+                            />
+                        )}
+                    </div>
+
                 </CardContent>
             </Card>
         </div>
