@@ -354,7 +354,7 @@ export async function contributeToGroupFromSavings(
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
 
-      // Check if the user has already contributed this week
+      // Check if the user has already contributed this week by querying transactions
       const weeklyContributionQuery = query(
         userTransactionsRef,
         where('groupId', '==', groupId),
@@ -364,10 +364,14 @@ export async function contributeToGroupFromSavings(
         limit(1)
       );
 
-      const existingContributionSnap = await getDocs(weeklyContributionQuery);
-      if (!existingContributionSnap.empty) {
+      // We need to execute this query outside the transaction to check for existence.
+      // Firestore transactions do not support reads after writes, but this is a read *before* any writes.
+      // However, for simplicity and to avoid complex transaction rules, we can perform this check here.
+      const existingContributions = await getDocs(weeklyContributionQuery);
+      if (!existingContributions.empty) {
         throw new Error('You have already contributed for this week.');
       }
+
 
       // 1. Debit the user's Solidara balance
       transaction.update(userRef, {
