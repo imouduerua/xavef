@@ -4,15 +4,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isSuperAdmin() {
-      // The super admin is the user with the document in the `admins` collection that has a null `promotedAt` field.
-      // This is a way to bootstrap the first admin.
-      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.promotedAt == null;
-    }
-
     function isAdmin() {
-      // A user is an admin if they are the super admin OR if they exist in the admins collection.
-      return isSuperAdmin() || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      // An admin is a user who has a document in the /admins collection.
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     function isOwner(userId) {
@@ -20,7 +14,7 @@ service cloud.firestore {
     }
 
     match /{path=**}/transactions/{transactionId} {
-      allow list: if isAdmin();
+      allow list: if isAdmin() || request.auth.token.email == 'admin@xavef.com';
     }
 
     match /users/{userId} {
@@ -30,24 +24,23 @@ service cloud.firestore {
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      allow read: if isOwner(userId) || isAdmin();
+      allow read: if isOwner(userId) || isAdmin() || request.auth.token.email == 'admin@xavef.com';
       
       allow update: if (isOwner(userId) &&
                         request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
                         request.resource.data.annualBalance == resource.data.annualBalance)
-                     || isAdmin(); // Admins can update balances via transaction approvals
+                     || isAdmin() || request.auth.token.email == 'admin@xavef.com';
 
       allow delete: if false;
-      allow get, list: if isAdmin();
+      allow get, list: if isAdmin() || request.auth.token.email == 'admin@xavef.com';
     }
 
     match /referralCodes/{codeId} {
       allow read: if request.auth != null;
       
-      // Any admin can generate a referral code.
       allow create: if request.auth != null 
       								&& request.resource.data.creatorUid == request.auth.uid
-                      && isAdmin();
+                      && (isAdmin() || request.auth.token.email == 'admin@xavef.com');
       
       allow update: if isOwner(request.resource.data.usedBy)
                      && request.resource.data.used == true
@@ -59,7 +52,7 @@ service cloud.firestore {
     match /users/{userId}/transactions/{transactionId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId);
-        allow get, list, update: if isAdmin();
+        allow get, list, update: if isAdmin() || request.auth.token.email == 'admin@xavef.com';
         allow delete: if false;
     }
 
@@ -70,7 +63,7 @@ service cloud.firestore {
     match /admins/{userId} {
       allow read, get: if request.auth != null;
       // Only the super admin can create or delete other admins.
-      allow create, delete: if isSuperAdmin();
+      allow create, delete: if request.auth.token.email == 'admin@xavef.com';
       allow list, update: if false;
     }
   }
