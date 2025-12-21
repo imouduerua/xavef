@@ -4,7 +4,7 @@
 import { doc, getDoc, updateDoc, writeBatch, Firestore, increment } from 'firebase/firestore';
 import type { Transaction, UserData } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 /**
  * Updates the status of a transaction and, if approved, the user's balance.
@@ -30,6 +30,11 @@ export async function updateTransactionStatus(
     const txData = txDoc.data() as Transaction;
     if (txData.status !== 'Pending') {
       throw new Error(`Transaction is already ${txData.status.toLowerCase()}.`);
+    }
+    
+    const userDoc = await getDoc(userRef);
+    if (!userDoc.exists()) {
+        throw new Error("User data not found. Cannot update balance.");
     }
 
     const batch = writeBatch(firestore);
@@ -60,38 +65,20 @@ export async function updateTransactionStatus(
        }
     }
 
-    await batch.commit().catch(async (serverError) => {
-        // This is the new, critical error handling part.
-        const txUpdateError = new FirestorePermissionError({
-            path: txRef.path,
-            operation: 'update',
-            requestResourceData: { status: newStatus },
-        });
-        errorEmitter.emit('permission-error', txUpdateError);
-        
-        // We assume if the batch fails, it's the user doc update that's the issue.
-        if (newStatus === 'Completed') {
-            const userUpdateError = new FirestorePermissionError({
-                path: userRef.path,
-                operation: 'update',
-                requestResourceData: { balance: 'increment' }
-            });
-             errorEmitter.emit('permission-error', userUpdateError);
-        }
-
-        // We re-throw the original error to be caught by the outer block
-        // so the UI can still show a generic failure message.
-        throw serverError;
-    });
+    await batch.commit();
 
     return { success: true };
   } catch (error: any) {
     console.error('[updateTransactionStatus] Error:', error);
-    // Don't emit another error here, let the catch block in `commit` handle it.
-    if (!(error instanceof FirestorePermissionError)) {
-        return { success: false, error: error.message || 'An unknown error occurred.' };
-    }
-    // Error was already emitted, so we just return the failure state.
-    return { success: false, error: error.message };
+    
+    // Construct and emit a detailed error for debugging
+    const permissionError = new FirestorePermissionError({
+        path: userRef.path,
+        operation: 'update',
+        requestResourceData: { balance: 'increment' } // Representing the increment operation
+    });
+    errorEmitter.emit('permission-error', permissionError);
+
+    return { success: false, error: error.message || 'An unknown error occurred.' };
   }
 }
