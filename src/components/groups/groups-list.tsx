@@ -9,6 +9,7 @@ import { Card } from '../ui/card';
 import { Users } from 'lucide-react';
 import type { Group } from '@/lib/types';
 import { GroupCard } from './group-card';
+import { MissingIndexAlert } from '../admin/missing-index-alert';
 
 
 function GroupSkeleton() {
@@ -41,7 +42,7 @@ export function GroupsList() {
     );
   }, [firestore]);
 
-  const { data: groups, loading } = useCollection<Group>(groupsQuery);
+  const { data: groups, loading, indexCreationUrl } = useCollection<Group>(groupsQuery);
 
   if (loading) {
     return (
@@ -51,6 +52,10 @@ export function GroupsList() {
         <GroupSkeleton />
       </div>
     );
+  }
+
+  if (indexCreationUrl) {
+    return <MissingIndexAlert url={indexCreationUrl} />;
   }
 
   if (!groups || groups.length === 0) {
