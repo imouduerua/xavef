@@ -19,7 +19,7 @@ import {
   increment,
   Timestamp,
 } from 'firebase/firestore';
-import type { Group, GroupJoinRequest } from '@/lib/types';
+import type { Group, GroupJoinRequest, UserData } from '@/lib/types';
 import type { User } from 'firebase/auth';
 
 interface GroupData {
@@ -191,6 +191,15 @@ export async function respondToJoinRequest(
 
       const requestData = requestSnap.data() as GroupJoinRequest;
       const groupDocRef = doc(firestore, 'groups', requestData.groupId);
+      
+      const groupSnap = await transaction.get(groupDocRef);
+      if (!groupSnap.exists()) {
+        throw new Error('The associated group could not be found.');
+      }
+      const groupData = groupSnap.data() as Group;
+      if (groupData.members.length >= groupData.numberOfMembers && decision === 'approved') {
+        throw new Error('This group is already full.');
+      }
 
       // Update the request status to reflect the decision
       transaction.update(requestDocRef, {
@@ -199,15 +208,6 @@ export async function respondToJoinRequest(
       });
 
       if (decision === 'approved') {
-        const groupSnap = await transaction.get(groupDocRef);
-        if (!groupSnap.exists()) {
-          throw new Error('The associated group could not be found.');
-        }
-        const groupData = groupSnap.data() as Group;
-        if (groupData.members.length >= groupData.numberOfMembers) {
-          throw new Error('This group is already full.');
-        }
-
         // Atomically add the new member to the group's member array
         transaction.update(groupDocRef, {
           members: arrayUnion(requestData.requesterUid),
@@ -254,8 +254,18 @@ export async function distributeGroupFunds(
       const groupSnap = await transaction.get(groupRef);
       if (!groupSnap.exists()) throw new Error('Group not found.');
 
-      const groupData = groupSnap.data();
+      const groupData = groupSnap.data() as Group;
+      if (groupData.status !== 'active') {
+        throw new Error('This group is not active.');
+      }
+      
       const currentWeek = groupData.currentCollectionWeek || 1;
+      const recipientDoc = await transaction.get(recipientUserRef);
+       if (!recipientDoc.exists()) {
+        throw new Error('Recipient user data not found.');
+      }
+      const recipientName = recipientDoc.data()?.displayName || 'A member';
+
 
       // 1. Credit the recipient's Solidara balance
       transaction.update(recipientUserRef, {
@@ -286,9 +296,6 @@ export async function distributeGroupFunds(
         const notificationRef = doc(
           collection(firestore, `users/${memberId}/notifications`)
         );
-        const recipientDoc = await transaction.get(recipientUserRef);
-        const recipientName =
-          recipientDoc.data()?.displayName || 'A member';
         transaction.set(notificationRef, {
           userId: memberId,
           title: `Week ${currentWeek} Payout Complete!`,
@@ -321,6 +328,49 @@ export async function contributeToGroupFromSavings(
   const userRef = doc(firestore, 'users', userId);
   const userTransactionsRef = collection(userRef, 'transactions');
 
+  // We must perform the read for existing contributions *outside* the transaction.
+  try {
+    const groupSnapForCheck = await getDoc(groupRef);
+     if (!groupSnapForCheck.exists()) {
+      return { success: false, error: 'Group not found.' };
+    }
+    const group = groupSnapForCheck.data() as Group;
+
+    if (group.status !== 'active') {
+       return { success: false, error: 'This group is not active.' };
+    }
+    if (!group.startedAt) {
+      return { success: false, error: 'Group start date is not set.' };
+    }
+
+    const startDate = group.startedAt.toDate();
+    const currentWeek = group.currentCollectionWeek || 1;
+    const weekOffset = (currentWeek - 1) * 7;
+    const weekStart = new Date(startDate);
+    weekStart.setDate(weekStart.getDate() + weekOffset);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const weeklyContributionQuery = query(
+      userTransactionsRef,
+      where('groupId', '==', groupId),
+      where('type', '==', 'Group Contribution'),
+      where('date', '>=', Timestamp.fromDate(weekStart)),
+      where('date', '<', Timestamp.fromDate(weekEnd)),
+      limit(1)
+    );
+      
+    const existingContributions = await getDocs(weeklyContributionQuery);
+    if (!existingContributions.empty) {
+      return { success: false, error: 'You have already contributed for this week.' };
+    }
+  } catch (error: any) {
+     console.error('Error checking for existing contributions:', error);
+     return { success: false, error: 'Could not verify your contribution status.' };
+  }
+
   try {
     await runTransaction(firestore, async (transaction) => {
       const groupSnap = await transaction.get(groupRef);
@@ -330,48 +380,15 @@ export async function contributeToGroupFromSavings(
       if (!userSnap.exists()) throw new Error('User not found.');
 
       const group = groupSnap.data() as Group;
-      const user = userSnap.data();
+      const user = userSnap.data() as UserData;
 
-      // Check if group is active
       if (group.status !== 'active') {
         throw new Error('This group is not active.');
       }
 
-      // Check user balance
       if (user.solidaraBalance < group.contributionAmount) {
         throw new Error('Insufficient Solidara balance to make contribution.');
       }
-
-      // Determine the start and end of the current collection week
-      if (!group.startedAt) throw new Error('Group start date is not set.');
-      const startDate = group.startedAt.toDate();
-      const currentWeek = group.currentCollectionWeek || 1;
-      const weekOffset = (currentWeek - 1) * 7;
-      const weekStart = new Date(startDate);
-      weekStart.setDate(weekStart.getDate() + weekOffset);
-      weekStart.setHours(0, 0, 0, 0);
-
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 7);
-
-      // Check if the user has already contributed this week by querying transactions
-      const weeklyContributionQuery = query(
-        userTransactionsRef,
-        where('groupId', '==', groupId),
-        where('type', '==', 'Group Contribution'),
-        where('date', '>=', Timestamp.fromDate(weekStart)),
-        where('date', '<', Timestamp.fromDate(weekEnd)),
-        limit(1)
-      );
-
-      // We need to execute this query outside the transaction to check for existence.
-      // Firestore transactions do not support reads after writes, but this is a read *before* any writes.
-      // However, for simplicity and to avoid complex transaction rules, we can perform this check here.
-      const existingContributions = await getDocs(weeklyContributionQuery);
-      if (!existingContributions.empty) {
-        throw new Error('You have already contributed for this week.');
-      }
-
 
       // 1. Debit the user's Solidara balance
       transaction.update(userRef, {
