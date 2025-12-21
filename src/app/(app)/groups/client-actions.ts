@@ -6,12 +6,14 @@ import {
   collection,
   serverTimestamp,
   Firestore,
+  updateDoc,
+  doc,
 } from 'firebase/firestore';
 
 interface GroupData {
   name: string;
   contributionAmount: number;
-  contributionFrequency: 'weekly' | 'monthly';
+  contributionFrequency: 'weekly';
   numberOfMembers: number;
 }
 
@@ -34,4 +36,21 @@ export async function createGroup(
     console.error('Error creating group:', error);
     return { success: false, error: 'Failed to create group.' };
   }
+}
+
+export async function startGroup(
+    firestore: Firestore,
+    groupId: string
+): Promise<{ success: boolean; error?: string; }> {
+    try {
+        const groupDocRef = doc(firestore, 'groups', groupId);
+        await updateDoc(groupDocRef, {
+            status: 'active',
+            startedAt: serverTimestamp(),
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error starting group:', error);
+        return { success: false, error: 'Failed to start group.' };
+    }
 }

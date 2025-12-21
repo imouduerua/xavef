@@ -6,11 +6,10 @@ import { collection, query, where, orderBy } from 'firebase/firestore';
 import React from 'react';
 import { Skeleton } from '../ui/skeleton';
 import { Card } from '../ui/card';
-import { Users } from 'lucide-react';
+import { UserCheck } from 'lucide-react';
 import type { Group } from '@/lib/types';
 import { GroupCard } from './group-card';
 import { MissingIndexAlert } from '../admin/missing-index-alert';
-
 
 function GroupSkeleton() {
     return (
@@ -28,33 +27,24 @@ function GroupSkeleton() {
     )
 }
 
-
-export function AvailableGroupsList() {
+export function MyGroupsList() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const groupsQuery = React.useMemo(() => {
+  const myGroupsQuery = React.useMemo(() => {
     if (!firestore || !user) return null;
-    // Query for groups that are open for new members and the user is not already a member
     return query(
         collection(firestore, `groups`), 
-        where('status', '==', 'forming'),
+        where('members', 'array-contains', user.uid),
         orderBy('createdAt', 'desc')
     );
   }, [firestore, user]);
 
-  const { data: groups, loading, indexCreationUrl } = useCollection<Group>(groupsQuery);
-  
-  const availableGroups = React.useMemo(() => {
-    if (!groups || !user) return [];
-    return groups.filter(group => !group.members.includes(user.uid));
-  }, [groups, user]);
+  const { data: groups, loading, indexCreationUrl } = useCollection<Group>(myGroupsQuery);
 
   if (loading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <GroupSkeleton />
-        <GroupSkeleton />
         <GroupSkeleton />
       </div>
     );
@@ -64,13 +54,13 @@ export function AvailableGroupsList() {
     return <MissingIndexAlert url={indexCreationUrl} />;
   }
 
-  if (!availableGroups || availableGroups.length === 0) {
+  if (!groups || groups.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
-        <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-semibold">No Available Groups</h3>
+        <UserCheck className="mx-auto h-12 w-12 text-muted-foreground" />
+        <h3 className="mt-4 text-lg font-semibold">You Haven't Joined Any Groups</h3>
         <p className="mb-4 mt-2 text-sm text-muted-foreground">
-          There are currently no savings groups looking for new members. Why not create one?
+          Join an available group or create a new one to get started.
         </p>
       </div>
     );
@@ -78,8 +68,8 @@ export function AvailableGroupsList() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {availableGroups.map((group) => (
-        <GroupCard key={group.id} group={group} />
+      {groups.map((group) => (
+        <GroupCard key={group.id} group={group} isOwned={true} />
       ))}
     </div>
   );

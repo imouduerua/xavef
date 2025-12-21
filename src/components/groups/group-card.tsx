@@ -3,15 +3,26 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useUser, useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
-import { UserPlus, Users } from 'lucide-react';
+import { Loader2, PlayCircle, UserPlus, Users } from 'lucide-react';
+import React from 'react';
+import { startGroup } from '@/app/(app)/groups/client-actions';
 
 interface GroupCardProps {
   group: Group;
+  isOwned?: boolean;
 }
 
-export function GroupCard({ group }: GroupCardProps) {
+export function GroupCard({ group, isOwned = false }: GroupCardProps) {
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const [isStarting, setIsStarting] = React.useState(false);
+  
+  const isGroupAdmin = user?.uid === group.creatorUid;
+  const isGroupFull = group.members.length === group.numberOfMembers;
+
   const formatCurrency = (amount: number) =>
     `₦${amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
@@ -27,14 +38,69 @@ export function GroupCard({ group }: GroupCardProps) {
     });
   }
 
+  const handleStartGroup = async () => {
+      if (!firestore) return;
+
+      setIsStarting(true);
+      const result = await startGroup(firestore, group.id);
+      if (result.success) {
+          toast({
+              title: "Group Started!",
+              description: `The group "${group.name}" is now active.`
+          });
+      } else {
+          toast({
+              variant: "destructive",
+              title: "Failed to Start Group",
+              description: result.error
+          });
+      }
+      setIsStarting(false);
+  }
+
+  const renderFooter = () => {
+      if (group.status !== 'forming') {
+          return null; // Or show other info for active/closed groups
+      }
+      if (isOwned && isGroupAdmin) {
+          return (
+             <Button className="w-full" disabled={!isGroupFull || isStarting} onClick={handleStartGroup}>
+                {isStarting ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Starting...
+                    </>
+                ) : (
+                    <>
+                        <PlayCircle className="mr-2 h-4 w-4" />
+                        Start Group
+                    </>
+                )}
+            </Button>
+          )
+      }
+      if (!isOwned) {
+          return (
+             <Button className="w-full" onClick={handleRequestToJoin}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Request to Join
+            </Button>
+          )
+      }
+      return null;
+  }
+
   const memberProgress = `${group.members.length}/${group.numberOfMembers}`;
 
   return (
-    <Card>
+    <Card className='flex flex-col'>
       <CardHeader>
         <CardTitle>{group.name}</CardTitle>
         <CardDescription>
-            A weekly savings group.
+            {group.status === 'forming' 
+                ? isGroupFull ? 'This group is full and ready to start.' : 'A weekly savings group.'
+                : `This group is ${group.status}.`
+            }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -50,12 +116,11 @@ export function GroupCard({ group }: GroupCardProps) {
             </div>
         </div>
       </CardContent>
-      <CardFooter>
-        <Button className="w-full" onClick={handleRequestToJoin}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Request to Join
-        </Button>
-      </CardFooter>
+      {renderFooter() && (
+         <CardFooter>
+            {renderFooter()}
+        </CardFooter>
+      )}
     </Card>
   );
 }

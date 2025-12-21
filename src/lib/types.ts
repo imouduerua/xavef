@@ -99,6 +99,8 @@ export interface SavingGoal {
     emoji?: string;
 }
 
+export type GroupStatus = 'forming' | 'active' | 'closed';
+
 export interface Group {
     id: string;
     name: string;
@@ -107,6 +109,7 @@ export interface Group {
     numberOfMembers: number;
     creatorUid: string;
     members: string[];
-    status: 'forming' | 'active' | 'closed';
+    status: GroupStatus;
     createdAt: any;
+    startedAt?: any;
 }

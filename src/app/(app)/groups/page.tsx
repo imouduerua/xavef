@@ -4,7 +4,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateGroupDialog } from "@/components/groups/create-group-dialog";
 import { Suspense } from "react";
-import { GroupsList } from "@/components/groups/groups-list";
+import { AvailableGroupsList } from "@/components/groups/available-groups-list";
+import { MyGroupsList } from "@/components/groups/my-groups-list";
+import { Separator } from "@/components/ui/separator";
 
 export default function GroupsPage() {
     return (
@@ -20,9 +22,21 @@ export default function GroupsPage() {
                     <CreateGroupDialog />
                 </CardHeader>
                 <CardContent>
-                    <Suspense fallback={<div>Loading groups...</div>}>
-                        <GroupsList />
-                    </Suspense>
+                    <div className="space-y-8">
+                        <div>
+                            <h3 className="text-xl font-semibold mb-4">My Groups</h3>
+                             <Suspense fallback={<div>Loading your groups...</div>}>
+                                <MyGroupsList />
+                            </Suspense>
+                        </div>
+                        <Separator />
+                        <div>
+                            <h3 className="text-xl font-semibold mb-4">Available Groups</h3>
+                             <Suspense fallback={<div>Loading available groups...</div>}>
+                                <AvailableGroupsList />
+                            </Suspense>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         </div>

@@ -35,7 +35,7 @@ export function AvailableGroupsList() {
 
   const groupsQuery = React.useMemo(() => {
     if (!firestore || !user) return null;
-    // Query for groups that are open for new members and the user is not already a member
+    // Query for groups that are open for new members
     return query(
         collection(firestore, `groups`), 
         where('status', '==', 'forming'),
@@ -70,7 +70,7 @@ export function AvailableGroupsList() {
         <Users className="mx-auto h-12 w-12 text-muted-foreground" />
         <h3 className="mt-4 text-lg font-semibold">No Available Groups</h3>
         <p className="mb-4 mt-2 text-sm text-muted-foreground">
-          There are currently no savings groups looking for new members. Why not create one?
+          There are currently no savings groups looking for new members.
         </p>
       </div>
     );
