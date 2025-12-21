@@ -34,14 +34,14 @@ service cloud.firestore {
       allow update: if 
         // Rule for regular user updates
         (request.auth.uid == userId &&
-          request.resource.data.canGenerateReferralCode == resource.data.canGenerateReferralCode &&
           request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
-          request.resource.data.annualBalance == resource.data.annualBalance
+          request.resource.data.annualBalance == resource.data.annualBalance &&
+          request.resource.data.canGenerateReferralCode == resource.data.canGenerateReferralCode
         ) ||
         // Rule for super admin permission updates
         (request.auth.token.email == 'admin@xavef.com' &&
-          // The only field that can change is canGenerateReferralCode
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['canGenerateReferralCode']));
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['canGenerateReferralCode'])
+        );
 
 
       // Admins can read any user document.
