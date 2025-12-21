@@ -87,9 +87,6 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
     }
   }
   
-  // This useEffect will reset the form with the goal's current values
-  // every time the dialog is opened. This is crucial if the goal data
-  // might have changed in the background.
   React.useEffect(() => {
     if (isOpen) {
       form.reset({
