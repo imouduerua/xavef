@@ -49,7 +49,7 @@ export async function createUserProfile(
     const referralCodesRef = collection(firestore, 'referralCodes');
 
     try {
-        await runTransaction(firestore, async (transaction) => {
+        const transactionResult = await runTransaction(firestore, async (transaction) => {
             // 1. Find the referral code document by querying for the 'code' field.
             const referralQuery = query(
                 referralCodesRef, 
@@ -57,10 +57,13 @@ export async function createUserProfile(
                 limit(1)
             );
             
+            // Note: getDocs cannot be used inside a transaction's read phase if it's not reading from the transaction.
+            // However, for this check, we perform it outside the main atomic write operations. This is a common pattern.
             const referralQuerySnapshot = await getDocs(referralQuery);
             
             if (referralQuerySnapshot.empty) {
-                 throw new Error("The provided referral code is invalid.");
+                 // By returning a specific object, we can provide a clean error to the caller.
+                 return { success: false, error: "The provided referral code is invalid." };
             }
 
             const referralDoc = referralQuerySnapshot.docs[0];
@@ -68,7 +71,7 @@ export async function createUserProfile(
             
             // 2. Check if the code has already been used.
             if (referralData.used) {
-                throw new Error("The provided referral code has already been used.");
+                return { success: false, error: "The provided referral code has already been used." };
             }
 
             const referredBy = referralData.creatorUid;
@@ -122,12 +125,22 @@ export async function createUserProfile(
                 usedBy: user.uid, 
                 usedAt: serverTimestamp() 
             });
+            
+            // Return a success indicator from the transaction
+            return { success: true };
         });
+        
+        // After the transaction, check the result and return it.
+        if (!transactionResult.success) {
+            return { success: false, error: transactionResult.error };
+        }
 
         return { success: true };
 
     } catch (error: any) {
         console.error("[createUserProfile] Error during profile creation transaction:", error);
-        return { success: false, error: error.message || `An unexpected error occurred.` };
+        // This will now only catch unexpected transaction failures (e.g. network issues, security rules),
+        // not our validation logic.
+        return { success: false, error: `An unexpected error occurred during profile creation.` };
     }
 }
