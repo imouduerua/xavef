@@ -54,6 +54,16 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     let userCredential: UserCredential | null = null;
+    
+    if(!firestore) {
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: "Database service is not available. Please try again later.",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     try {
         // Step 1: Create the Firebase Auth user
@@ -81,14 +91,16 @@ export function RegisterForm() {
         if (!profileResult.success) {
             // This is a critical failure, likely an invalid referral code.
             // We must delete the orphaned auth user and show the error to the user.
-            await deleteUser(user).catch(deleteError => {
-                console.error("Failed to clean up orphaned auth user:", deleteError);
-            });
+            if (userCredential) {
+              await deleteUser(userCredential.user).catch(deleteError => {
+                  console.error("Failed to clean up orphaned auth user:", deleteError);
+              });
+            }
 
             toast({
                 variant: "destructive",
                 title: "Registration Failed",
-                description: profileResult.error || "Failed to create user profile.",
+                description: profileResult.error || "Failed to create user profile. Please check your details and try again.",
                 duration: 10000,
             });
             setIsLoading(false);
@@ -108,7 +120,7 @@ export function RegisterForm() {
         
         // This catch block will now primarily handle auth errors like "email-already-in-use"
         if (userCredential) {
-            // If profile creation failed after auth user was created, clean up.
+            // If an auth user was created but another error occurred, clean it up.
             await deleteUser(userCredential.user).catch(deleteError => {
                 console.error("Failed to clean up orphaned auth user during general error:", deleteError);
             });
