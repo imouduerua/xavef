@@ -17,23 +17,34 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '../ui/sidebar';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useDoc, useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { mockNotifications } from '@/lib/mock-data';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import { useUserData } from '@/hooks/use-user-data';
 import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
+import { doc } from 'firebase/firestore';
 
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user } = useUser();
   const { userData } = useUserData();
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');
+
+  const generatorDocRef = React.useMemo(() => {
+    if (!user) return null;
+    return doc(firestore, 'referralCodeGenerators', user.uid);
+  }, [user, firestore]);
+
+  const { data: generatorData } = useDoc(generatorDocRef);
+  const canGenerateReferralCode = !!generatorData;
+
 
   const isDashboard = pathname === '/dashboard';
 
@@ -139,7 +150,7 @@ export function AppHeader() {
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                 {userData?.canGenerateReferralCode && (
+                 {canGenerateReferralCode && (
                   <ReferralCodeDialog>
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                       <BadgePercent className="mr-2 h-4 w-4" />

@@ -83,10 +83,6 @@
                 },
                 "required": ["bankName", "accountName", "bankAccountNumber"]
             }
-        },
-        "canGenerateReferralCode": {
-            "type": "boolean",
-            "description": "Whether the user is permitted to generate new referral codes."
         }
       },
       "required": [
@@ -223,6 +219,23 @@
         "currentAmount",
         "createdAt"
       ]
+    },
+     "referralCodeGenerator": {
+      "title": "Referral Code Generator",
+      "description": "A document indicating a user has permission to generate referral codes.",
+      "type": "object",
+      "properties": {
+        "enabledBy": {
+          "type": "string",
+          "description": "The email of the admin who enabled this permission."
+        },
+        "enabledAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the permission was granted."
+        }
+      },
+      "required": ["enabledBy", "enabledAt"]
     }
   },
   "auth": {
@@ -260,6 +273,12 @@
         "$ref": "#/entities/admin"
       },
       "description": "Stores a list of admin users."
+    },
+    "/referralCodeGenerators/{userId}": {
+      "schema": {
+        "$ref": "#/entities/referralCodeGenerator"
+      },
+      "description": "A list of user IDs that have permission to generate referral codes."
     }
   }
 }

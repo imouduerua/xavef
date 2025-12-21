@@ -32,7 +32,6 @@ export interface UserData {
   solidaraBalance: number;
   annualBalance: number;
   bankAccounts: BankAccount[];
-  canGenerateReferralCode?: boolean;
 }
 
 export interface SavingsAccount {

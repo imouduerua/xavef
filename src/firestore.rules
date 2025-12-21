@@ -11,7 +11,7 @@ service cloud.firestore {
     }
     
     function canGenerateCode(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.canGenerateReferralCode == true;
+      return exists(/databases/$(database)/documents/referralCodeGenerators/$(userId));
     }
 
     // Admins can perform a collection group query on transactions
@@ -30,34 +30,10 @@ service cloud.firestore {
       // An authenticated user can read their own document.
       allow read: if request.auth != null && request.auth.uid == userId;
       
-      // An authenticated user can update their own document, or an admin can update permissions.
-      allow update: if 
-          // Rule for regular user updates: User can update their own profile, but cannot change protected fields.
-          (request.auth.uid == userId &&
-            request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
-            request.resource.data.annualBalance == resource.data.annualBalance &&
-            request.resource.data.canGenerateReferralCode == resource.data.canGenerateReferralCode
-          ) ||
-          // Rule for super admin permission updates: Super admin can ONLY change the `canGenerateReferralCode` field.
-          (request.auth.token.email == 'admin@xavef.com' &&
-            request.resource.data.uid == resource.data.uid &&
-            request.resource.data.email == resource.data.email &&
-            request.resource.data.firstName == resource.data.firstName &&
-            request.resource.data.lastName == resource.data.lastName &&
-            request.resource.data.displayName == resource.data.displayName &&
-            request.resource.data.dateOfBirth == resource.data.dateOfBirth &&
-            request.resource.data.phoneNumber == resource.data.phoneNumber &&
-            request.resource.data.address == resource.data.address &&
-            request.resource.data.state == resource.data.state &&
-            request.resource.data.country == resource.data.country &&
-            request.resource.data.xavefId == resource.data.xavefId &&
-            request.resource.data.createdAt == resource.data.createdAt &&
-            request.resource.data.referredBy == resource.data.referredBy &&
-            request.resource.data.bankAccounts == resource.data.bankAccounts &&
-            request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
-            request.resource.data.annualBalance == resource.data.annualBalance
-          );
-
+      // An authenticated user can update their own document, but not protected fields.
+      allow update: if request.auth.uid == userId &&
+          request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
+          request.resource.data.annualBalance == resource.data.annualBalance;
 
       // Admins can read any user document.
       allow get, list: if isAdmin(); 
@@ -83,6 +59,13 @@ service cloud.firestore {
 
       // No one can delete referral codes
       allow delete: if false;
+    }
+
+    // New rules for the generators collection
+    match /referralCodeGenerators/{userId} {
+      allow read, get: if request.auth != null;
+      allow create, delete: if isAdmin() && request.auth.token.email == 'admin@xavef.com';
+      allow list, update: if false;
     }
 
     match /users/{userId}/transactions/{transactionId} {

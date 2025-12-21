@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useDoc, useFirestore } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { ArrowLeft, Landmark, PiggyBank, BadgePercent } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -35,7 +35,15 @@ export default function UserDetailPage() {
     [userId, firestore]
   );
   
+  const generatorDocRef = useMemo(
+    () => (userId && firestore ? doc(firestore, 'referralCodeGenerators', userId) : null),
+    [userId, firestore]
+  );
+
   const { data: userData, loading } = useDoc<UserData>(userDocRef);
+  const { data: generatorData, loading: generatorLoading } = useDoc(generatorDocRef);
+
+  const canGenerate = !!generatorData;
 
   const formatCurrency = (amount: number | null | undefined) => {
     if (amount === undefined || amount === null) {
@@ -44,15 +52,19 @@ export default function UserDetailPage() {
     return `₦${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   
-  const handlePermissionChange = async (canGenerate: boolean) => {
-    if (!userDocRef) return;
+  const handlePermissionChange = async (shouldBeAbleToGenerate: boolean) => {
+    if (!generatorDocRef || !userData) return;
 
     setIsUpdatingPermission(true);
     try {
-        await updateDoc(userDocRef, { canGenerateReferralCode: canGenerate });
+        if (shouldBeAbleToGenerate) {
+            await setDoc(generatorDocRef, { enabledBy: 'admin@xavef.com', enabledAt: new Date() });
+        } else {
+            await deleteDoc(generatorDocRef);
+        }
         toast({
             title: "Permission Updated",
-            description: `${userData?.email} can ${canGenerate ? 'now' : 'no longer'} generate referral codes.`
+            description: `${userData.email} can ${shouldBeAbleToGenerate ? 'now' : 'no longer'} generate referral codes.`
         })
     } catch (error: any) {
         console.error("Error updating permission:", error);
@@ -82,7 +94,7 @@ export default function UserDetailPage() {
     </div>
   )
 
-  if (loading || !userId || !userData) {
+  if (loading || generatorLoading || !userId || !userData) {
     return <PageSkeleton />;
   }
 
@@ -144,7 +156,7 @@ export default function UserDetailPage() {
                         </div>
                         <Switch
                           id="referral-permission"
-                          checked={userData?.canGenerateReferralCode === true}
+                          checked={canGenerate}
                           onCheckedChange={handlePermissionChange}
                           disabled={isUpdatingPermission}
                         />
