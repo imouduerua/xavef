@@ -19,6 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase";
+import Link from "next/link";
+import { ForgotPasswordDialog } from "./forgot-password-dialog";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -83,7 +85,14 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+                <div className="flex items-center justify-between">
+                    <FormLabel>Password</FormLabel>
+                    <ForgotPasswordDialog>
+                         <Button variant="link" type="button" className="p-0 h-auto text-xs">
+                            Forgot password?
+                        </Button>
+                    </ForgotPasswordDialog>
+                </div>
               <FormControl>
                 <Input type="password" placeholder="********" {...field} />
               </FormControl>
