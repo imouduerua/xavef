@@ -1,55 +1,203 @@
 'use client';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Clock } from "lucide-react";
-import Link from "next/link";
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { useCollection, useFirestore } from '@/firebase';
+import type { Group, Transaction, UserData } from '@/lib/types';
+import { collection, collectionGroup, query, where } from 'firebase/firestore';
+import {
+  Users,
+  Clock,
+  Landmark,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Activity,
+  PiggyBank,
+} from 'lucide-react';
+import Link from 'next/link';
+import React, { useMemo } from 'react';
+
+const formatCurrency = (amount: number) => {
+  if (isNaN(amount)) {
+    return '₦0.00';
+  }
+  return `₦${amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+function StatCard({
+  title,
+  value,
+  description,
+  icon: Icon,
+}: {
+  title: string;
+  value: string;
+  description: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function AdminDashboardPage() {
-    return (
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Admin Dashboard</CardTitle>
-                    <CardDescription>Welcome to the XAVEF Financials control panel. From here you can oversee users and manage the application.</CardDescription>
-                </CardHeader>
-            </Card>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">User Management</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">Oversee Users</div>
-                        <p className="text-xs text-muted-foreground">
-                            View all registered users and their transaction histories.
-                        </p>
-                    </CardContent>
-                    <CardContent>
-                         <Button asChild>
-                            <Link href="/admin/users">Go to User Management</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Transactions</CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">Review Transactions</div>
-                        <p className="text-xs text-muted-foreground">
-                            Approve or decline pending deposits and withdrawals.
-                        </p>
-                    </CardContent>
-                    <CardContent>
-                         <Button asChild>
-                            <Link href="/admin/pending-transactions">Go to Pending Transactions</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
-    );
+  const firestore = useFirestore();
+
+  const usersQuery = useMemo(
+    () => (firestore ? collection(firestore, 'users') : null),
+    [firestore]
+  );
+  const groupsQuery = useMemo(
+    () =>
+      firestore
+        ? query(collection(firestore, 'groups'), where('status', '==', 'active'))
+        : null,
+    [firestore]
+  );
+  const transactionsQuery = useMemo(
+    () =>
+      firestore
+        ? query(
+            collectionGroup(firestore, 'transactions'),
+            where('status', '==', 'Completed')
+          )
+        : null,
+    [firestore]
+  );
+
+  const { data: users, loading: usersLoading } =
+    useCollection<UserData>(usersQuery);
+  const { data: activeGroups, loading: groupsLoading } =
+    useCollection<Group>(groupsQuery);
+  const { data: transactions, loading: txsLoading } =
+    useCollection<Transaction>(transactionsQuery);
+
+  const stats = useMemo(() => {
+    const totalUsers = users?.length ?? 0;
+    const totalActiveGroups = activeGroups?.length ?? 0;
+
+    const totalSavings =
+      users?.reduce(
+        (acc, user) => acc + user.solidaraBalance + user.annualBalance,
+        0
+      ) ?? 0;
+
+    const totalDeposits =
+      transactions
+        ?.filter((tx) => tx.type === 'Deposit')
+        .reduce((acc, tx) => acc + tx.amount, 0) ?? 0;
+
+    const totalWithdrawals =
+      transactions
+        ?.filter((tx) => tx.type === 'Withdrawal')
+        .reduce((acc, tx) => acc + tx.amount, 0) ?? 0;
+
+    return {
+      totalUsers,
+      totalActiveGroups,
+      totalSavings,
+      totalDeposits,
+      totalWithdrawals: Math.abs(totalWithdrawals),
+    };
+  }, [users, activeGroups, transactions]);
+
+  const isLoading = usersLoading || groupsLoading || txsLoading;
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Admin Dashboard</CardTitle>
+          <CardDescription>
+            Welcome to the XAVEF Financials control panel. Here is an overview
+            of platform activity.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatCard
+            title="Total Users"
+            value={isLoading ? '...' : stats.totalUsers.toString()}
+            description="Total registered users on the platform."
+            icon={Users}
+        />
+         <StatCard
+            title="Total Savings"
+            value={isLoading ? '...' : formatCurrency(stats.totalSavings)}
+            description="Combined Solidara & Annual balances."
+            icon={PiggyBank}
+        />
+        <StatCard
+            title="Total Deposits"
+            value={isLoading ? '...' : formatCurrency(stats.totalDeposits)}
+            description="Sum of all completed deposits."
+            icon={ArrowDownCircle}
+        />
+         <StatCard
+            title="Total Withdrawals"
+            value={isLoading ? '...' : formatCurrency(stats.totalWithdrawals)}
+            description="Sum of all completed withdrawals."
+            icon={ArrowUpCircle}
+        />
+        <StatCard
+            title="Active Groups"
+            value={isLoading ? '...' : stats.totalActiveGroups.toString()}
+            description="Number of currently active savings groups."
+            icon={Activity}
+        />
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Pending Transactions</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">Review Now</div>
+                 <p className="text-xs text-muted-foreground">
+                    Approve or decline pending deposits and withdrawals.
+                </p>
+            </CardContent>
+            <CardFooter>
+                 <Button asChild className="w-full">
+                    <Link href="/admin/pending-transactions">Go to Pending Transactions</Link>
+                </Button>
+            </CardFooter>
+        </Card>
+         <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">User Management</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">Oversee Users</div>
+                <p className="text-xs text-muted-foreground">
+                    View all registered users and their transaction histories.
+                </p>
+            </CardContent>
+            <CardFooter>
+                 <Button asChild className="w-full">
+                    <Link href="/admin/users">Go to User Management</Link>
+                </Button>
+            </CardFooter>
+        </Card>
+      </div>
+    </div>
+  );
 }
