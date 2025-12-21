@@ -11,6 +11,7 @@ import React from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
+import { MissingIndexAlert } from '../admin/missing-index-alert';
 
 interface JoinRequestCardProps {
   request: GroupJoinRequest;
@@ -44,7 +45,7 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
     );
   }, [firestore, request.requesterUid]);
   
-  const { data: transactions, loading } = useCollection<Transaction>(transactionsQuery);
+  const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 
   const totalDeposits = React.useMemo(() => {
       if (!transactions) return 0;
@@ -72,6 +73,31 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
       // No need to set isResponding to false on success, as the component will be removed from the UI.
   }
 
+  const renderFinancialActivity = () => {
+    if (indexCreationUrl) {
+      return (
+        <div className='p-4'>
+            <MissingIndexAlert url={indexCreationUrl} />
+        </div>
+      );
+    }
+
+    return (
+       <Card className="bg-muted/30">
+            <CardHeader className='pb-2'>
+                <CardTitle className='text-base flex items-center gap-2'><TrendingUp className='h-5 w-5' /> Financial Activity</CardTitle>
+                <CardDescription className="text-xs">Based on the last 90 days.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {loading ? <Skeleton className="h-6 w-32" /> : (
+                     <p className="text-xl font-bold text-green-600">{formatCurrency(totalDeposits)}</p>
+                )}
+                 <p className="text-sm text-muted-foreground">Total completed deposits</p>
+            </CardContent>
+        </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -86,18 +112,7 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className='text-sm text-muted-foreground'>{request.requesterEmail}</p>
-        <Card className="bg-muted/30">
-            <CardHeader className='pb-2'>
-                <CardTitle className='text-base flex items-center gap-2'><TrendingUp className='h-5 w-5' /> Financial Activity</CardTitle>
-                <CardDescription className="text-xs">Based on the last 90 days.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {loading ? <Skeleton className="h-6 w-32" /> : (
-                     <p className="text-xl font-bold text-green-600">{formatCurrency(totalDeposits)}</p>
-                )}
-                 <p className="text-sm text-muted-foreground">Total completed deposits</p>
-            </CardContent>
-        </Card>
+        {renderFinancialActivity()}
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
          {isResponding ? (
@@ -118,4 +133,3 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
     </Card>
   );
 }
-
