@@ -20,20 +20,14 @@ service cloud.firestore {
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      // User can read their own profile.
-      allow read: if request.auth != null && request.auth.uid == userId;
-      
-      // User can update their own profile, but CANNOT change their balance.
-      allow update: if request.auth != null && request.auth.uid == userId
-                      && request.resource.data.solidaraBalance == resource.data.solidaraBalance
-                      && request.resource.data.annualBalance == resource.data.annualBalance;
-
-      // Admin can read any user profile.
+      // Admins can get and list users. A user can read their own profile.
       allow get, list: if isAdmin();
-      
-      // Admin can update a user document.
+      allow read: if request.auth.uid == userId;
+
+      // Admins can update any user document. This is required to approve transactions.
       allow update: if isAdmin();
 
+      // Nobody can delete user documents.
       allow delete: if false;
     }
 
