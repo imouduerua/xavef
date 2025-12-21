@@ -104,16 +104,16 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
         {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90vh]">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle>Edit Saving Goal</DialogTitle>
-          <DialogDescription>
-            Update the details for your "{goal.name}" goal.
-          </DialogDescription>
-        </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
-            <ScrollArea className="flex-1 px-6 py-4">
-              <div className="space-y-4">
+            <DialogHeader className="p-6 pb-4">
+              <DialogTitle>Edit Saving Goal</DialogTitle>
+              <DialogDescription>
+                Update the details for your "{goal.name}" goal.
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-1 px-6">
+              <div className="space-y-4 py-4">
                 <FormField
                   control={form.control}
                   name="name"
