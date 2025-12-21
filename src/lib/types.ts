@@ -113,6 +113,7 @@ export interface Group {
     status: GroupStatus;
     createdAt: any;
     startedAt?: any;
+    payoutOrder?: string[];
 }
 
 export type JoinRequestStatus = 'pending' | 'approved' | 'declined';

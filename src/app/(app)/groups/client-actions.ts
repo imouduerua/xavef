@@ -27,6 +27,20 @@ interface GroupData {
   numberOfMembers: number;
 }
 
+/**
+ * Shuffles an array in-place using the Fisher-Yates algorithm.
+ * @param array The array to shuffle.
+ * @returns The shuffled array.
+ */
+function shuffleArray<T>(array: T[]): T[] {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+
 export async function createGroup(
   firestore: Firestore,
   creatorUid: string,
@@ -60,17 +74,20 @@ export async function startGroup(
     }
     const groupData = groupSnap.data() as Group;
 
+    // Shuffle the members to create the payout order
+    const payoutOrder = shuffleArray([...groupData.members]);
+
     // Start a write batch to perform multiple operations atomically
     const batch = writeBatch(firestore);
 
-    // 1. Update the group status
+    // 1. Update the group status, startedAt timestamp, and payoutOrder
     batch.update(groupDocRef, {
       status: 'active',
       startedAt: serverTimestamp(),
+      payoutOrder: payoutOrder,
     });
 
     // 2. Create a notification for each member
-    const notificationsCollection = collection(firestore, 'notifications');
     for (const memberId of groupData.members) {
         const userNotificationsRef = collection(firestore, `users/${memberId}/notifications`);
         const newNotification = {
