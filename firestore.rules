@@ -29,7 +29,7 @@ service cloud.firestore {
       // Allow any authenticated user to create a code for themselves.
       allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
       
-      // Allow a user to "use" a code if it hasn't been used before.
+      // Allow a user to "use" a code (update the 'used' field) if it hasn't been used before.
       allow update: if request.auth != null 
                      && request.resource.data.used == true
                      && resource.data.used == false

@@ -55,6 +55,16 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     let userCredential: UserCredential | null = null;
+    
+    if(!firestore) {
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: "Database service is not available. Please try again later.",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     try {
         // Step 1: Create the Firebase Auth user
@@ -89,7 +99,7 @@ export function RegisterForm() {
             toast({
                 variant: "destructive",
                 title: "Registration Failed",
-                description: profileResult.error || "Failed to create user profile.",
+                description: profileResult.error || "Failed to create user profile. Please check your details and try again.",
                 duration: 10000,
             });
             setIsLoading(false);
