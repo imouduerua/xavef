@@ -75,5 +75,15 @@ service cloud.firestore {
         // Any authenticated user can create a group, as long as they are the creator.
         allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
     }
+
+    match /joinRequests/{requestId} {
+        // A user can create a join request for themselves.
+        allow create: if request.auth != null && request.resource.data.requesterUid == request.auth.uid;
+        // The group creator can read requests for their groups. The requester can read their own requests.
+        allow read: if request.auth != null && (resource.data.groupCreatorUid == request.auth.uid || resource.data.requesterUid == request.auth.uid);
+        // The group creator can update the status (approve/decline).
+        allow update: if request.auth != null && request.resource.data.groupCreatorUid == request.auth.uid;
+        allow delete: if false;
+    }
   }
 }

@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { ArrowLeft, Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent, Users } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -17,21 +17,60 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '../ui/sidebar';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore, useCollection } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
-import { mockNotifications } from '@/lib/mock-data';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
+import { collection, query, where } from 'firebase/firestore';
+import type { GroupJoinRequest, Notification } from '@/lib/types';
+import { Skeleton } from '../ui/skeleton';
+
+const formatDate = (date: any) => {
+    if (!date) return '';
+    if (date.toDate) {
+        return date.toDate().toLocaleDateString();
+    }
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString();
+};
+
 
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const auth = useAuth();
   const { user } = useUser();
-  const unreadCount = mockNotifications.filter((n) => !n.read).length;
+  const firestore = useFirestore();
+
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');
+
+  const joinRequestsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(
+      collection(firestore, 'joinRequests'),
+      where('groupCreatorUid', '==', user.uid),
+      where('status', '==', 'pending')
+    );
+  }, [user, firestore]);
+
+  const { data: joinRequests, loading: joinRequestsLoading } = useCollection<GroupJoinRequest>(joinRequestsQuery);
+
+  const notifications: Notification[] = useMemo(() => {
+    if (!joinRequests) return [];
+    return joinRequests.map(req => ({
+      id: req.id,
+      title: 'Group Join Request',
+      description: `${req.requesterName} wants to join "${req.groupName}".`,
+      date: req.createdAt,
+      read: false, // All pending requests are unread
+      actionUrl: '/groups'
+    }));
+  }, [joinRequests]);
+  
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const isDashboard = pathname === '/dashboard';
 
@@ -82,26 +121,38 @@ export function AppHeader() {
           {isClient && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  {unreadCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
+                 <Button variant="ghost" size="icon" className="relative">
+                  {joinRequestsLoading ? (
+                    <Skeleton className="h-5 w-5" />
+                  ) : (
+                    <>
+                      <Bell className="h-5 w-5" />
+                      {unreadCount > 0 && (
+                        <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
+                      )}
+                    </>
                   )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {mockNotifications.map((notification) => (
-                  <DropdownMenuItem key={notification.id} className="flex flex-col items-start gap-1">
-                    <div className="flex w-full items-center">
-                      <p className={`flex-1 font-medium ${notification.read ? '' : 'font-bold'}`}>{notification.title}</p>
-                      {!notification.read && <div className="h-2 w-2 rounded-full bg-primary ml-2" />}
-                    </div>
-                    <p className="text-xs text-muted-foreground">{notification.description}</p>
-                    <p className="text-xs text-muted-foreground/70">{new Date(notification.date).toLocaleDateString()}</p>
+                {notifications.length > 0 ? notifications.map((notification) => (
+                  <DropdownMenuItem key={notification.id} asChild className="flex flex-col items-start gap-1 cursor-pointer">
+                    <Link href={notification.actionUrl || '#'}>
+                      <div className="flex w-full items-center">
+                        <p className={`flex-1 font-medium ${notification.read ? '' : 'font-bold'}`}>{notification.title}</p>
+                        {!notification.read && <div className="h-2 w-2 rounded-full bg-primary ml-2" />}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{notification.description}</p>
+                      <p className="text-xs text-muted-foreground/70">{formatDate(notification.date)}</p>
+                    </Link>
                   </DropdownMenuItem>
-                ))}
+                )) : (
+                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                        You have no new notifications.
+                    </div>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}

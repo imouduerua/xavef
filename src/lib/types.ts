@@ -77,8 +77,9 @@ export interface Notification {
   id: string;
   title: string;
   description: string;
-  date: string;
+  date: any;
   read: boolean;
+  actionUrl?: string;
 }
 
 export interface ReferralCode {
@@ -112,4 +113,18 @@ export interface Group {
     status: GroupStatus;
     createdAt: any;
     startedAt?: any;
+}
+
+export type JoinRequestStatus = 'pending' | 'approved' | 'declined';
+
+export interface GroupJoinRequest {
+    id: string;
+    groupId: string;
+    groupName: string;
+    groupCreatorUid: string;
+    requesterUid: string;
+    requesterEmail: string;
+    requesterName: string;
+    status: JoinRequestStatus;
+    createdAt: any;
 }

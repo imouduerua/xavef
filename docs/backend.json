@@ -243,6 +243,22 @@
         "status": { "type": "string", "enum": ["forming", "active", "closed"], "description": "The current status of the group."}
       },
       "required": ["name", "contributionAmount", "contributionFrequency", "numberOfMembers", "creatorUid", "members", "status"]
+    },
+    "joinRequest": {
+        "title": "Group Join Request",
+        "description": "A request from a user to join a savings group.",
+        "type": "object",
+        "properties": {
+            "groupId": { "type": "string" },
+            "groupName": { "type": "string" },
+            "groupCreatorUid": { "type": "string" },
+            "requesterUid": { "type": "string" },
+            "requesterEmail": { "type": "string" },
+            "requesterName": { "type": "string" },
+            "status": { "type": "string", "enum": ["pending", "approved", "declined"] },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["groupId", "groupName", "groupCreatorUid", "requesterUid", "requesterEmail", "requesterName", "status", "createdAt"]
     }
   },
   "auth": {
@@ -284,6 +300,10 @@
     "/groups/{groupId}": {
         "schema": { "$ref": "#/entities/group" },
         "description": "Stores savings group information."
+    },
+    "/joinRequests/{requestId}": {
+        "schema": { "$ref": "#/entities/joinRequest" },
+        "description": "Stores requests from users to join savings groups."
     }
   }
 }

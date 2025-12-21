@@ -8,7 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
 import { Loader2, PlayCircle, UserPlus, Users } from 'lucide-react';
 import React from 'react';
-import { startGroup } from '@/app/(app)/groups/client-actions';
+import { startGroup, requestToJoinGroup } from '@/app/(app)/groups/client-actions';
 
 interface GroupCardProps {
   group: Group;
@@ -19,6 +19,7 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
   const { user } = useUser();
   const firestore = useFirestore();
   const [isStarting, setIsStarting] = React.useState(false);
+  const [isJoining, setIsJoining] = React.useState(false);
   
   const isGroupAdmin = user?.uid === group.creatorUid;
   const isGroupFull = group.members.length === group.numberOfMembers;
@@ -29,13 +30,30 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
       maximumFractionDigits: 2,
     })}`;
 
-  const handleRequestToJoin = () => {
-    // In a real application, this would trigger a Firestore write
-    // to a 'joinRequests' subcollection. For now, it's a placeholder.
-    toast({
-        title: "Feature Coming Soon!",
-        description: "The ability to request to join a group is not yet implemented.",
-    });
+  const handleRequestToJoin = async () => {
+    if (!user || !firestore) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: "You must be logged in to join a group.",
+      });
+      return;
+    }
+    setIsJoining(true);
+    const result = await requestToJoinGroup(firestore, user, group);
+    if (result.success) {
+      toast({
+        title: "Request Sent!",
+        description: `Your request to join "${group.name}" has been sent to the group creator.`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Request Failed",
+        description: result.error,
+      });
+    }
+    setIsJoining(false);
   }
 
   const handleStartGroup = async () => {
@@ -81,9 +99,18 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
       }
       if (!isOwned) {
           return (
-             <Button className="w-full" onClick={handleRequestToJoin}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Request to Join
+             <Button className="w-full" onClick={handleRequestToJoin} disabled={isJoining}>
+                {isJoining ? (
+                   <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending Request...
+                   </>
+                ) : (
+                   <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Request to Join
+                   </>
+                )}
             </Button>
           )
       }

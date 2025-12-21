@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Copy } from 'lucide-react';
+import { Copy, Users } from 'lucide-react';
 import Link from 'next/link';
 import React, { Suspense, useMemo } from 'react';
 
@@ -15,10 +15,11 @@ import { useUserData } from '@/hooks/use-user-data';
 import { useUser, useCollection, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { AccountType, SavingGoal, Transaction } from '@/lib/types';
+import type { AccountType, SavingGoal, Transaction, GroupJoinRequest } from '@/lib/types';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { addFundsToGoal } from '../savings/client-actions';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 function DashboardContent() {
   const { user, loading: userLoading } = useUser();
@@ -39,8 +40,20 @@ function DashboardContent() {
     return query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc'));
   }, [user, firestore]);
 
+  const joinRequestsQuery = React.useMemo(() => {
+    if (!user) return null;
+    return query(
+      collection(firestore, 'joinRequests'),
+      where('groupCreatorUid', '==', user.uid),
+      where('status', '==', 'pending')
+    );
+  }, [user, firestore]);
+
+
   const { data: pendingTransactions, loading: pendingTransactionsLoading } = useCollection<Transaction>(pendingTransactionsQuery);
   const { data: goals, loading: goalsLoading } = useCollection<SavingGoal>(goalsQuery);
+  const { data: joinRequests, loading: joinRequestsLoading } = useCollection<GroupJoinRequest>(joinRequestsQuery);
+
 
   const pendingSolidaraDeposit = useMemo(
     () => pendingTransactions?.find(tx => tx.targetAccount === 'solidara'),
@@ -142,7 +155,7 @@ function DashboardContent() {
         </div>
   )
 
-  if (userLoading || userDataLoading || pendingTransactionsLoading || goalsLoading) {
+  if (userLoading || userDataLoading || pendingTransactionsLoading || goalsLoading || joinRequestsLoading) {
     return <PageSkeleton />
   }
 
@@ -176,6 +189,20 @@ function DashboardContent() {
                 </CardDescription>
             </CardHeader>
         </Card>
+
+        {joinRequests && joinRequests.length > 0 && (
+            <Alert variant="default" className="border-primary/50">
+                <Users className="h-4 w-4" />
+                <AlertTitle className="font-bold">New Group Join Requests</AlertTitle>
+                <AlertDescription>
+                    You have {joinRequests.length} new request{joinRequests.length > 1 ? 's' : ''} to join your groups.
+                    <Button asChild variant="link" className="p-0 pl-2 h-auto">
+                        <Link href="/groups">Manage Requests</Link>
+                    </Button>
+                </AlertDescription>
+            </Alert>
+        )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Your Xavef ID:</span>

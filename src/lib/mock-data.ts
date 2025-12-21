@@ -22,6 +22,7 @@ export const mockLoanAccount: LoanAccount = {
 export const mockTransactions: Transaction[] = [
   {
     id: "txn_1",
+    path: "",
     date: "2024-07-15",
     description: "Monthly Salary",
     type: "Deposit",
@@ -30,6 +31,7 @@ export const mockTransactions: Transaction[] = [
   },
   {
     id: "txn_2",
+    path: "",
     date: "2024-07-14",
     description: "Car Loan Payment",
     type: "Loan Payment",
@@ -38,6 +40,7 @@ export const mockTransactions: Transaction[] = [
   },
   {
     id: "txn_3",
+    path: "",
     date: "2024-07-12",
     description: "Grocery Store",
     type: "Withdrawal",
@@ -46,6 +49,7 @@ export const mockTransactions: Transaction[] = [
   },
   {
     id: "txn_4",
+    path: "",
     date: "2024-07-10",
     description: "ATM Withdrawal",
     type: "Withdrawal",
@@ -54,6 +58,7 @@ export const mockTransactions: Transaction[] = [
   },
   {
     id: "txn_5",
+    path: "",
     date: "2024-07-05",
     description: "Online Shopping",
     type: "Withdrawal",
@@ -62,6 +67,7 @@ export const mockTransactions: Transaction[] = [
   },
   {
     id: "txn_6",
+    path: "",
     date: "2024-07-01",
     description: "Monthly Interest",
     type: "Interest",
@@ -70,6 +76,7 @@ export const mockTransactions: Transaction[] = [
   },
   {
     id: "txn_7",
+    path: "",
     date: "2024-06-28",
     description: "Utility Bill",
     type: "Withdrawal",
@@ -78,6 +85,7 @@ export const mockTransactions: Transaction[] = [
   },
   {
     id: "txn_8",
+    path: "",
     date: "2024-06-15",
     description: "Monthly Salary",
     type: "Deposit",
