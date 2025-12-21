@@ -29,10 +29,10 @@ service cloud.firestore {
       // An authenticated user can read their own document.
       allow read: if request.auth != null && request.auth.uid == userId;
       
-      // A user can update their own data, except for the permission field.
+      // A user can update their own data, except for protected fields.
       // The super admin can update only the permission field.
       allow update: if (request.auth != null && request.auth.uid == userId && !('canGenerateReferralCode' in request.resource.data))
-      							|| (isAdmin() && request.auth.token.email == 'admin@xavef.com' && request.resource.data.keys().hasOnly(['canGenerateReferralCode']));
+      							|| (isAdmin() && request.auth.token.email == 'admin@xavef.com' && request.resource.data.keys().hasAny(['canGenerateReferralCode']));
 
 
       // Admins can read any user document.
