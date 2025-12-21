@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -8,6 +9,8 @@ import {
   FirestoreError,
 } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
+import { errorEmitter } from '../error-emitter';
+import { FirestorePermissionError } from '../errors';
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
@@ -49,12 +52,18 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       (err: FirestoreError) => {
         console.error('Error fetching collection:', err);
 
-        // Check for the specific "missing index" error
+        // Check for the specific "missing index" error first.
         if (err.code === 'failed-precondition' && err.message.includes('requires an index')) {
           const urlMatch = err.message.match(/https?:\/\/[^\s]+/);
           if (urlMatch) {
             setIndexCreationUrl(urlMatch[0]);
           }
+        } else if (err.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: memoizedQuery.path,
+                operation: 'list',
+            });
+            errorEmitter.emit('permission-error', permissionError);
         }
         
         setError(err);
