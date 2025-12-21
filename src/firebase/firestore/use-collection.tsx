@@ -8,7 +8,7 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
@@ -18,11 +18,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  // Memoize the query to prevent re-running the effect on every render
-  const memoizedQuery = useMemo(() => query, [query]);
-
   useEffect(() => {
-    if (!memoizedQuery) {
+    if (!query) {
       setData(null);
       setLoading(false);
       setError(null);
@@ -30,13 +27,12 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       return;
     }
 
-    // Reset state on new query
     setLoading(true);
     setError(null);
     setIndexCreationUrl(null);
 
     const unsubscribe = onSnapshot(
-      memoizedQuery,
+      query,
       (snapshot: QuerySnapshot<T>) => {
         const resultData = snapshot.docs.map((doc) => {
              const docData = doc.data();
@@ -52,7 +48,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       (err: FirestoreError) => {
         console.error('Error fetching collection:', err);
 
-        // Check for the specific "missing index" error first.
         if (err.code === 'failed-precondition' && err.message.includes('requires an index')) {
           const urlMatch = err.message.match(/https?:\/\/[^\s]+/);
           if (urlMatch) {
@@ -60,7 +55,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           }
         } else if (err.code === 'permission-denied') {
             const permissionError = new FirestorePermissionError({
-                path: memoizedQuery.path,
+                path: query.path,
                 operation: 'list',
             });
             errorEmitter.emit('permission-error', permissionError);
@@ -73,7 +68,9 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [memoizedQuery]);
+  // We remove the query from the dependency array as it can cause infinite loops if not memoized correctly upstream.
+  // The hook should re-run based on its parent component's lifecycle.
+  }, [query]);
 
   return { data, loading, error, indexCreationUrl };
 }
