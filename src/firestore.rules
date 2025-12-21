@@ -31,6 +31,8 @@ service cloud.firestore {
 
       allow read: if isOwner(userId) || isAdmin();
       
+      // Regular users can update their profile but not balances.
+      // Admins can only update balances.
       allow update: if (isOwner(userId) &&
                         request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
                         request.resource.data.annualBalance == resource.data.annualBalance)
@@ -48,6 +50,7 @@ service cloud.firestore {
       								&& request.resource.data.creatorUid == request.auth.uid
                       && canGenerateCode(request.auth.uid);
       
+      // A user can update a code to mark it as 'used' by them.
       allow update: if isOwner(request.resource.data.usedBy)
                      && request.resource.data.used == true
                      && resource.data.used == false;
@@ -75,7 +78,7 @@ service cloud.firestore {
 
     match /admins/{userId} {
       allow read, get: if request.auth != null;
-      // Only admins can manage the list of other admins
+      // Only the super admin can manage the list of other admins
       allow create, delete: if request.auth.token.email == 'admin@xavef.com';
       allow list, update: if false;
     }
