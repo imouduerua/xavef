@@ -49,7 +49,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         console.error('Error fetching collection:', err);
 
         if (err.code === 'failed-precondition' && err.message.includes('requires an index')) {
-          const urlMatch = err.message.match(/https?:\/\/[^\s]+/);
+          const urlMatch = err.message.match(/https?:\/\/console\.firebase\.google\.com\S+/);
           if (urlMatch) {
             setIndexCreationUrl(urlMatch[0]);
           }
