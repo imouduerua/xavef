@@ -19,9 +19,8 @@ service cloud.firestore {
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      allow read: if request.auth != null && request.auth.uid == userId;
-      // Admins can get, list, AND update user profiles (e.g., to update balances)
-      allow get, list, update: if isAdmin(); 
+      allow read, update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow get, list: if isAdmin(); 
       allow delete: if false;
     }
 
@@ -34,7 +33,8 @@ service cloud.firestore {
       allow update: if request.auth != null 
                      && request.resource.data.used == true
                      && resource.data.used == false
-                     && request.resource.data.usedBy == request.auth.uid;
+                     && "usedBy" in request.resource.data && request.resource.data.usedBy == request.auth.uid;
+
 
       allow delete: if false;
     }
