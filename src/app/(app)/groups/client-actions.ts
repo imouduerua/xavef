@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -17,6 +16,7 @@ import {
   runTransaction,
   writeBatch,
   increment,
+  Timestamp,
 } from 'firebase/firestore';
 import type { Group, GroupJoinRequest } from '@/lib/types';
 import type { User } from 'firebase/auth';
@@ -34,13 +34,12 @@ interface GroupData {
  * @returns The shuffled array.
  */
 function shuffleArray<T>(array: T[]): T[] {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
 }
-
 
 export async function createGroup(
   firestore: Firestore,
@@ -93,16 +92,19 @@ export async function startGroup(
 
     // 2. Create a notification for each member
     for (const memberId of groupData.members) {
-        const userNotificationsRef = collection(firestore, `users/${memberId}/notifications`);
-        const newNotification = {
-            userId: memberId,
-            title: "Group Started!",
-            description: `The savings group "${groupData.name}" has officially started.`,
-            createdAt: serverTimestamp(),
-            read: false,
-            actionUrl: `/groups/${groupId}`,
-        };
-        batch.set(doc(userNotificationsRef), newNotification);
+      const userNotificationsRef = collection(
+        firestore,
+        `users/${memberId}/notifications`
+      );
+      const newNotification = {
+        userId: memberId,
+        title: 'Group Started!',
+        description: `The savings group "${groupData.name}" has officially started.`,
+        createdAt: serverTimestamp(),
+        read: false,
+        actionUrl: `/groups/${groupId}`,
+      };
+      batch.set(doc(userNotificationsRef), newNotification);
     }
 
     // Commit the batch
@@ -146,7 +148,10 @@ export async function requestToJoinGroup(
         };
       }
       if (existingRequest.status === 'approved') {
-        return { success: false, error: 'You are already a member of this group.' };
+        return {
+          success: false,
+          error: 'You are already a member of this group.',
+        };
       }
     }
 
@@ -178,7 +183,9 @@ export async function respondToJoinRequest(
     await runTransaction(firestore, async (transaction) => {
       const requestSnap = await transaction.get(requestDocRef);
       if (!requestSnap.exists() || requestSnap.data().status !== 'pending') {
-        throw new Error('This join request is no longer valid or has already been actioned.');
+        throw new Error(
+          'This join request is no longer valid or has already been actioned.'
+        );
       }
 
       const requestData = requestSnap.data() as GroupJoinRequest;
@@ -206,21 +213,24 @@ export async function respondToJoinRequest(
         });
 
         // Create a notification for the accepted user
-        const userNotificationsRef = collection(firestore, `users/${requestData.requesterUid}/notifications`);
+        const userNotificationsRef = collection(
+          firestore,
+          `users/${requestData.requesterUid}/notifications`
+        );
         const newNotification = {
-            userId: requestData.requesterUid,
-            title: "You've been accepted!",
-            description: `You are now a member of the group "${requestData.groupName}".`,
-            createdAt: serverTimestamp(),
-            read: false,
-            actionUrl: `/groups/${requestData.groupId}`,
+          userId: requestData.requesterUid,
+          title: "You've been accepted!",
+          description: `You are now a member of the group "${requestData.groupName}".`,
+          createdAt: serverTimestamp(),
+          read: false,
+          actionUrl: `/groups/${requestData.groupId}`,
         };
         transaction.set(doc(userNotificationsRef), newNotification);
       }
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: any)
     console.error('Error responding to join request:', error);
     return {
       success: false,
@@ -237,22 +247,24 @@ export async function distributeGroupFunds(
 ): Promise<{ success: boolean; error?: string }> {
   const groupRef = doc(firestore, 'groups', groupId);
   const recipientUserRef = doc(firestore, 'users', recipientUid);
-  
+
   try {
     await runTransaction(firestore, async (transaction) => {
       const groupSnap = await transaction.get(groupRef);
-      if (!groupSnap.exists()) throw new Error("Group not found.");
+      if (!groupSnap.exists()) throw new Error('Group not found.');
 
       const groupData = groupSnap.data();
       const currentWeek = groupData.currentCollectionWeek || 1;
 
       // 1. Credit the recipient's Solidara balance
       transaction.update(recipientUserRef, {
-        solidaraBalance: increment(totalPurse)
+        solidaraBalance: increment(totalPurse),
       });
-      
+
       // 2. Create a "Group Payout" transaction for the recipient
-      const recipientTxRef = doc(collection(firestore, `users/${recipientUid}/transactions`));
+      const recipientTxRef = doc(
+        collection(firestore, `users/${recipientUid}/transactions`)
+      );
       transaction.set(recipientTxRef, {
         amount: totalPurse,
         date: serverTimestamp(),
@@ -270,15 +282,21 @@ export async function distributeGroupFunds(
 
       // 4. Create notifications for all members
       for (const memberId of groupData.members) {
-        const notificationRef = doc(collection(firestore, `users/${memberId}/notifications`));
-        const recipientName = (await getDoc(recipientUserRef)).data()?.displayName || 'A member';
+        const notificationRef = doc(
+          collection(firestore, `users/${memberId}/notifications`)
+        );
+        const recipientDoc = await transaction.get(recipientUserRef);
+        const recipientName =
+          recipientDoc.data()?.displayName || 'A member';
         transaction.set(notificationRef, {
           userId: memberId,
           title: `Week ${currentWeek} Payout Complete!`,
-          description: `${recipientName} has received the Week ${currentWeek} payout of ₦${totalPurse.toFixed(2)} from group "${groupData.name}".`,
+          description: `${recipientName} has received the Week ${currentWeek} payout of ₦${totalPurse.toFixed(
+            2
+          )} from group "${groupData.name}".`,
           createdAt: serverTimestamp(),
           read: false,
-          actionUrl: `/groups/${groupId}`
+          actionUrl: `/groups/${groupId}`,
         });
       }
     });
@@ -286,6 +304,93 @@ export async function distributeGroupFunds(
     return { success: true };
   } catch (error: any) {
     console.error('Error distributing group funds:', error);
-    return { success: false, error: error.message || 'Failed to distribute funds.' };
+    return {
+      success: false,
+      error: error.message || 'Failed to distribute funds.',
+    };
+  }
+}
+
+export async function contributeToGroupFromSavings(
+  firestore: Firestore,
+  userId: string,
+  groupId: string
+): Promise<{ success: boolean; error?: string }> {
+  const groupRef = doc(firestore, 'groups', groupId);
+  const userRef = doc(firestore, 'users', userId);
+  const userTransactionsRef = collection(userRef, 'transactions');
+
+  try {
+    await runTransaction(firestore, async (transaction) => {
+      const groupSnap = await transaction.get(groupRef);
+      const userSnap = await transaction.get(userRef);
+
+      if (!groupSnap.exists()) throw new Error('Group not found.');
+      if (!userSnap.exists()) throw new Error('User not found.');
+
+      const group = groupSnap.data() as Group;
+      const user = userSnap.data();
+
+      // Check if group is active
+      if (group.status !== 'active') {
+        throw new Error('This group is not active.');
+      }
+
+      // Check user balance
+      if (user.solidaraBalance < group.contributionAmount) {
+        throw new Error('Insufficient Solidara balance to make contribution.');
+      }
+
+      // Determine the start and end of the current collection week
+      if (!group.startedAt) throw new Error('Group start date is not set.');
+      const startDate = group.startedAt.toDate();
+      const currentWeek = group.currentCollectionWeek || 1;
+      const weekOffset = (currentWeek - 1) * 7;
+      const weekStart = new Date(startDate);
+      weekStart.setDate(weekStart.getDate() + weekOffset);
+      weekStart.setHours(0, 0, 0, 0);
+
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+
+      // Check if the user has already contributed this week
+      const weeklyContributionQuery = query(
+        userTransactionsRef,
+        where('groupId', '==', groupId),
+        where('type', '==', 'Group Contribution'),
+        where('date', '>=', Timestamp.fromDate(weekStart)),
+        where('date', '<', Timestamp.fromDate(weekEnd)),
+        limit(1)
+      );
+
+      const existingContributionSnap = await getDocs(weeklyContributionQuery);
+      if (!existingContributionSnap.empty) {
+        throw new Error('You have already contributed for this week.');
+      }
+
+      // 1. Debit the user's Solidara balance
+      transaction.update(userRef, {
+        solidaraBalance: increment(-group.contributionAmount),
+      });
+
+      // 2. Create a "Group Contribution" transaction for the user
+      const newTxRef = doc(userTransactionsRef);
+      transaction.set(newTxRef, {
+        amount: group.contributionAmount, // Positive amount for the contribution itself
+        date: serverTimestamp(),
+        description: `Weekly contribution to group "${group.name}"`,
+        type: 'Group Contribution',
+        status: 'Completed',
+        groupId: groupId,
+      });
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error contributing to group from savings:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to make contribution.',
+    };
   }
 }

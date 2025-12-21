@@ -42,18 +42,15 @@ const depositSchema = z.object({
     .number()
     .positive('Amount must be a positive number.')
     .min(1, 'Deposit amount must be at least ₦1.00'),
-  targetAccount: z.enum(['solidara', 'annual', 'group']),
-  groupId: z.string().optional(),
+  targetAccount: z.enum(['solidara', 'annual']),
 });
 
 type FormValues = z.infer<typeof depositSchema>;
 
 interface DepositDialogProps {
   accountName: string;
-  targetAccount: AccountType | 'group';
+  targetAccount: AccountType;
   children: React.ReactNode;
-  groupId?: string; // Optional groupId for group contributions
-  contributionAmount?: number; // Optional fixed amount for group contributions
 }
 
 const MAX_FILE_SIZE_MB = 1;
@@ -63,8 +60,6 @@ export function DepositDialog({
     accountName, 
     targetAccount, 
     children, 
-    groupId,
-    contributionAmount
 }: DepositDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [step, setStep] = React.useState<'amount' | 'details'>('amount');
@@ -73,14 +68,12 @@ export function DepositDialog({
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const isGroupContribution = targetAccount === 'group';
 
   const form = useForm<FormValues>({
     resolver: zodResolver(depositSchema),
     defaultValues: {
-      amount: contributionAmount || ('' as any),
+      amount: '' as any,
       targetAccount: targetAccount,
-      groupId: groupId,
     },
   });
 
@@ -151,12 +144,11 @@ export function DepositDialog({
       const newTransaction = {
         date: Timestamp.now(),
         amount: amountAsNumber,
-        description: isGroupContribution ? `Contribution to ${accountName}` : `Deposit to ${accountName}`,
+        description: `Deposit to ${accountName}`,
         status: 'Pending' as const,
-        type: isGroupContribution ? 'Group Contribution' as const : 'Deposit' as const,
+        type: 'Deposit' as const,
         targetAccount: values.targetAccount,
         proofOfPaymentUrl: proofOfPayment.dataUrl,
-        ...(isGroupContribution && { groupId: values.groupId }),
       };
       
       await addDoc(transactionRef, newTransaction);
@@ -184,15 +176,15 @@ export function DepositDialog({
     setIsOpen(open);
     if (!open) {
       setTimeout(() => {
-        reset({ amount: contributionAmount || ('' as any) });
+        reset({ amount: '' as any });
         setStep('amount');
         setProofOfPayment({ file: null, dataUrl: null });
       }, 300);
     }
   };
   
-  const dialogTitle = isGroupContribution ? `Contribute to ${accountName}` : 'Make a Deposit';
-  const amountLabel = isGroupContribution ? 'Contribution Amount' : 'Amount';
+  const dialogTitle = 'Make a Deposit';
+  const amountLabel = 'Amount';
 
 
   return (
@@ -203,9 +195,7 @@ export function DepositDialog({
           <DialogTitle>{dialogTitle}</DialogTitle>
            {step === 'amount' && (
             <DialogDescription>
-              {isGroupContribution
-                ? `The weekly contribution amount is fixed. Proceed to make your payment.`
-                : `Enter the amount you wish to deposit. You will be shown bank transfer details in the next step.`}
+              Enter the amount you wish to deposit. You will be shown bank transfer details in the next step.
             </DialogDescription>
           )}
            {step === 'details' && (
@@ -235,7 +225,6 @@ export function DepositDialog({
                               placeholder="0.00"
                               className="pl-8"
                               {...field}
-                              disabled={isGroupContribution}
                             />
                           </div>
                         </FormControl>

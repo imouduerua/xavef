@@ -21,12 +21,12 @@ service cloud.firestore {
 
       // A user can update their profile, but NOT their balance or sensitive fields managed by admin.
       allow update: if request.auth.uid == userId &&
-                     !('solidaraBalance' in request.resource.data) &&
-                     !('annualBalance' in request.resource.data);
+                     !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                     !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys());
       
       // An admin can ONLY update the balances or specific fields
       allow update: if isAdmin() &&
-                  request.resource.data.keys().hasAny(['solidaraBalance', 'annualBalance']);
+                  request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
 
       allow delete: if false;
     }

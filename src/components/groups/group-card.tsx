@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import Link from 'next/link';
-import { DepositDialog } from '../dashboard/deposit-dialog';
+import { ContributeDialog } from './contribute-dialog';
 
 
 interface GroupCardProps {
@@ -102,17 +102,12 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
                     <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
             </Button>
-            <DepositDialog
-              accountName={group.name}
-              targetAccount="group"
-              groupId={group.id}
-              contributionAmount={group.contributionAmount}
-            >
-              <Button className="flex-1">
-                <HandCoins className="mr-2 h-4 w-4" />
-                Contribute
-              </Button>
-            </DepositDialog>
+            <ContributeDialog group={group}>
+                 <Button className="flex-1">
+                    <HandCoins className="mr-2 h-4 w-4" />
+                    Contribute
+                </Button>
+            </ContributeDialog>
           </div>
         )
       }

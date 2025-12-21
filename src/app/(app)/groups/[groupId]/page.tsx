@@ -18,7 +18,7 @@ import { distributeGroupFunds } from '../client-actions';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
-import { DepositDialog } from '@/components/dashboard/deposit-dialog';
+import { ContributeDialog } from '@/components/groups/contribute-dialog';
 
 
 function PageSkeleton() {
@@ -218,17 +218,12 @@ export default function GroupDetailsPage() {
                     
                     <div className="flex justify-end gap-2">
                         {isUserMember && group.status === 'active' && (
-                            <DepositDialog
-                                accountName={group.name}
-                                targetAccount="group"
-                                groupId={group.id}
-                                contributionAmount={group.contributionAmount}
-                            >
-                                <Button>
+                           <ContributeDialog group={group}>
+                                 <Button>
                                     <HandCoins className="mr-2 h-4 w-4" />
                                     Contribute to Group
                                 </Button>
-                            </DepositDialog>
+                           </ContributeDialog>
                         )}
                         {isGroupCreator && group.status === 'active' && (
                              <AlertDialog>
