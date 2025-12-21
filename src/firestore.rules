@@ -5,9 +5,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      // An admin is any user whose UID exists in the /admins collection.
-      // This now becomes the single source of truth for admin status.
-      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return request.auth.token.email == 'admin@xavef.com' || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
     
     function canGenerateCode(userId) {
@@ -27,18 +25,14 @@ service cloud.firestore {
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      // An authenticated user can read their own document.
-      allow read: if request.auth != null && request.auth.uid == userId;
+      // An authenticated user can read their own document. Admins can read any user document.
+      allow read, get, list: if (request.auth != null && request.auth.uid == userId) || isAdmin();
       
       // An authenticated user can update their own document, but not protected fields.
-      // Admins can update a user's document based on the more specific rule below.
-      // This rule is now more secure and clear.
-      allow update: if request.auth.uid == userId &&
+      allow update: if (request.auth.uid == userId &&
           request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
-          request.resource.data.annualBalance == resource.data.annualBalance;
+          request.resource.data.annualBalance == resource.data.annualBalance);
 
-      // Admins can read any user document.
-      allow get, list: if isAdmin(); 
       // No one can delete user documents for now.
       allow delete: if false;
     }
