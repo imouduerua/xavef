@@ -10,3 +10,5 @@ export const firebaseConfig = {
   "messagingSenderId": "571984618219"
 };
 
+// Add project ID to environment variables for server-side access if needed
+process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = firebaseConfig.projectId;

@@ -3,6 +3,8 @@
 
 import { doc, getDoc, updateDoc, writeBatch, Firestore, increment } from 'firebase/firestore';
 import type { Transaction, UserData } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 /**
  * Updates the status of a transaction and, if approved, the user's balance.
@@ -53,16 +55,43 @@ export async function updateTransactionStatus(
          
          const balanceFieldToUpdate = `${targetAccount}Balance` as keyof UserData;
          
-         batch.update(userRef, { [balanceFieldToUpdate]: increment(amount) });
+         const balanceUpdate = { [balanceFieldToUpdate]: increment(amount) };
+         batch.update(userRef, balanceUpdate);
        }
     }
 
+    await batch.commit().catch(async (serverError) => {
+        // This is the new, critical error handling part.
+        const txUpdateError = new FirestorePermissionError({
+            path: txRef.path,
+            operation: 'update',
+            requestResourceData: { status: newStatus },
+        });
+        errorEmitter.emit('permission-error', txUpdateError);
+        
+        // We assume if the batch fails, it's the user doc update that's the issue.
+        if (newStatus === 'Completed') {
+            const userUpdateError = new FirestorePermissionError({
+                path: userRef.path,
+                operation: 'update',
+                requestResourceData: { balance: 'increment' }
+            });
+             errorEmitter.emit('permission-error', userUpdateError);
+        }
 
-    await batch.commit();
+        // We re-throw the original error to be caught by the outer block
+        // so the UI can still show a generic failure message.
+        throw serverError;
+    });
 
     return { success: true };
   } catch (error: any) {
     console.error('[updateTransactionStatus] Error:', error);
-    return { success: false, error: error.message || 'An unknown error occurred.' };
+    // Don't emit another error here, let the catch block in `commit` handle it.
+    if (!(error instanceof FirestorePermissionError)) {
+        return { success: false, error: error.message || 'An unknown error occurred.' };
+    }
+    // Error was already emitted, so we just return the failure state.
+    return { success: false, error: error.message };
   }
 }
