@@ -32,16 +32,21 @@ service cloud.firestore {
       // A user can update their own data, except for protected fields.
       // The super admin can update only the permission field.
       allow update: if 
-        // Rule for regular user updates: User can update their profile, but cannot change protected fields.
-        (request.auth.uid == userId &&
-          !('solidaraBalance' in request.resource.data) &&
-          !('annualBalance' in request.resource.data) &&
-          !('canGenerateReferralCode' in request.resource.data)
-        ) ||
-        // Rule for super admin permission updates: Admin can ONLY change the `canGenerateReferralCode` field.
-        (request.auth.token.email == 'admin@xavef.com' &&
-          request.resource.data.keys().hasOnly(['canGenerateReferralCode'])
-        );
+          // Rule for regular user updates: User can update their own profile, but cannot change protected fields.
+          (request.auth.uid == userId &&
+            request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
+            request.resource.data.annualBalance == resource.data.annualBalance &&
+            request.resource.data.canGenerateReferralCode == resource.data.canGenerateReferralCode
+          ) ||
+          // Rule for super admin permission updates: Admin can ONLY change the `canGenerateReferralCode` field.
+          (request.auth.token.email == 'admin@xavef.com' &&
+            request.resource.data.uid == resource.data.uid &&
+            request.resource.data.email == resource.data.email &&
+            request.resource.data.firstName == resource.data.firstName &&
+            request.resource.data.lastName == resource.data.lastName &&
+            request.resource.data.solidaraBalance == resource.data.solidaraBalance &&
+            request.resource.data.annualBalance == resource.data.annualBalance
+          );
 
 
       // Admins can read any user document.
