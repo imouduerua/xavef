@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +8,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { makeTransfer, findUserByXavefId } from '@/app/(app)/dashboard/actions';
+import { makeTransfer } from '@/app/(app)/dashboard/actions';
+import { findUserByXavefIdClient } from '@/app/(app)/dashboard/client-actions';
 import type { AccountType, SavingGoal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,7 +42,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { useDebounce } from 'use-debounce';
 
 const formSchema = z.discriminatedUnion('transferType', [
@@ -84,6 +86,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
     'toSelf'
   );
   const { user } = useUser();
+  const firestore = useFirestore();
   const [recipientName, setRecipientName] = useState<string | null>(null);
   const [isCheckingRecipient, setIsCheckingRecipient] = useState(false);
 
@@ -103,19 +106,19 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
   const [debouncedRecipientId] = useDebounce(recipientIdValue, 500);
 
   const checkRecipient = useCallback(async (id: string) => {
-    if (!id || !user) {
+    if (!id || !user || !firestore) {
         setRecipientName(null);
         return;
     }
     setIsCheckingRecipient(true);
-    const result = await findUserByXavefId(id, user.uid);
+    const result = await findUserByXavefIdClient(firestore, id, user.uid);
     if (result.success && result.name) {
         setRecipientName(result.name);
     } else {
         setRecipientName(null);
     }
     setIsCheckingRecipient(false);
-  }, [user]);
+  }, [user, firestore]);
 
   useEffect(() => {
     if (debouncedRecipientId) {

@@ -15,7 +15,7 @@ import {
     documentId,
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
-import type { ReferralCode } from "@/lib/types";
+import type { ReferralCode, UserData } from "@/lib/types";
 
 async function generateUniqueXavefId(firestore: Firestore): Promise<string> {
     let xavefId;
@@ -38,6 +38,48 @@ interface CreateProfileData {
     email: string;
     referralCode: string;
 }
+
+export async function findUserByXavefIdClient(firestore: Firestore, xavefId: string, senderUid: string): Promise<{ success: boolean; name?: string; error?: string }> {
+    if (!xavefId) {
+        return { success: false, error: 'Xavef ID is required.' };
+    }
+     if (!senderUid) {
+        return { success: false, error: 'Sender not identified.' };
+    }
+
+    try {
+        const usersRef = collection(firestore, 'users');
+        const q = query(
+            usersRef, 
+            where('xavefId', '==', xavefId), 
+            where(documentId(), '!=', senderUid),
+            limit(1)
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return { success: false, error: 'User not found.' };
+        }
+
+        const userData = querySnapshot.docs[0].data() as UserData;
+        
+        const fullName = (userData.firstName && userData.lastName) 
+            ? `${userData.firstName} ${userData.lastName}`.trim()
+            : userData.displayName;
+        
+        if (!fullName) {
+             return { success: false, error: 'User name not available.' };
+        }
+        
+        return { success: true, name: fullName };
+
+    } catch (error) {
+        console.error('Error finding user by Xavef ID:', error);
+        return { success: false, error: 'An unexpected error occurred.' };
+    }
+}
+
 
 export async function createUserProfile(
     firestore: Firestore,
