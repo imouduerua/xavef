@@ -14,6 +14,7 @@ import {
     limit,
     documentId,
     increment,
+    addDoc,
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
 import type { ReferralCode, UserData } from "@/lib/types";
@@ -100,19 +101,15 @@ export async function createUserProfile(
                 limit(1)
             );
             
-            // Note: getDocs cannot be used inside a transaction's read phase if it's not reading from the transaction.
-            // However, for this check, we perform it outside the main atomic write operations. This is a common pattern.
             const referralQuerySnapshot = await getDocs(referralQuery);
             
             if (referralQuerySnapshot.empty) {
-                 // By returning a specific object, we can provide a clean error to the caller.
                  return { success: false, error: "The provided referral code is invalid." };
             }
 
             const referralDoc = referralQuerySnapshot.docs[0];
             const referralData = referralDoc.data() as ReferralCode;
             
-            // 2. Check if the code has already been used.
             if (referralData.used) {
                 return { success: false, error: "The provided referral code has already been used." };
             }
@@ -140,10 +137,8 @@ export async function createUserProfile(
                 bankAccounts: [],
             };
 
-            // 3. Create the user's profile document
             transaction.set(userDocRef, newUserProfile);
 
-            // 4. Create default saving goals
             const goalsCollectionRef = collection(firestore, `users/${user.uid}/goals`);
             const defaultGoals = [
                 { name: 'House Rent', targetAmount: 0, emoji: '🏠' },
@@ -162,18 +157,15 @@ export async function createUserProfile(
                 });
             }
 
-            // 5. Mark the referral code as used
             transaction.update(referralDoc.ref, { 
                 used: true, 
                 usedBy: user.uid, 
                 usedAt: serverTimestamp() 
             });
             
-            // Return a success indicator from the transaction
             return { success: true };
         });
         
-        // After the transaction, check the result and return it.
         if (!transactionResult.success) {
             return { success: false, error: transactionResult.error };
         }
@@ -182,8 +174,6 @@ export async function createUserProfile(
 
     } catch (error: any) {
         console.error("[createUserProfile] Error during profile creation transaction:", error);
-        // This will now only catch unexpected transaction failures (e.g. network issues, security rules),
-        // not our validation logic.
         return { success: false, error: `An unexpected error occurred during profile creation.` };
     }
 }
@@ -192,87 +182,40 @@ export async function createUserProfile(
 export async function makeTransferClient(firestore: Firestore, data: {
   senderUid: string;
   recipientXavefId: string;
+  recipientName: string;
   amount: number;
 }): Promise<{ success: boolean; error?: string }> {
   
-    const { senderUid, recipientXavefId, amount } = data;
+    const { senderUid, recipientXavefId, recipientName, amount } = data;
 
     if (amount <= 0) {
         return { success: false, error: 'Transfer amount must be positive.' };
     }
 
     try {
-        // Find recipient by xavefId
-        const usersRef = collection(firestore, 'users');
-        const recipientQuery = query(usersRef, where('xavefId', '==', recipientXavefId), where(documentId(), '!=', senderUid));
-        const recipientSnapshot = await getDocs(recipientQuery);
-
-        if (recipientSnapshot.empty) {
-            return { success: false, error: 'Recipient with that Xavef ID not found.' };
+        const senderRef = doc(firestore, 'users', senderUid);
+        const senderDoc = await getDoc(senderRef);
+        if (!senderDoc.exists() || senderDoc.data().solidaraBalance < amount) {
+             return { success: false, error: 'Insufficient funds.' };
         }
 
-        const recipient = recipientSnapshot.docs[0].data() as UserData;
-        const recipientUid = recipientSnapshot.docs[0].id;
+        // Create a pending transaction for the sender. This will be approved by an admin.
+        const senderTxRef = collection(firestore, `users/${senderUid}/transactions`);
+        const newTransaction = {
+            amount: -amount, // Store as a negative value for the sender
+            date: serverTimestamp(),
+            description: `Transfer to ${recipientName} (${recipientXavefId})`,
+            type: 'User Transfer' as const,
+            status: 'Pending' as const,
+            targetAccount: 'solidara' as const,
+        };
         
-        const senderRef = doc(firestore, 'users', senderUid);
-        const recipientRef = doc(firestore, 'users', recipientUid);
+        await addDoc(senderTxRef, newTransaction);
         
-        await runTransaction(firestore, async (transaction) => {
-            const senderDoc = await transaction.get(senderRef);
-            if (!senderDoc.exists()) {
-                throw new Error('Sender not found.');
-            }
-
-            const senderData = senderDoc.data() as UserData;
-            if (senderData.solidaraBalance < amount) {
-                throw new Error('Insufficient funds.');
-            }
-            
-            // 1. Debit the sender
-            transaction.update(senderRef, { solidaraBalance: increment(-amount) });
-
-            // 2. Credit the recipient
-            transaction.update(recipientRef, { solidaraBalance: increment(amount) });
-            
-            const timestamp = serverTimestamp();
-
-            // 3. Create sender's transaction record
-            const senderTxRef = doc(collection(senderRef, 'transactions'));
-            transaction.set(senderTxRef, {
-                amount: -amount,
-                date: timestamp,
-                description: `Transfer to ${recipient.displayName || 'user'} (${recipientXavefId})`,
-                type: 'User Transfer',
-                status: 'Completed',
-                targetAccount: 'solidara'
-            });
-
-            // 4. Create recipient's transaction record
-            const recipientTxRef = doc(collection(recipientRef, 'transactions'));
-            transaction.set(recipientTxRef, {
-                amount: amount,
-                date: timestamp,
-                description: `Transfer from ${senderData.displayName || 'user'}`,
-                type: 'User Transfer',
-                status: 'Completed',
-                targetAccount: 'solidara'
-            });
-
-            // 5. (Optional but good practice) Create a root-level transfer record
-            const transferRecordRef = doc(collection(firestore, 'transfers'));
-            transaction.set(transferRecordRef, {
-                senderUid,
-                recipientUid,
-                amount,
-                createdAt: timestamp,
-                status: 'completed'
-            });
-        });
-
         return { success: true };
 
     } catch (error: any) {
-        console.error('Error during user transfer:', error);
+        console.error('Error initiating user transfer:', error);
         return { success: false, error: error.message || 'An unexpected error occurred during the transfer.' };
     }
 }

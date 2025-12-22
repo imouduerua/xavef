@@ -28,6 +28,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
@@ -169,14 +170,15 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
       const result = await makeTransferClient(firestore, {
         senderUid: user.uid,
         recipientXavefId: values.recipientId,
+        recipientName: recipientName,
         amount: values.amount,
       });
       if (result.success) {
         toast({
-          title: 'Transfer Successful!',
-          description: `You sent ₦${values.amount.toFixed(
+          title: 'Transfer Request Submitted',
+          description: `Your transfer of ₦${values.amount.toFixed(
             2
-          )} to ${recipientName}.`,
+          )} to ${recipientName} is pending admin approval.`,
         });
         setIsOpen(false);
       } else {
@@ -205,7 +207,6 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (!open) {
-      // Reset form state on close
        handleTabChange('toSelf');
     }
   };
@@ -351,9 +352,9 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                     </FormItem>
                   )}
                 />
-                 <p className="text-sm text-muted-foreground">
+                 <FormDescription>
                     From Solidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
-                 </p>
+                 </FormDescription>
               </TabsContent>
             </Tabs>
             <DialogFooter className="gap-2 sm:justify-end pt-4">
@@ -366,7 +367,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
+                    Submitting...
                   </>
                 ) : (
                   'Submit Transfer'
