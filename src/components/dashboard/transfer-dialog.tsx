@@ -39,6 +39,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
+import { useUser } from '@/firebase';
 
 const formSchema = z.discriminatedUnion('transferType', [
   z.object({
@@ -80,6 +81,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
   const [activeTab, setActiveTab] = React.useState<'toSelf' | 'toOther'>(
     'toSelf'
   );
+  const { user } = useUser();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -91,10 +93,18 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
     },
   });
 
-  const { formState: { isSubmitting }, reset } = form;
+  const { formState: { isSubmitting }, reset, trigger, getValues } = form;
 
   async function onSubmit(values: FormValues) {
     if (values.transferType === 'toSelf') {
+      if (values.amount > balances.solidara) {
+         toast({
+            variant: "destructive",
+            title: "Transfer Failed",
+            description: "Insufficient Solidara balance.",
+        });
+        return;
+      }
       const success = await onSelfTransfer(
         values.amount,
         values.fromAccount,
@@ -104,8 +114,21 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
         setIsOpen(false);
       }
     } else if (values.transferType === 'toOther') {
+       if (!user) {
+         toast({ variant: 'destructive', title: 'Not Authenticated' });
+         return;
+      }
+       if (values.amount > balances.solidara) {
+         toast({
+            variant: "destructive",
+            title: "Transfer Failed",
+            description: "Insufficient Solidara balance.",
+        });
+        return;
+      }
       const result = await makeTransfer({
-        recipientId: values.recipientId,
+        senderUid: user.uid,
+        recipientXavefId: values.recipientId,
         amount: values.amount,
       });
       if (result.success) {
@@ -207,7 +230,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                         </FormControl>
                         <SelectContent>
                             <SelectItem value="solidara">
-                                Savings (Olidara) (Balance: ₦{balances.solidara.toFixed(2)})
+                                Solidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
                             </SelectItem>
                              <SelectItem value="annual" disabled>
                                 Annual Savings (Balance: ₦{balances.annual.toFixed(2)})
@@ -276,6 +299,9 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                            <Input type="number" placeholder="0.00" className="pl-8" {...field} />
                         </div>
                       </FormControl>
+                       <FormDescription>
+                        From Solidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -305,3 +331,5 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
     </Dialog>
   );
 }
+
+    

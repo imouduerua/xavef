@@ -48,7 +48,7 @@ export interface LoanAccount {
 }
 
 export type AccountType = 'solidara' | 'annual';
-export type TransactionType = "Deposit" | "Withdrawal" | "Loan Payment" | "Interest" | "Group Contribution" | "Group Payout";
+export type TransactionType = "Deposit" | "Withdrawal" | "Loan Payment" | "Interest" | "Group Contribution" | "Group Payout" | "User Transfer";
 export type TransactionStatus = "Completed" | "Pending" | "Failed";
 
 export interface Transaction {
@@ -71,6 +71,15 @@ export interface TransactionWithUserDetails extends Transaction {
   userId: string;
   userEmail: string;
   xavefId: string;
+}
+
+export interface Transfer {
+    id: string;
+    senderUid: string;
+    recipientUid: string;
+    amount: number;
+    createdAt: any;
+    status: 'completed';
 }
 
 
@@ -132,3 +141,5 @@ export interface GroupJoinRequest {
     status: JoinRequestStatus;
     createdAt: any;
 }
+
+    
