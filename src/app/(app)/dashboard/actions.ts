@@ -51,9 +51,14 @@ export async function findUserByXavefId(xavefId: string, senderUid: string): Pro
         }
 
         const userData = querySnapshot.docs[0].data() as UserData;
+        
         const fullName = (userData.firstName && userData.lastName) 
             ? `${userData.firstName} ${userData.lastName}`.trim()
             : userData.displayName;
+        
+        if (!fullName) {
+             return { success: false, error: 'User name not available.' };
+        }
         
         return { success: true, name: fullName };
 
