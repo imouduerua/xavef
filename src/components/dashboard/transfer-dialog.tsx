@@ -8,8 +8,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { makeTransfer } from '@/app/(app)/dashboard/actions';
-import { findUserByXavefIdClient } from '@/app/(app)/dashboard/client-actions';
+import { findUserByXavefIdClient, makeTransferClient } from '@/app/(app)/dashboard/client-actions';
 import type { AccountType, SavingGoal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,7 +24,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -148,7 +146,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
         setIsOpen(false);
       }
     } else if (values.transferType === 'toOther') {
-       if (!user) {
+       if (!user || !firestore) {
          toast({ variant: 'destructive', title: 'Not Authenticated' });
          return;
       }
@@ -168,7 +166,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
         });
         return;
       }
-      const result = await makeTransfer({
+      const result = await makeTransferClient(firestore, {
         senderUid: user.uid,
         recipientXavefId: values.recipientId,
         amount: values.amount,
@@ -178,7 +176,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
           title: 'Transfer Successful!',
           description: `You sent ₦${values.amount.toFixed(
             2
-          )} to ID ${values.recipientId}.`,
+          )} to ${recipientName}.`,
         });
         setIsOpen(false);
       } else {
@@ -349,13 +347,13 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                            <Input type="number" placeholder="0.00" className="pl-8" {...field} />
                         </div>
                       </FormControl>
-                       <FormDescription>
-                        From Solidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
-                      </FormDescription>
-                      <FormMessage />
+                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                 <p className="text-sm text-muted-foreground">
+                    From Solidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
+                 </p>
               </TabsContent>
             </Tabs>
             <DialogFooter className="gap-2 sm:justify-end pt-4">
