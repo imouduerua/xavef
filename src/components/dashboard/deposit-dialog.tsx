@@ -113,15 +113,6 @@ export function DepositDialog({
       return;
     }
 
-    if (!proofOfPayment.dataUrl) {
-      toast({
-        variant: 'destructive',
-        title: 'Proof of Payment Required',
-        description: 'Please upload a receipt or screenshot to proceed.',
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     const values = getValues();
     const amountAsNumber = Number(values.amount);
@@ -146,7 +137,7 @@ export function DepositDialog({
         status: 'Pending' as const,
         type: 'Deposit' as const,
         targetAccount: targetAccount,
-        proofOfPaymentUrl: proofOfPayment.dataUrl,
+        proofOfPaymentUrl: proofOfPayment.dataUrl || '',
       };
       
       await addDoc(transactionRef, newTransaction);
@@ -246,7 +237,7 @@ export function DepositDialog({
               <div className='px-6 space-y-4'>
                   <BankDetailsCard amount={Number(getValues("amount"))} />
                     <FormItem>
-                      <FormLabel htmlFor="receipt">Proof of Payment</FormLabel>
+                      <FormLabel htmlFor="receipt">Proof of Payment (Optional)</FormLabel>
                       <FormControl>
                         <Input id="receipt" type="file" accept="image/*" onChange={handleFileChange} />
                       </FormControl>
@@ -268,7 +259,7 @@ export function DepositDialog({
               <Button type="button" variant="outline" onClick={() => setStep('amount')}>
                   Back
               </Button>
-              <Button type="button" onClick={handleConfirmTransfer} disabled={isSubmitting || !proofOfPayment.dataUrl}>
+              <Button type="button" onClick={handleConfirmTransfer} disabled={isSubmitting}>
                   {isSubmitting ? (
                       <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
