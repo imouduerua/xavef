@@ -2,12 +2,12 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Repeat } from 'lucide-react';
-import React from 'react';
+import { Loader2, Repeat, UserCheck } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { makeTransfer } from '@/app/(app)/dashboard/actions';
+import { makeTransfer, findUserByXavefId } from '@/app/(app)/dashboard/actions';
 import type { AccountType, SavingGoal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,6 +41,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
 import { useUser } from '@/firebase';
+import { useDebounce } from 'use-debounce';
 
 const formSchema = z.discriminatedUnion('transferType', [
   z.object({
@@ -83,6 +84,8 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
     'toSelf'
   );
   const { user } = useUser();
+  const [recipientName, setRecipientName] = useState<string | null>(null);
+  const [isCheckingRecipient, setIsCheckingRecipient] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -94,7 +97,34 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
     },
   });
 
-  const { formState: { isSubmitting }, reset, trigger, getValues } = form;
+  const { formState: { isSubmitting }, reset, getValues, watch } = form;
+
+  const recipientIdValue = watch('recipientId', '');
+  const [debouncedRecipientId] = useDebounce(recipientIdValue, 500);
+
+  const checkRecipient = useCallback(async (id: string) => {
+    if (!id || !user) {
+        setRecipientName(null);
+        return;
+    }
+    setIsCheckingRecipient(true);
+    const result = await findUserByXavefId(id, user.uid);
+    if (result.success && result.name) {
+        setRecipientName(result.name);
+    } else {
+        setRecipientName(null);
+    }
+    setIsCheckingRecipient(false);
+  }, [user]);
+
+  useEffect(() => {
+    if (debouncedRecipientId) {
+        checkRecipient(debouncedRecipientId);
+    } else {
+        setRecipientName(null);
+    }
+  }, [debouncedRecipientId, checkRecipient]);
+
 
   async function onSubmit(values: FormValues) {
     if (values.transferType === 'toSelf') {
@@ -124,6 +154,14 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
             variant: "destructive",
             title: "Transfer Failed",
             description: "Insufficient Solidara balance.",
+        });
+        return;
+      }
+      if (!recipientName) {
+         toast({
+            variant: "destructive",
+            title: "Invalid Recipient",
+            description: "Please enter a valid recipient Xavef ID.",
         });
         return;
       }
@@ -160,6 +198,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
         ? { fromAccount: 'solidara', toAccount: '' }
         : { recipientId: '' }),
     });
+    setRecipientName(null);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -284,6 +323,13 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                       <FormControl>
                         <Input placeholder="e.g., 5678" {...field} />
                       </FormControl>
+                       {isCheckingRecipient && <div className="text-sm text-muted-foreground flex items-center pt-2"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Checking...</div>}
+                       {recipientName && !isCheckingRecipient && (
+                          <div className="text-sm text-green-600 font-medium flex items-center pt-2">
+                            <UserCheck className="mr-2 h-4 w-4" />
+                            {recipientName}
+                          </div>
+                        )}
                       <FormMessage />
                     </FormItem>
                   )}

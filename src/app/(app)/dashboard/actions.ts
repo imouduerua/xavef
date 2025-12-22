@@ -10,7 +10,8 @@ import {
     runTransaction,
     doc,
     serverTimestamp,
-    increment
+    increment,
+    limit,
 } from 'firebase-admin/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -25,6 +26,40 @@ if (!getApps().length) {
 }
 
 const db = getFirestore();
+
+export async function findUserByXavefId(xavefId: string, senderUid: string): Promise<{ success: boolean; name?: string; error?: string }> {
+    if (!xavefId) {
+        return { success: false, error: 'Xavef ID is required.' };
+    }
+     if (!senderUid) {
+        return { success: false, error: 'Sender not identified.' };
+    }
+
+    try {
+        const usersRef = collection(db, 'users');
+        const q = query(
+            usersRef, 
+            where('xavefId', '==', xavefId), 
+            where('uid', '!=', senderUid), // Make sure user isn't trying to find themselves
+            limit(1)
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return { success: false, error: 'User not found.' };
+        }
+
+        const userData = querySnapshot.docs[0].data() as UserData;
+        
+        return { success: true, name: userData.displayName || `${userData.firstName} ${userData.lastName}` };
+
+    } catch (error) {
+        console.error('Error finding user by Xavef ID:', error);
+        return { success: false, error: 'An unexpected error occurred.' };
+    }
+}
+
 
 export async function makeTransfer(data: {
   senderUid: string;
@@ -119,5 +154,3 @@ export async function makeTransfer(data: {
         return { success: false, error: error.message || 'An unexpected error occurred during the transfer.' };
     }
 }
-
-    
