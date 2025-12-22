@@ -51,8 +51,11 @@ export async function findUserByXavefId(xavefId: string, senderUid: string): Pro
         }
 
         const userData = querySnapshot.docs[0].data() as UserData;
+        const fullName = (userData.firstName && userData.lastName) 
+            ? `${userData.firstName} ${userData.lastName}`.trim()
+            : userData.displayName;
         
-        return { success: true, name: userData.displayName || `${userData.firstName} ${userData.lastName}` };
+        return { success: true, name: fullName };
 
     } catch (error) {
         console.error('Error finding user by Xavef ID:', error);
