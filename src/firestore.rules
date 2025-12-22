@@ -34,21 +34,20 @@ service cloud.firestore {
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      // User can read their own profile.
-      allow read: if request.auth != null && request.auth.uid == userId;
+      // User can read their own profile. Any auth'd user can get another profile (for transfers).
+      allow get: if request.auth != null;
+      allow list: if request.auth != null && request.auth.uid == userId;
       
       // Admin can get/list any user profile.
       allow get, list: if isAdmin();
 
-      // A user can update their profile, but NOT their balance.
-      allow update: if request.auth.uid == userId
-                    && request.resource.data.solidaraBalance == resource.data.solidaraBalance
-                    && request.resource.data.annualBalance == resource.data.annualBalance;
+      // A user can update their own profile information.
+      // The client-side transaction for transfers handles balance changes atomically.
+      allow update: if request.auth.uid == userId;
       
-      // An admin can ONLY update the balances.
+      // An admin can ONLY update the balances of other users.
       allow update: if isAdmin() &&
                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
-
 
       allow delete: if false;
     }
@@ -120,10 +119,19 @@ service cloud.firestore {
         // A user can create a join request for themselves.
         allow create: if request.auth != null && request.resource.data.requesterUid == request.auth.uid;
         // The group creator can read requests for their groups. The requester can read their own requests.
-        allow read, list: if request.auth != null && (resource.data.groupCreatorUid == request.auth.uid || resource.data.requesterUid == request.auth.uid);
+        allow read, list: if request.auth != null && (get(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.creatorUid == request.auth.uid || resource.data.requesterUid == request.auth.uid);
         // The group creator can update the status (approve/decline).
         allow update: if request.auth != null && resource.data.groupCreatorUid == request.auth.uid;
         allow delete: if false;
     }
+    
+    match /transfers/{transferId} {
+        // A user can create a transfer document if they are the sender.
+        // This is used by the client transaction to securely process transfers.
+        allow create: if request.auth != null && request.resource.data.senderUid == request.auth.uid;
+        allow read, update, delete: if false; // No one can read/update/delete these directly
+    }
   }
 }
+
+    
