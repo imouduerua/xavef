@@ -1,3 +1,4 @@
+
 'use client';
 
 import { toast } from '@/hooks/use-toast';
@@ -6,9 +7,9 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 
 const bankDetails = {
-    accountName: 'XAVEF FINANCIALS LTD',
-    accountNumber: '1234567890',
-    bankName: 'Providus Bank'
+    accountName: 'Ameh Fidelis Aneke',
+    accountNumber: '3002506954',
+    bankName: 'Firstbank of Nigeria'
 };
 
 interface BankDetailsCardProps {
