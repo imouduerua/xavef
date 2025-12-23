@@ -17,8 +17,6 @@ service cloud.firestore {
 
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
       
-      allow get, list: if isAdmin();
-
       // A user can update their profile, but NOT their balance or sensitive fields managed by admin.
       allow update: if request.auth.uid == userId &&
                      !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
@@ -51,13 +49,6 @@ service cloud.firestore {
 
         // Admins can update a transaction status, or delete a pending transaction (decline)
         allow update, delete: if isAdmin();
-        
-        // Group creator can list transactions of a user with a PENDING join request for their group
-        allow list: if request.auth != null && exists(
-            /databases/$(database)/documents/joinRequests/{joinRequestId}
-        ) && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.groupCreatorUid == request.auth.uid 
-          && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.requesterUid == userId
-          && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.status == 'pending';
     }
     
     // This rule allows admins to perform a collectionGroup query on 'transactions'
@@ -71,8 +62,8 @@ service cloud.firestore {
     
     match /users/{userId}/notifications/{notificationId} {
         allow read, list, update: if request.auth != null && request.auth.uid == userId;
-        // Allow server-side/trusted creation only. For now, relax to authenticated.
-        allow create: if request.auth != null; 
+        // Server-side/admin can create
+        allow create: if isAdmin(); 
         allow delete: if false;
     }
 
