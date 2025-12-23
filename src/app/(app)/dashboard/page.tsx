@@ -254,5 +254,3 @@ function CardSkeleton() {
         </Card>
     )
 }
-
-    
