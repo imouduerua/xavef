@@ -18,16 +18,16 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
   
-  // Use a ref to store the unsubscribe function
-  const unsubscribeRef = useRef<() => void | undefined>();
+  // Use a ref to store the unsubscribe function to prevent re-subscribing on every render
+  const unsubscribeRef = useRef<() => void>();
 
   useEffect(() => {
-    // If there's a previous subscription, unsubscribe from it before creating a new one.
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-    }
-
+    // Definitive fix: If the query is not valid, do not proceed.
+    // Reset the state and clean up any existing listener.
     if (!query) {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
       setData(null);
       setLoading(false);
       setError(null);
@@ -63,15 +63,13 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             setIndexCreationUrl(urlMatch[0]);
           }
         } else if (err.code === 'permission-denied') {
-            if (query.path) {
-                const permissionError = new FirestorePermissionError({
-                    path: query.path,
-                    operation: 'list',
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            } else {
-                 console.error("Permission denied on a query with an undefined path.");
-            }
+            // Path can be retrieved from the query object for creating contextual errors
+            const path = (query as any)._query?.path?.canonical || 'unknown path';
+            const permissionError = new FirestorePermissionError({
+                path: path,
+                operation: 'list',
+            });
+            errorEmitter.emit('permission-error', permissionError);
         }
         
         setError(err);
@@ -89,6 +87,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             unsubscribeRef.current();
         }
     };
+    // The query object itself is the dependency. A new query should trigger a new subscription.
   }, [query]);
 
   return { data, loading, error, indexCreationUrl };
