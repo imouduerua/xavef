@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -37,9 +36,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   useEffect(() => {
     // If query is the same as the one we're already listening to, do nothing.
     if (areQueriesEqual(query, queryRef.current)) {
-      // If the query is the same but we are not loading, it means data is already fetched or an error occurred.
-      // No need to re-run the effect.
-      if (!loading) return;
+      return;
     }
     
     queryRef.current = query;
@@ -101,7 +98,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
     
     return () => unsubscribe();
-  }, [query, loading]); // Added 'loading' to dependency array to re-evaluate if query becomes valid
+  }, [query]);
 
   return { data, loading, error, indexCreationUrl };
 }
