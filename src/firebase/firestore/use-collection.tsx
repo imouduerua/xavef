@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -45,7 +46,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     // Reset state and wait for a valid query.
     if (!query) {
       setData(null);
-      setLoading(false); 
+      setLoading(false); // Not loading if there's no query
       setError(null);
       setIndexCreationUrl(null);
       return; // Stop here and wait for the next effect run with a valid query.
