@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -11,7 +12,7 @@ import { useEffect, useState, useRef } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
-// Helper function to compare if two queries are equivalent by their string representation
+// Helper function to compare if two queries are equivalent
 function areQueriesEqual(q1: Query | null, q2: Query | null): boolean {
   if (!q1 && !q2) return true;
   if (!q1 || !q2) return false;
@@ -23,29 +24,29 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
-  
+
   const queryRef = useRef<Query | null>(null);
 
   useEffect(() => {
-    // If query is the same, do nothing. This prevents re-running on every render.
+    // If query is the same as the one we're already listening to, do nothing.
     if (areQueriesEqual(query, queryRef.current)) {
       return;
     }
     queryRef.current = query;
 
-    // If the query is null, reset the state and do not create a listener.
+    // If the query is null, reset the state and ensure no listener is active.
     if (!query) {
-      setLoading(true);
       setData(null);
+      setLoading(true); // Set to true because we are effectively "loading" a new state (of no data)
       setError(null);
       setIndexCreationUrl(null);
       return;
     }
-    
+
     setLoading(true);
     setError(null);
     setIndexCreationUrl(null);
-
+    
     const unsubscribe = onSnapshot(
       query,
       (snapshot: QuerySnapshot<T>) => {
@@ -70,6 +71,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           }
         } else if (err.code === 'permission-denied') {
             const path = (query as any)?._query?.path?.canonical;
+            
             if (path) {
                 const permissionError = new FirestorePermissionError({
                     path: path,
@@ -87,7 +89,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       }
     );
     
-    // Cleanup listener on unmount or when the query changes.
     return () => unsubscribe();
   }, [query]);
 

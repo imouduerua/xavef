@@ -32,7 +32,7 @@ export default function AdminPendingTransactionsPage() {
 
   useEffect(() => {
     // Halt processing if there's no data, it's loading, or an index is needed.
-    if (rawLoading || indexCreationUrl || !rawTransactions) {
+    if (rawLoading || indexCreationUrl || !rawTransactions || !firestore) {
       // Also clear stale data if we enter a loading/error state
       if (transactions) setTransactions(null);
       return;
@@ -82,7 +82,7 @@ export default function AdminPendingTransactionsPage() {
 
     processTransactions();
   // We only want to re-run this effect when the raw, unprocessed data changes.
-  }, [rawTransactions, firestore, transactions]);
+  }, [rawTransactions, firestore, transactions, indexCreationUrl, rawLoading]);
 
   const renderContent = () => {
     // Priority 1: Show index creation alert if needed.
