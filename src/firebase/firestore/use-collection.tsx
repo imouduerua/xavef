@@ -18,6 +18,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
   
+  // Use a ref to track the query and prevent re-running the effect on every render
   const queryRef = useRef(query);
   queryRef.current = query;
 
@@ -67,6 +68,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             setIndexCreationUrl(urlMatch[0]);
           }
         } else if (err.code === 'permission-denied') {
+            // Path can be retrieved from the query object for creating contextual errors
             const path = (query as any)._query?.path?.canonical;
             
             if (path) {
@@ -87,10 +89,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
     
     return () => unsubscribe();
-    // Using `JSON.stringify` on the query object is a common pattern to serialize it for dependency arrays,
-    // but Firestore queries are complex. A simpler and effective method for many cases is to just use the query object itself.
-    // However, if the query is re-created on every render, this will cause an infinite loop.
-    // The calling component MUST memoize the query.
+    // The calling component MUST memoize the query to prevent infinite loops.
   }, [query]);
 
   return { data, loading, error, indexCreationUrl };
