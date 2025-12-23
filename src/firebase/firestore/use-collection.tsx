@@ -18,7 +18,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
   
-  // Use a ref to store the unsubscribe function to prevent re-subscribing on every render
   const unsubscribeRef = useRef<() => void>();
 
   useEffect(() => {
@@ -39,7 +38,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     setError(null);
     setIndexCreationUrl(null);
 
-    // Set up the new snapshot listener
     const unsubscribe = onSnapshot(
       query,
       (snapshot: QuerySnapshot<T>) => {
@@ -63,8 +61,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             setIndexCreationUrl(urlMatch[0]);
           }
         } else if (err.code === 'permission-denied') {
-            // Path can be retrieved from the query object for creating contextual errors
-            // This is fragile and accesses a private property. Let's be safe.
             const path = (query as any)._query?.path?.canonical;
             
             if (path) {
@@ -84,16 +80,13 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       }
     );
     
-    // Store the new unsubscribe function in the ref.
     unsubscribeRef.current = unsubscribe;
 
-    // The cleanup function for when the component unmounts or query changes.
     return () => {
         if (unsubscribeRef.current) {
             unsubscribeRef.current();
         }
     };
-    // The query object itself is the dependency. A new query should trigger a new subscription.
   }, [query]);
 
   return { data, loading, error, indexCreationUrl };
