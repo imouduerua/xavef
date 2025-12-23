@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import { PendingTransactionsTable } from '@/components/admin/pending-transactions-table';
 import type { Transaction, UserData, TransactionWithUserDetails } from '@/lib/types';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
@@ -22,11 +22,11 @@ export default function AdminPendingTransactionsPage() {
   const [transactions, setTransactions] = useState<TransactionWithUserDetails[] | null>(null);
   const firestore = useFirestore();
 
-  const pendingTxsQuery = firestore ? query(
+  const pendingTxsQuery = useMemo(() => firestore ? query(
         collectionGroup(firestore, 'transactions'), 
         where('status', '==', 'Pending'),
         orderBy('date', 'desc')
-    ) : null;
+    ) : null, [firestore]);
 
   const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
 

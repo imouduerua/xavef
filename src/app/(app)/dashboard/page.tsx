@@ -26,18 +26,18 @@ function DashboardContent() {
   const { userData, loading: userDataLoading } = useUserData();
   const firestore = useFirestore();
 
-  const pendingTransactionsQuery = (user && firestore) ? query(
+  const pendingTransactionsQuery = useMemo(() => (user && firestore) ? query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "==", "Pending"),
-    ) : null;
+    ) : null, [user, firestore]);
   
-  const goalsQuery = (user && firestore) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null;
+  const goalsQuery = useMemo(() => (user && firestore) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [user, firestore]);
 
-  const joinRequestsQuery = (user && firestore) ? query(
+  const joinRequestsQuery = useMemo(() => (user && firestore) ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    ) : null;
+    ) : null, [user, firestore]);
 
 
   const { data: pendingTransactions, loading: pendingTransactionsLoading } = useCollection<Transaction>(pendingTransactionsQuery);

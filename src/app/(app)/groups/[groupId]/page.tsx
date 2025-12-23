@@ -5,7 +5,7 @@ import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import { doc, getDoc, collection, getDocs, query, where, documentId, collectionGroup, Timestamp, orderBy } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users, Wallet, Calendar, ListOrdered, UserCheck, HandCoins, History } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -60,7 +60,7 @@ export default function GroupDetailsPage() {
     const [membersData, setMembersData] = useState<UserData[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(true);
 
-    const groupRef = (firestore && groupId) ? doc(firestore, 'groups', groupId) : null;
+    const groupRef = useMemo(() => (firestore && groupId) ? doc(firestore, 'groups', groupId) : null, [firestore, groupId]);
     const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
     
     // Determine the start and end of the current collection week
@@ -82,19 +82,19 @@ export default function GroupDetailsPage() {
     }, [group]);
 
 
-    const weeklyContributionsQuery = (firestore && group && group.members.length > 0 && weekStart && weekEnd) ? query(
+    const weeklyContributionsQuery = useMemo(() => (firestore && group && group.members.length > 0 && weekStart && weekEnd) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             where('type', '==', 'Group Contribution'),
             where('date', '>=', weekStart),
             where('date', '<', weekEnd)
-        ) : null;
+        ) : null, [firestore, group, weekStart, weekEnd, groupId]);
     
-    const groupTransactionsQuery = (firestore && groupId) ? query(
+    const groupTransactionsQuery = useMemo(() => (firestore && groupId) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             orderBy('date', 'desc')
-        ) : null;
+        ) : null, [firestore, groupId]);
 
 
     const { data: weeklyContributions, loading: contributionsLoading, indexCreationUrl } = useCollection<Transaction>(weeklyContributionsQuery);

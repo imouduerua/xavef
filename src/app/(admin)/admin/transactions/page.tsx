@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { Transaction } from '@/lib/types';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
 import { collectionGroup, orderBy, query } from 'firebase/firestore';
@@ -20,10 +20,10 @@ import { AllTransactionsTable } from '@/components/admin/all-transactions-table'
 function AllTransactionsPageContent() {
   const firestore = useFirestore();
 
-  const allTxsQuery = firestore ? query(
+  const allTxsQuery = useMemo(() => firestore ? query(
       collectionGroup(firestore, 'transactions'),
       orderBy('date', 'desc')
-    ) : null;
+    ) : null, [firestore]);
 
   const {
     data: rawTransactions,

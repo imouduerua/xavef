@@ -8,9 +8,19 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
+
+// Helper function to compare if two queries are equivalent
+function areQueriesEqual(q1: Query | null, q2: Query | null): boolean {
+  if (!q1 || !q2) return q1 === q2;
+  return (
+    (q1 as any)._query.path.canonical === (q2 as any)._query.path.canonical &&
+    JSON.stringify((q1 as any)._query.filters) === JSON.stringify((q2 as any)._query.filters) &&
+    JSON.stringify((q1 as any)._query.explicitOrderBy) === JSON.stringify((q2 as any)._query.explicitOrderBy)
+  );
+}
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
@@ -18,23 +28,30 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
+  // Use a ref to store the previous query to compare against the new one.
+  const prevQueryRef = useRef<Query | null>(null);
+
   useEffect(() => {
-    // If the query is not valid, reset state and do not proceed.
-    // This is the critical guard to prevent listeners on null queries.
+    // If the query is null or hasn't changed, do nothing.
+    if (areQueriesEqual(query, prevQueryRef.current)) {
+      return;
+    }
+    
+    prevQueryRef.current = query;
+    
+    // If the new query is null, reset the state and do not create a listener.
     if (!query) {
       setData(null);
-      setLoading(true); // Keep loading until a valid query is provided
+      setLoading(false); // Not loading if there's no query
       setError(null);
       setIndexCreationUrl(null);
-      return; // Exit the effect
+      return;
     }
 
-    // A valid query is present, reset state for the new query
     setLoading(true);
     setError(null);
-    setData(null);
     setIndexCreationUrl(null);
-
+    
     const unsubscribe = onSnapshot(
       query,
       (snapshot: QuerySnapshot<T>) => {
@@ -81,7 +98,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     
     // Cleanup function to unsubscribe from the listener when the component unmounts or query changes.
     return () => unsubscribe();
-  }, [query]);
+  }, [query]); // The effect now depends directly on the query prop.
 
   return { data, loading, error, indexCreationUrl };
 }
