@@ -20,7 +20,6 @@ import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { addFundsToGoal } from '../savings/client-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { PendingTransferCard } from '@/components/dashboard/pending-transfer-card';
 
 function DashboardContent() {
   const { user, loading: userLoading } = useUser();
@@ -255,3 +254,5 @@ function CardSkeleton() {
         </Card>
     )
 }
+
+    

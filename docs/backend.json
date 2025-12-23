@@ -113,8 +113,7 @@
             "Loan Payment",
             "Interest",
             "Group Contribution",
-            "Group Payout",
-            "User Transfer"
+            "Group Payout"
           ]
         },
         "status": {
@@ -153,19 +152,6 @@
         "status",
         "amount"
       ]
-    },
-    "transfer": {
-        "title": "Transfer",
-        "description": "A record of a user-to-user transfer.",
-        "type": "object",
-        "properties": {
-            "senderUid": { "type": "string" },
-            "recipientUid": { "type": "string" },
-            "amount": { "type": "number" },
-            "createdAt": { "type": "string", "format": "date-time" },
-            "status": { "type": "string", "enum": ["completed"] }
-        },
-        "required": ["senderUid", "recipientUid", "amount", "createdAt", "status"]
     },
     "referralCode": {
       "title": "Referral Code",
@@ -369,10 +355,6 @@
         "schema": { "$ref": "#/entities/joinRequest" },
         "description": "Stores requests from users to join savings groups."
     },
-    "/transfers/{transferId}": {
-        "schema": { "$ref": "#/entities/transfer" },
-        "description": "Atomically records a transfer between two users."
-    },
     "/fcmTokens/{userId}": {
       "schema": {
         "$ref": "#/entities/fcmToken"
@@ -381,3 +363,5 @@
     }
   }
 }
+
+    
