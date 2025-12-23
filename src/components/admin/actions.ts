@@ -35,7 +35,14 @@ export async function updateTransactionStatus(
     
     // If declining, simply delete the transaction document.
     if (newStatus === 'Failed') {
-        await deleteDoc(txRef);
+        await deleteDoc(txRef).catch((serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: txRef.path,
+                operation: 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            throw new Error('You do not have permission to decline this transaction.');
+        });
         return { success: true };
     }
 
@@ -75,12 +82,14 @@ export async function updateTransactionStatus(
   } catch (error: any) {
     console.error('[updateTransactionStatus] Error:', error);
     
-    const permissionError = new FirestorePermissionError({
-        path: userRef.path,
-        operation: 'update',
-        requestResourceData: { balance: 'increment' }
-    });
-    errorEmitter.emit('permission-error', permissionError);
+    if (error.name !== 'FirestorePermissionError') {
+      const permissionError = new FirestorePermissionError({
+          path: userRef.path,
+          operation: 'update',
+          requestResourceData: { balance: 'increment' }
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    }
 
     return { success: false, error: error.message || 'An unknown error occurred.' };
   }
