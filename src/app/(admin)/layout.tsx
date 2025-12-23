@@ -2,29 +2,29 @@
 'use client';
 
 import { AppHeader } from "@/components/layout/header";
-import { SidebarProvider, useSidebar, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { UserDataProvider } from "@/context/user-data-provider";
 import { AdminAuthGuard } from "@/components/admin/admin-auth-guard";
 import { AppSidebar } from "@/components/layout/app-sidebar";
-import { cn } from "@/lib/utils";
-
+import { useFCM } from "@/hooks/use-fcm";
 
 function AdminLayoutContent({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { state, isMobile } = useSidebar();
+  // Initialize FCM for admin users
+  useFCM();
 
   return (
     <AdminAuthGuard>
       <AppSidebar />
-       <SidebarInset>
+      <main className="flex flex-1 flex-col">
         <AppHeader />
-        <main className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {children}
-        </main>
-      </SidebarInset>
+        </div>
+      </main>
     </AdminAuthGuard>
   );
 }
