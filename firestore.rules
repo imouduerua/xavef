@@ -47,10 +47,8 @@ service cloud.firestore {
         // User can read and create their own transactions
         allow read, create: if request.auth != null && request.auth.uid == userId;
 
-        // Admins can update any transaction
-        allow update: if isAdmin();
-        
-        allow delete: if false;
+        // Admins can update a transaction status, or delete a pending transaction (decline)
+        allow update, delete: if isAdmin();
     }
     
     // This rule allows admins to perform a collectionGroup query on 'transactions'
@@ -64,8 +62,8 @@ service cloud.firestore {
     
     match /users/{userId}/notifications/{notificationId} {
         allow read, list, update: if request.auth != null && request.auth.uid == userId;
-        // Allow server-side/trusted creation only. For now, relax to authenticated.
-        allow create: if request.auth != null; 
+        // Server-side/admin can create
+        allow create: if isAdmin(); 
         allow delete: if false;
     }
 
@@ -95,5 +93,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
