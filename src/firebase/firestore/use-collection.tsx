@@ -22,11 +22,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const queryRef = useRef(query);
 
   useEffect(() => {
-    // Only update the ref if the query has actually changed.
-    if (queryRef.current !== query) {
-        queryRef.current = query;
-    }
-
     // If the query is not valid, do not proceed.
     // Reset the state and wait for a valid query.
     if (!query) {
@@ -35,6 +30,11 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       setError(null);
       setIndexCreationUrl(null);
       return;
+    }
+
+    // Only update the ref if the query has actually changed.
+    if (queryRef.current !== query) {
+        queryRef.current = query;
     }
 
     setLoading(true);
