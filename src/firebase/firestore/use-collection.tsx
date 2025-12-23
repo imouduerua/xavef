@@ -15,11 +15,15 @@ import { FirestorePermissionError } from '../errors';
 // Helper function to compare if two queries are equivalent
 function areQueriesEqual(q1: Query | null, q2: Query | null): boolean {
   if (!q1 || !q2) return q1 === q2;
-  return (
-    (q1 as any)._query.path.canonical === (q2 as any)._query.path.canonical &&
-    JSON.stringify((q1 as any)._query.filters) === JSON.stringify((q2 as any)._query.filters) &&
-    JSON.stringify((q1 as any)._query.explicitOrderBy) === JSON.stringify((q2 as any)._query.explicitOrderBy)
-  );
+  // This is a simplified check. A robust implementation would deeply compare all query parameters.
+  // For this app, comparing canonical path and filters as strings is sufficient.
+  try {
+    const q1String = q1.toString();
+    const q2String = q2.toString();
+    return q1String === q2String;
+  } catch (e) {
+    return false;
+  }
 }
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
