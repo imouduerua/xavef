@@ -28,10 +28,7 @@ export function GoalsList() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const goalsQuery = React.useMemo(() => {
-    if (!user || !firestore) return null;
-    return query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc'));
-  }, [user, firestore]);
+  const goalsQuery = (user && firestore) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null;
 
   const { data: goals, loading } = useCollection<SavingGoal>(goalsQuery);
 

@@ -40,8 +40,16 @@ export function PendingWithdrawalCard({ transaction }: PendingWithdrawalCardProp
                     <span className="text-muted-foreground">Status</span>
                     <span className="font-medium text-yellow-600">{transaction.status}</span>
                 </div>
-                <div className="flex justify-between items-baseline pt-2 border-t">
-                    <span className="text-muted-foreground">Amount Requested</span>
+                 <div className="flex justify-between">
+                    <span className="text-muted-foreground">Fee (3.3%)</span>
+                    <span className="font-medium">- ₦{(transaction.fee ?? 0).toFixed(2)}</span>
+                </div>
+                 <div className="flex justify-between items-baseline pt-2 border-t">
+                    <span className="text-muted-foreground">You Will Receive</span>
+                    <span className="font-bold text-lg">₦{(transaction.payoutAmount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                 <div className="flex justify-between items-baseline pt-2 border-t">
+                    <span className="text-muted-foreground">Amount Deducted</span>
                     <span className="font-bold text-lg">₦{withdrawalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
             </CardContent>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { UserList } from '@/components/admin/user-list';
@@ -18,10 +19,7 @@ type UserDataWithId = UserData & { id: string };
 export default function AdminUsersPage() {
   const firestore = useFirestore();
 
-  const usersQuery = React.useMemo(
-    () => (firestore ? query(collection(firestore, 'users'), orderBy('email')) : null),
-    [firestore]
-  );
+  const usersQuery = firestore ? query(collection(firestore, 'users'), orderBy('email')) : null;
 
   const { data: users, loading } = useCollection<UserDataWithId>(usersQuery);
 

@@ -60,7 +60,7 @@ export default function GroupDetailsPage() {
     const [membersData, setMembersData] = useState<UserData[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(true);
 
-    const groupRef = React.useMemo(() => (firestore && groupId ? doc(firestore, 'groups', groupId) : null), [firestore, groupId]);
+    const groupRef = (firestore && groupId) ? doc(firestore, 'groups', groupId) : null;
     const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
     
     // Determine the start and end of the current collection week
@@ -82,25 +82,19 @@ export default function GroupDetailsPage() {
     }, [group]);
 
 
-    const weeklyContributionsQuery = React.useMemo(() => {
-        if (!firestore || !group || group.members.length === 0 || !weekStart || !weekEnd) return null;
-        return query(
+    const weeklyContributionsQuery = (firestore && group && group.members.length > 0 && weekStart && weekEnd) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             where('type', '==', 'Group Contribution'),
             where('date', '>=', weekStart),
             where('date', '<', weekEnd)
-        );
-    }, [firestore, groupId, group, weekStart, weekEnd]);
+        ) : null;
     
-    const groupTransactionsQuery = React.useMemo(() => {
-        if (!firestore || !groupId) return null;
-        return query(
+    const groupTransactionsQuery = (firestore && groupId) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             orderBy('date', 'desc')
-        );
-    }, [firestore, groupId]);
+        ) : null;
 
 
     const { data: weeklyContributions, loading: contributionsLoading, indexCreationUrl } = useCollection<Transaction>(weeklyContributionsQuery);

@@ -8,6 +8,7 @@ import {
   Users,
   Clock,
   PanelLeft,
+  History,
 } from 'lucide-react';
 
 import {
@@ -22,6 +23,7 @@ import {
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useUser } from '@/firebase';
+import { useAdminStatus } from '@/hooks/use-admin-status';
 
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
@@ -33,6 +35,7 @@ const navItems = [
 export function AdminSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
+  const { isSuperAdmin } = useAdminStatus();
 
   const isActive = (href: string, exact = false) => {
     return exact ? pathname === href : pathname.startsWith(href);
@@ -57,6 +60,18 @@ export function AdminSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+           {isSuperAdmin && (
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={isActive('/admin/transactions')}
+                icon={<History />}
+                tooltip="All Transactions"
+              >
+                <Link href="/admin/transactions">All Transactions</Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+           )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="flex-col !items-start !gap-0">

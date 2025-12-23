@@ -18,18 +18,12 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  // Use a ref to store the query to avoid re-running the effect due to query object instability
-  const queryRef = useRef(query);
-  useEffect(() => {
-    queryRef.current = query;
-  }, [query]);
-  
   useEffect(() => {
     // If the query is not valid, reset state and do not proceed.
     // This is the critical guard to prevent listeners on null queries.
-    if (!queryRef.current) {
+    if (!query) {
       setData(null);
-      setLoading(true); // Set loading to true as we are waiting for a valid query
+      setLoading(true); // Keep loading until a valid query is provided
       setError(null);
       setIndexCreationUrl(null);
       return; // Exit the effect
@@ -42,7 +36,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     setIndexCreationUrl(null);
 
     const unsubscribe = onSnapshot(
-      queryRef.current,
+      query,
       (snapshot: QuerySnapshot<T>) => {
         const resultData = snapshot.docs.map((doc) => {
             const docData = doc.data();
@@ -65,7 +59,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           }
         } else if (err.code === 'permission-denied') {
             // Path can be retrieved from the query object for creating contextual errors
-            const path = (queryRef.current as any)?._query?.path?.canonical;
+            const path = (query as any)?._query?.path?.canonical;
             
             if (path) {
                 const permissionError = new FirestorePermissionError({
@@ -87,7 +81,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     
     // Cleanup function to unsubscribe from the listener when the component unmounts or query changes.
     return () => unsubscribe();
-  // Re-run the effect ONLY when the query object itself changes (which is tracked by the ref update).
   }, [query]);
 
   return { data, loading, error, indexCreationUrl };

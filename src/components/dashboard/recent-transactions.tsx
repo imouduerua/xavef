@@ -31,15 +31,12 @@ export function RecentTransactions() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const transactionsQuery = useMemo(() => {
-    if (!user || !firestore) return null;
-    return query(
+  const transactionsQuery = (user && firestore) ? query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "in", ["Completed", "Failed"]),
       orderBy("date", "desc"),
       limit(5)
-    );
-  }, [user, firestore]);
+    ) : null;
 
   const { data: transactions, loading } = useCollection<Transaction>(transactionsQuery);
 
