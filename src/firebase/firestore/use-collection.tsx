@@ -46,7 +46,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     // Reset state and wait for a valid query.
     if (!query) {
       setData(null);
-      setLoading(false); // Set loading to false as we are not actively fetching.
+      setLoading(true); // Set loading to true as we expect a query to come soon
       setError(null);
       setIndexCreationUrl(null);
       return; // Stop here and wait for the next effect run with a valid query.

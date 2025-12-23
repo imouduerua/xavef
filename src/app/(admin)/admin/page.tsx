@@ -87,7 +87,7 @@ export default function AdminDashboardPage() {
 
     const totalSavings =
       users?.reduce(
-        (acc, user) => acc + user.solidaraBalance + user.annualBalance,
+        (acc, user) => acc + (user.solidaraBalance || 0) + (user.annualBalance || 0),
         0
       ) ?? 0;
 
