@@ -7,9 +7,23 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
+
+// Helper function to compare if two queries are equivalent
+function areQueriesEqual(q1: Query | null, q2: Query | null): boolean {
+  if (!q1 || !q2) return q1 === q2;
+  // This is a simplified check. A robust implementation would deeply compare all query parameters.
+  // For this app, comparing canonical path and filters as strings is sufficient.
+  try {
+    const q1String = q1.toString();
+    const q2String = q2.toString();
+    return q1String === q2String;
+  } catch (e) {
+    return false;
+  }
+}
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
@@ -17,12 +31,21 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
+  // Use a ref to store the previous query to compare against the new one.
+  const prevQueryRef = useRef<Query | null>(null);
+
   useEffect(() => {
-    // If the query is not ready, reset state and don't create a listener.
-    // This is the critical fix.
+    // If the query is null or hasn't changed, do nothing.
+    if (areQueriesEqual(query, prevQueryRef.current)) {
+      return;
+    }
+    
+    prevQueryRef.current = query;
+    
+    // If the new query is null, reset the state and do not create a listener.
     if (!query) {
       setData(null);
-      setLoading(true); // Set to true as we are "waiting" for a valid query
+      setLoading(false); // Not loading if there's no query
       setError(null);
       setIndexCreationUrl(null);
       return;
@@ -55,6 +78,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             setIndexCreationUrl(urlMatch[0]);
           }
         } else if (err.code === 'permission-denied') {
+            // Path can be retrieved from the query object for creating contextual errors
             const path = (query as any)?._query?.path?.canonical;
             
             if (path) {
@@ -64,6 +88,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
                 });
                 errorEmitter.emit('permission-error', permissionError);
             } else {
+                 // This fallback prevents the app from crashing if the path is not found.
                  console.error("Permission denied on a query where the path could not be determined.");
             }
         }
@@ -76,7 +101,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     
     // Cleanup function to unsubscribe from the listener when the component unmounts or query changes.
     return () => unsubscribe();
-  }, [query]);
+  }, [query]); // The effect now depends directly on the query prop.
 
   return { data, loading, error, indexCreationUrl };
 }
