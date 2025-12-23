@@ -16,7 +16,14 @@ import { FirestorePermissionError } from '../errors';
 function areQueriesEqual(q1: Query | null, q2: Query | null): boolean {
   if (!q1 && !q2) return true;
   if (!q1 || !q2) return false;
-  return q1.toString() === q2.toString();
+  // This is a simplified check. Firestore's Query objects don't have a stable `isEqual` method on the client-side SDK.
+  // Comparing the string representation is a pragmatic approach for many cases.
+  try {
+    return q1.toString() === q2.toString();
+  } catch (e) {
+    // If toString() fails for some reason, assume they are not equal.
+    return false;
+  }
 }
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
@@ -30,17 +37,21 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   useEffect(() => {
     // If query is the same as the one we're already listening to, do nothing.
     if (areQueriesEqual(query, queryRef.current)) {
-      return;
+      // If the query is the same but we are not loading, it means data is already fetched or an error occurred.
+      // No need to re-run the effect.
+      if (!loading) return;
     }
+    
     queryRef.current = query;
 
-    // If the query is null, reset the state and ensure no listener is active.
+    // If the query is null, it means we don't have enough information to fetch data yet (e.g., user is loading).
+    // Reset state and wait for a valid query.
     if (!query) {
       setData(null);
-      setLoading(true); // Set to true because we are effectively "loading" a new state (of no data)
+      setLoading(true); // Stay in loading state until a valid query is provided.
       setError(null);
       setIndexCreationUrl(null);
-      return;
+      return; // Stop here and wait for the next effect run with a valid query.
     }
 
     setLoading(true);
@@ -90,7 +101,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
     
     return () => unsubscribe();
-  }, [query]);
+  }, [query, loading]); // Added 'loading' to dependency array to re-evaluate if query becomes valid
 
   return { data, loading, error, indexCreationUrl };
 }
