@@ -268,7 +268,7 @@ export function DepositDialog({
                   ) : (
                         <>
                           <CheckCircle className="mr-2 h-4 w-4" />
-                          I Have Made The Transfer
+                          Deposit
                         </>
                   )}
               </Button>
