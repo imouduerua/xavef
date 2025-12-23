@@ -80,7 +80,7 @@ export function GoalCard({ goal }: GoalCardProps) {
     if (result.success) {
       toast({
         title: 'Goal Completed!',
-        description: `Funds from "${goal.name}" have been moved to your Solidara savings account and the goal has been reset.`,
+        description: `Funds from "${goal.name}" have been moved to your Olidara savings account and the goal has been reset.`,
       });
     } else {
       toast({
@@ -106,7 +106,7 @@ export function GoalCard({ goal }: GoalCardProps) {
             <AlertDialogHeader>
               <AlertDialogTitle>Withdraw Completed Goal?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will move {formatCurrency(goal.currentAmount)} to your main Solidara savings account and reset this goal's progress to zero.
+                This will move {formatCurrency(goal.currentAmount)} to your main Olidara savings account and reset this goal's progress to zero.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

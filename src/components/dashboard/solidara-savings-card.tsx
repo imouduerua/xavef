@@ -17,7 +17,7 @@ export function SolidaraSavingsCard({ balance, pendingAmount }: SolidaraSavingsC
   const isDisabled = pendingAmount !== undefined;
 
   const depositButton = (
-     <DepositDialog accountName="Solidara Savings" targetAccount="solidara">
+     <DepositDialog accountName="Olidara Savings" targetAccount="solidara">
         <Button className="w-full" disabled={isDisabled}>
            <Banknote className="mr-2" />
            Make Contribution
@@ -30,7 +30,7 @@ export function SolidaraSavingsCard({ balance, pendingAmount }: SolidaraSavingsC
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg md:text-xl">Solidara Savings</CardTitle>
+            <CardTitle className="text-lg md:text-xl">Olidara Savings</CardTitle>
           </div>
           <div className="rounded-md bg-transparent text-muted-foreground">
             <PiggyBank className="h-5 w-5" />

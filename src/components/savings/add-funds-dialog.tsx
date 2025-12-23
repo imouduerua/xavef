@@ -52,7 +52,7 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
       .positive('Amount must be positive.')
       .min(1, 'Minimum amount is ₦1.00')
       .refine(amount => typeof solidaraBalance === 'number' ? amount <= solidaraBalance : true, {
-        message: 'Amount cannot exceed your Solidara balance.'
+        message: 'Amount cannot exceed your Olidara balance.'
       }),
   });
 
@@ -100,7 +100,7 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
         <DialogHeader>
           <DialogTitle>Add Funds to "{goal.name}"</DialogTitle>
           <DialogDescription>
-            Transfer money from your main Solidara account to this savings goal.
+            Transfer money from your main Olidara account to this savings goal.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -120,7 +120,7 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
                     </div>
                   </FormControl>
                    <FormDescription>
-                    Available Solidara Balance: ₦{solidaraBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    Available Olidara Balance: ₦{solidaraBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

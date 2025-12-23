@@ -117,8 +117,8 @@ export default function WithdrawalPage() {
                     <CardTitle>Withdrawal</CardTitle>
                     <CardDescription>
                        {pendingSolidaraWithdrawal 
-                            ? "You have a pending withdrawal request from your Solidara savings account."
-                            : "Request a withdrawal from your Solidara savings account. Requests are processed by an admin."
+                            ? "You have a pending withdrawal request from your Olidara savings account."
+                            : "Request a withdrawal from your Olidara savings account. Requests are processed by an admin."
                        }
                     </CardDescription>
                 </CardHeader>

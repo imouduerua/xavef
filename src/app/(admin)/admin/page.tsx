@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
          <StatCard
             title="Total Savings"
             value={isLoading ? '...' : formatCurrency(stats.totalSavings)}
-            description="Combined Solidara & Annual balances."
+            description="Combined Olidara & Annual balances."
             icon={PiggyBank}
         />
         <StatCard

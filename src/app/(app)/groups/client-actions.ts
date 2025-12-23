@@ -267,7 +267,7 @@ export async function distributeGroupFunds(
       const recipientName = recipientDoc.data()?.displayName || 'A member';
 
 
-      // 1. Credit the recipient's Solidara balance
+      // 1. Credit the recipient's Olidara balance
       transaction.update(recipientUserRef, {
         solidaraBalance: increment(totalPurse),
       });
@@ -387,10 +387,10 @@ export async function contributeToGroupFromSavings(
       }
 
       if (user.solidaraBalance < group.contributionAmount) {
-        throw new Error('Insufficient Solidara balance to make contribution.');
+        throw new Error('Insufficient Olidara balance to make contribution.');
       }
 
-      // 1. Debit the user's Solidara balance
+      // 1. Debit the user's Olidara balance
       transaction.update(userRef, {
         solidaraBalance: increment(-group.contributionAmount),
       });

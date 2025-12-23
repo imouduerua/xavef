@@ -158,7 +158,7 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
                 </div>
               </FormControl>
               <FormDescription>
-                Available Solidara Balance: ₦{solidaraBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Available Olidara Balance: ₦{solidaraBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </FormDescription>
               <FormMessage />
             </FormItem>

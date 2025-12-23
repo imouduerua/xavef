@@ -83,7 +83,7 @@ export function ContributeDialog({ group, children }: ContributeDialogProps) {
             <span className="font-bold">
               {formatCurrency(group.contributionAmount)}
             </span>{' '}
-            from your Solidara savings account for the group "{group.name}".
+            from your Olidara savings account for the group "{group.name}".
             This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>

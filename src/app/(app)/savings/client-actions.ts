@@ -102,7 +102,7 @@ export async function addFundsToGoal(
 
             const userData = userDoc.data();
             if (userData.solidaraBalance < amount) {
-                throw new Error("Insufficient Solidara balance.");
+                throw new Error("Insufficient Olidara balance.");
             }
 
             // Perform the updates

@@ -15,6 +15,7 @@ import {
     documentId,
     increment,
     addDoc,
+    getDoc,
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
 import type { ReferralCode, UserData } from "@/lib/types";

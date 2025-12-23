@@ -134,7 +134,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
          toast({
             variant: "destructive",
             title: "Transfer Failed",
-            description: "Insufficient Solidara balance.",
+            description: "Insufficient Olidara balance.",
         });
         return;
       }
@@ -155,7 +155,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
          toast({
             variant: "destructive",
             title: "Transfer Failed",
-            description: "Insufficient Solidara balance.",
+            description: "Insufficient Olidara balance.",
         });
         return;
       }
@@ -272,7 +272,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                         </FormControl>
                         <SelectContent>
                             <SelectItem value="solidara">
-                                Solidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
+                                Olidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
                             </SelectItem>
                              <SelectItem value="annual" disabled>
                                 Annual Savings (Balance: ₦{balances.annual.toFixed(2)})
@@ -353,7 +353,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                   )}
                 />
                  <FormDescription>
-                    From Solidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
+                    From Olidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
                  </FormDescription>
               </TabsContent>
             </Tabs>

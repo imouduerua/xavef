@@ -127,7 +127,7 @@ export default function UserDetailPage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Solidara Savings</CardTitle>
+                        <CardTitle className="text-sm font-medium">Olidara Savings</CardTitle>
                         <PiggyBank className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
