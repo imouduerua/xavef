@@ -18,17 +18,15 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
   
-  const unsubscribeRef = useRef<() => void>();
+  const queryRef = useRef(query);
+  queryRef.current = query;
 
   useEffect(() => {
-    // Definitive fix: If the query is not valid, do not proceed.
-    // Reset the state and clean up any existing listener.
+    // If the query is not valid, do not proceed.
+    // Reset the state and wait for a valid query.
     if (!query) {
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-      }
       setData(null);
-      setLoading(true); // Reset to loading if query becomes null
+      setLoading(true); 
       setError(null);
       setIndexCreationUrl(null);
       return;
@@ -41,18 +39,26 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     const unsubscribe = onSnapshot(
       query,
       (snapshot: QuerySnapshot<T>) => {
-        const resultData = snapshot.docs.map((doc) => {
-             const docData = doc.data();
-            return {
-                id: doc.id,
-                path: doc.ref.path,
-                ...docData,
-            } as T;
-        });
-        setData(resultData);
-        setLoading(false);
+        // Ensure we are only setting state for the current query.
+        if (queryRef.current === query) {
+            const resultData = snapshot.docs.map((doc) => {
+                const docData = doc.data();
+                return {
+                    id: doc.id,
+                    path: doc.ref.path,
+                    ...docData,
+                } as T;
+            });
+            setData(resultData);
+            setLoading(false);
+        }
       },
       (err: FirestoreError) => {
+        // Ensure we are only setting state for the current query.
+         if (queryRef.current !== query) {
+            return;
+        }
+
         console.error('Error fetching collection:', err);
 
         if (err.code === 'failed-precondition' && err.message.includes('requires an index')) {
@@ -80,13 +86,11 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       }
     );
     
-    unsubscribeRef.current = unsubscribe;
-
-    return () => {
-        if (unsubscribeRef.current) {
-            unsubscribeRef.current();
-        }
-    };
+    return () => unsubscribe();
+    // Using `JSON.stringify` on the query object is a common pattern to serialize it for dependency arrays,
+    // but Firestore queries are complex. A simpler and effective method for many cases is to just use the query object itself.
+    // However, if the query is re-created on every render, this will cause an infinite loop.
+    // The calling component MUST memoize the query.
   }, [query]);
 
   return { data, loading, error, indexCreationUrl };
