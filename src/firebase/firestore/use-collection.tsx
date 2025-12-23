@@ -29,7 +29,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         unsubscribeRef.current();
       }
       setData(null);
-      setLoading(false);
+      setLoading(true); // Reset to loading if query becomes null
       setError(null);
       setIndexCreationUrl(null);
       return;
@@ -64,12 +64,18 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           }
         } else if (err.code === 'permission-denied') {
             // Path can be retrieved from the query object for creating contextual errors
-            const path = (query as any)._query?.path?.canonical || 'unknown path';
-            const permissionError = new FirestorePermissionError({
-                path: path,
-                operation: 'list',
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            // This is fragile and accesses a private property. Let's be safe.
+            const path = (query as any)._query?.path?.canonical;
+            
+            if (path) {
+                const permissionError = new FirestorePermissionError({
+                    path: path,
+                    operation: 'list',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            } else {
+                 console.error("Permission denied on a query where the path could not be determined.");
+            }
         }
         
         setError(err);
