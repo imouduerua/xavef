@@ -49,17 +49,15 @@ service cloud.firestore {
         // User can read and create their own transactions
         allow read, create: if request.auth != null && request.auth.uid == userId;
 
-        // Admins can update any transaction
-        allow update: if isAdmin();
+        // Admins can update a transaction status, or delete a pending transaction (decline)
+        allow update, delete: if isAdmin();
         
-        // Group creator can read transactions of a user with a PENDING join request for their group
+        // Group creator can list transactions of a user with a PENDING join request for their group
         allow list: if request.auth != null && exists(
             /databases/$(database)/documents/joinRequests/{joinRequestId}
-        ) where get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.groupCreatorUid == request.auth.uid 
+        ) && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.groupCreatorUid == request.auth.uid 
           && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.requesterUid == userId
           && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.status == 'pending';
-        
-        allow delete: if false;
     }
     
     // This rule allows admins to perform a collectionGroup query on 'transactions'

@@ -8,7 +8,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 /**
  * Updates the status of a transaction and, if approved, the user's balance.
- * If declined, the transaction document is deleted.
+ * If declined ('Failed'), the transaction document is deleted.
  * This is a client-side action that relies on Firestore security rules
  * to ensure only admins can perform it.
  */
@@ -35,14 +35,7 @@ export async function updateTransactionStatus(
     
     // If declining, simply delete the transaction document.
     if (newStatus === 'Failed') {
-        await deleteDoc(txRef).catch((serverError) => {
-            const permissionError = new FirestorePermissionError({
-                path: txRef.path,
-                operation: 'delete',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            throw new Error('You do not have permission to decline this transaction.');
-        });
+        await deleteDoc(txRef);
         return { success: true };
     }
 
@@ -82,13 +75,13 @@ export async function updateTransactionStatus(
   } catch (error: any) {
     console.error('[updateTransactionStatus] Error:', error);
     
-    if (error.name !== 'FirestorePermissionError') {
-      const permissionError = new FirestorePermissionError({
-          path: userRef.path,
-          operation: 'update',
-          requestResourceData: { balance: 'increment' }
-      });
-      errorEmitter.emit('permission-error', permissionError);
+    // Emit a more specific error for debugging permission issues.
+    if (error.code === 'permission-denied') {
+        const permissionError = new FirestorePermissionError({
+            path: newStatus === 'Failed' ? txRef.path : userRef.path,
+            operation: newStatus === 'Failed' ? 'delete' : 'update',
+        });
+        errorEmitter.emit('permission-error', permissionError);
     }
 
     return { success: false, error: error.message || 'An unknown error occurred.' };
