@@ -28,7 +28,7 @@ function DashboardContent() {
   const firestore = useFirestore();
 
   const pendingTransactionsQuery = useMemo(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "==", "Pending"),
@@ -36,12 +36,12 @@ function DashboardContent() {
   }, [user, firestore]);
   
   const goalsQuery = React.useMemo(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc'));
   }, [user, firestore]);
 
   const joinRequestsQuery = React.useMemo(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),

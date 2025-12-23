@@ -48,7 +48,7 @@ export function AppHeader() {
   const [theme, setTheme] = useState('light');
 
   const joinRequestsQuery = useMemo(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
@@ -57,7 +57,7 @@ export function AppHeader() {
   }, [user, firestore]);
   
   const notificationsQuery = useMemo(() => {
-      if (!user) return null;
+      if (!user || !firestore) return null;
       return query(
           collection(firestore, `users/${user.uid}/notifications`),
           orderBy('createdAt', 'desc'),

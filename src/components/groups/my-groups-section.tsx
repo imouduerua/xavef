@@ -42,7 +42,7 @@ export function MyGroupsSection() {
   }, [firestore, user]);
 
   const joinRequestsQuery = React.useMemo(() => {
-      if (!user) return null;
+      if (!user || !firestore) return null;
       return query(
           collection(firestore, 'joinRequests'),
           where('groupCreatorUid', '==', user.uid),

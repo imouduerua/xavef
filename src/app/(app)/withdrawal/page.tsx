@@ -75,7 +75,7 @@ export default function WithdrawalPage() {
     const firestore = useFirestore();
 
     const pendingWithdrawalQuery = React.useMemo(() => {
-        if (!user) return null;
+        if (!user || !firestore) return null;
         return query(
             collection(firestore, 'users', user.uid, 'transactions'),
             where('status', '==', 'Pending'),

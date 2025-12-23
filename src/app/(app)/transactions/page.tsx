@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -129,7 +130,7 @@ export default function TransactionsPage() {
   const firestore = useFirestore();
 
   const transactionsQuery = useMemo(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(
       collection(firestore, "users", user.uid, "transactions"),
       orderBy("date", "desc")

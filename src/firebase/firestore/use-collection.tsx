@@ -8,7 +8,7 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
@@ -17,11 +17,17 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
+
+  // Use a ref to store the query to avoid re-running the effect due to query object instability
+  const queryRef = useRef(query);
+  useEffect(() => {
+    queryRef.current = query;
+  }, [query]);
   
   useEffect(() => {
     // If the query is not valid, reset state and do not proceed.
     // This is the critical guard to prevent listeners on null queries.
-    if (!query) {
+    if (!queryRef.current) {
       setData(null);
       setLoading(true); // Set loading to true as we are waiting for a valid query
       setError(null);
@@ -32,10 +38,11 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     // A valid query is present, reset state for the new query
     setLoading(true);
     setError(null);
+    setData(null);
     setIndexCreationUrl(null);
 
     const unsubscribe = onSnapshot(
-      query,
+      queryRef.current,
       (snapshot: QuerySnapshot<T>) => {
         const resultData = snapshot.docs.map((doc) => {
             const docData = doc.data();
@@ -58,7 +65,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           }
         } else if (err.code === 'permission-denied') {
             // Path can be retrieved from the query object for creating contextual errors
-            const path = (query as any)._query?.path?.canonical;
+            const path = (queryRef.current as any)?._query?.path?.canonical;
             
             if (path) {
                 const permissionError = new FirestorePermissionError({
@@ -80,8 +87,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     
     // Cleanup function to unsubscribe from the listener when the component unmounts or query changes.
     return () => unsubscribe();
-  // Re-run the effect ONLY when the query object itself changes.
-  }, [query]); 
+  // Re-run the effect ONLY when the query object itself changes (which is tracked by the ref update).
+  }, [query]);
 
   return { data, loading, error, indexCreationUrl };
 }

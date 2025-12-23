@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -31,7 +32,7 @@ export function RecentTransactions() {
   const firestore = useFirestore();
 
   const transactionsQuery = useMemo(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "in", ["Completed", "Failed"]),

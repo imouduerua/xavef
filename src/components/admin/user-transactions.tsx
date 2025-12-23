@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCollection, useFirestore } from '@/firebase';
@@ -34,7 +35,7 @@ interface UserTransactionsProps {
 export function UserTransactions({ userId }: UserTransactionsProps) {
   const firestore = useFirestore();
   const transactionsQuery = React.useMemo(() => {
-    if (!userId) return null;
+    if (!firestore || !userId) return null;
     return query(
       collection(firestore, 'users', userId, 'transactions'),
       orderBy('date', 'desc')

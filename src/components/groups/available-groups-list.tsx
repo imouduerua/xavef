@@ -34,14 +34,14 @@ export function AvailableGroupsList() {
   const { user } = useUser();
 
   const groupsQuery = React.useMemo(() => {
-    if (!firestore || !user) return null;
+    if (!firestore) return null;
     // Query for groups that are open for new members
     return query(
         collection(firestore, `groups`), 
         where('status', '==', 'forming'),
         orderBy('createdAt', 'desc')
     );
-  }, [firestore, user]);
+  }, [firestore]);
 
   const { data: groups, loading, indexCreationUrl } = useCollection<Group>(groupsQuery);
   

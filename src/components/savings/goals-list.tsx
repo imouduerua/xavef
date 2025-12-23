@@ -29,7 +29,7 @@ export function GoalsList() {
   const firestore = useFirestore();
 
   const goalsQuery = React.useMemo(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc'));
   }, [user, firestore]);
 
