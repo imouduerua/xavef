@@ -28,6 +28,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -57,6 +58,8 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
   const { isAdmin, isSuperAdmin } = useAdminStatus();
+  const { isMobile, setOpenMobile } = useSidebar();
+
 
   const isInsideAdmin = pathname.startsWith('/admin');
 
@@ -71,6 +74,12 @@ export function AppSidebar() {
     return exact ? pathname === href : pathname.startsWith(href);
   };
   
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
 
   return (
     <Sidebar className="border-r" collapsible="icon">
@@ -87,7 +96,7 @@ export function AppSidebar() {
                 icon={<item.icon />}
                 tooltip={item.label}
               >
-                <Link href={item.href}>{item.label}</Link>
+                <Link href={item.href} onClick={handleLinkClick}>{item.label}</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
@@ -99,7 +108,7 @@ export function AppSidebar() {
                     icon={<Shield />}
                     tooltip="Admin Panel"
                 >
-                    <Link href="/admin">Admin Panel</Link>
+                    <Link href="/admin" onClick={handleLinkClick}>Admin Panel</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
           )}
@@ -115,7 +124,7 @@ export function AppSidebar() {
                 icon={<item.icon />}
                 tooltip={item.label}
               >
-                <Link href={item.href}>{item.label}</Link>
+                <Link href={item.href} onClick={handleLinkClick}>{item.label}</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
