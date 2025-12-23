@@ -8,7 +8,7 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
@@ -18,25 +18,17 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
   
-  // Use a ref to track the query and prevent re-running the effect on every render
-  const queryRef = useRef(query);
-
   useEffect(() => {
-    // If the query is not valid, do not proceed.
-    // Reset the state and wait for a valid query.
+    // If the query is not valid, reset state and do not proceed.
     if (!query) {
       setData(null);
-      setLoading(true); 
+      setLoading(true); // Set loading to true as we are waiting for a valid query
       setError(null);
       setIndexCreationUrl(null);
-      return;
+      return; // Exit the effect
     }
 
-    // Only update the ref if the query has actually changed.
-    if (queryRef.current !== query) {
-        queryRef.current = query;
-    }
-
+    // A valid query is present, reset state for the new query
     setLoading(true);
     setError(null);
     setIndexCreationUrl(null);
@@ -44,26 +36,18 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     const unsubscribe = onSnapshot(
       query,
       (snapshot: QuerySnapshot<T>) => {
-        // Ensure we are only setting state for the current query.
-        if (queryRef.current === query) {
-            const resultData = snapshot.docs.map((doc) => {
-                const docData = doc.data();
-                return {
-                    id: doc.id,
-                    path: doc.ref.path,
-                    ...docData,
-                } as T;
-            });
-            setData(resultData);
-            setLoading(false);
-        }
+        const resultData = snapshot.docs.map((doc) => {
+            const docData = doc.data();
+            return {
+                id: doc.id,
+                path: doc.ref.path,
+                ...docData,
+            } as T;
+        });
+        setData(resultData);
+        setLoading(false);
       },
       (err: FirestoreError) => {
-        // Ensure we are only setting state for the current query.
-         if (queryRef.current !== query) {
-            return;
-        }
-
         console.error('Error fetching collection:', err);
 
         if (err.code === 'failed-precondition' && err.message.includes('requires an index')) {
@@ -82,6 +66,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
                 });
                 errorEmitter.emit('permission-error', permissionError);
             } else {
+                 // This fallback prevents the app from crashing if the path is not found.
                  console.error("Permission denied on a query where the path could not be determined.");
             }
         }
@@ -92,9 +77,9 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       }
     );
     
+    // Cleanup function to unsubscribe from the listener when the component unmounts or query changes.
     return () => unsubscribe();
-    // The calling component MUST memoize the query to prevent infinite loops.
-  }, [query]);
+  }, [query]); // Re-run the effect ONLY when the query object itself changes.
 
   return { data, loading, error, indexCreationUrl };
 }
