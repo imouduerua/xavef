@@ -20,7 +20,7 @@ export function SolidaraSavingsCard({ balance, pendingAmount }: SolidaraSavingsC
      <DepositDialog accountName="Olidara Savings" targetAccount="solidara">
         <Button className="w-full" disabled={isDisabled}>
            <Banknote className="mr-2" />
-           Make Contribution
+           Deposit
         </Button>
     </DepositDialog>
   );
