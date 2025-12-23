@@ -20,6 +20,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   
   useEffect(() => {
     // If the query is not valid, reset state and do not proceed.
+    // This is the critical guard to prevent listeners on null queries.
     if (!query) {
       setData(null);
       setLoading(true); // Set loading to true as we are waiting for a valid query
@@ -79,7 +80,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     
     // Cleanup function to unsubscribe from the listener when the component unmounts or query changes.
     return () => unsubscribe();
-  }, [query]); // Re-run the effect ONLY when the query object itself changes.
+  // Re-run the effect ONLY when the query object itself changes.
+  }, [query]); 
 
   return { data, loading, error, indexCreationUrl };
 }
