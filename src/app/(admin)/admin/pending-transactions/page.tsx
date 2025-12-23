@@ -22,11 +22,14 @@ export default function AdminPendingTransactionsPage() {
   const [transactions, setTransactions] = useState<TransactionWithUserDetails[] | null>(null);
   const firestore = useFirestore();
 
-  const pendingTxsQuery = useMemo(() => firestore ? query(
+  const pendingTxsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(
         collectionGroup(firestore, 'transactions'), 
         where('status', '==', 'Pending'),
         orderBy('date', 'desc')
-    ) : null, [firestore]);
+    );
+  }, [firestore]);
 
   const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
 
