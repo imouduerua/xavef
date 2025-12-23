@@ -16,6 +16,7 @@ import {
     increment,
     addDoc,
     getDoc,
+    writeBatch,
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
 import type { ReferralCode, UserData } from "@/lib/types";
@@ -187,36 +188,67 @@ export async function makeTransferClient(firestore: Firestore, data: {
   amount: number;
 }): Promise<{ success: boolean; error?: string }> {
   
-    const { senderUid, recipientXavefId, recipientName, amount } = data;
+    const { senderUid, recipientXavefId, amount } = data;
 
     if (amount <= 0) {
         return { success: false, error: 'Transfer amount must be positive.' };
     }
 
+    const senderRef = doc(firestore, 'users', senderUid);
+    const usersRef = collection(firestore, 'users');
+    const q = query(usersRef, where('xavefId', '==', recipientXavefId), limit(1));
+    
     try {
-        const senderRef = doc(firestore, 'users', senderUid);
-        const senderDoc = await getDoc(senderRef);
-        if (!senderDoc.exists() || senderDoc.data().solidaraBalance < amount) {
-             return { success: false, error: 'Insufficient funds.' };
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+            return { success: false, error: 'Recipient not found.' };
         }
-
-        // Create a pending transaction for the sender. This will be approved by an admin.
-        const senderTxRef = collection(firestore, `users/${senderUid}/transactions`);
-        const newTransaction = {
-            amount: -amount, // Store as a negative value for the sender
-            date: serverTimestamp(),
-            description: `Transfer to ${recipientName} (${recipientXavefId})`,
-            type: 'User Transfer' as const,
-            status: 'Pending' as const,
-            targetAccount: 'solidara' as const,
-        };
+        const recipientDoc = querySnapshot.docs[0];
+        const recipientRef = recipientDoc.ref;
+        const recipientData = recipientDoc.data() as UserData;
         
-        await addDoc(senderTxRef, newTransaction);
+        await runTransaction(firestore, async (transaction) => {
+            const senderDoc = await transaction.get(senderRef);
+            if (!senderDoc.exists() || senderDoc.data().solidaraBalance < amount) {
+                throw new Error('Insufficient funds.');
+            }
+            const senderData = senderDoc.data() as UserData;
+            
+            // 1. Debit sender's solidaraBalance
+            transaction.update(senderRef, { solidaraBalance: increment(-amount) });
+            
+            // 2. Credit recipient's solidaraBalance
+            transaction.update(recipientRef, { solidaraBalance: increment(amount) });
+            
+            const now = serverTimestamp();
+            
+            // 3. Create transaction record for sender
+            const senderTxRef = doc(collection(firestore, `users/${senderUid}/transactions`));
+            transaction.set(senderTxRef, {
+                amount: -amount,
+                date: now,
+                description: `Transfer to ${recipientData.displayName || recipientData.email}`,
+                type: 'User Transfer',
+                status: 'Completed',
+                targetAccount: 'solidara',
+            });
+
+            // 4. Create transaction record for recipient
+            const recipientTxRef = doc(collection(firestore, `users/${recipientRef.id}/transactions`));
+            transaction.set(recipientTxRef, {
+                amount: amount,
+                date: now,
+                description: `Transfer from ${senderData.displayName || senderData.email}`,
+                type: 'User Transfer',
+                status: 'Completed',
+                targetAccount: 'solidara',
+            });
+        });
         
         return { success: true };
 
     } catch (error: any) {
-        console.error('Error initiating user transfer:', error);
+        console.error('Error during user transfer transaction:', error);
         return { success: false, error: error.message || 'An unexpected error occurred during the transfer.' };
     }
 }

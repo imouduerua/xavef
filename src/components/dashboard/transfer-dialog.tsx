@@ -175,10 +175,10 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
       });
       if (result.success) {
         toast({
-          title: 'Transfer Request Submitted',
-          description: `Your transfer of ₦${values.amount.toFixed(
+          title: 'Transfer Successful!',
+          description: `You have sent ₦${values.amount.toFixed(
             2
-          )} to ${recipientName} is pending admin approval.`,
+          )} to ${recipientName}.`,
         });
         setIsOpen(false);
       } else {
