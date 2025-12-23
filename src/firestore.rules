@@ -8,44 +8,21 @@ service cloud.firestore {
       return request.auth.token.email == 'admin@xavef.com' || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
     
-    // Function to check if a user is the creator of a group that another user has requested to join.
-    function isGroupCreatorForRequester(requesterUid) {
-      // Path to the join requests collection. We need to query it.
-      // This is a simplified check. A more robust way in rules is to check for the existence of a specific document.
-      let joinRequestPath = /databases/$(database)/documents/joinRequests/$(requesterUid);
-      // This is pseudo-code for the logic:
-      // The rule needs to check if there's a join request where the `requesterUid` matches
-      // and the `groupCreatorUid` matches the person making the current request.
-      // Firestore rules don't allow querying documents like this in a function.
-      // The check must be done in the 'allow' statement itself.
-      return true; // This function will be implemented in the rule directly.
-    }
-
-
-    match /{path=**}/transactions/{transactionId} {
-      allow list: if isAdmin();
-    }
-
     match /users/{userId} {
-      // Users can create their own profile with specific constraints.
       allow create: if request.auth != null && request.auth.uid == userId 
                     && request.resource.data.uid == userId
                     && request.resource.data.email == request.auth.token.email
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      // User can read their own profile. Any auth'd user can get another profile (for transfers).
-      allow get: if request.auth != null;
-      allow list: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
       
-      // Admin can get/list any user profile.
       allow get, list: if isAdmin();
 
-      // A user can update their own profile information.
-      // The client-side transaction for transfers handles balance changes atomically.
+      // A user can update their own profile.
       allow update: if request.auth.uid == userId;
       
-      // An admin can ONLY update the balances of other users.
+      // An admin can ONLY update the balances.
       allow update: if isAdmin() &&
                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
 
@@ -54,84 +31,73 @@ service cloud.firestore {
 
     match /referralCodes/{codeId} {
       allow read: if request.auth != null;
-      // Allow any authenticated user to create a code for themselves.
       allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
       
-      // Allow a user to "use" a code (update the 'used' field) if it hasn't been used before.
       allow update: if request.auth != null 
                      && request.resource.data.used == true
                      && resource.data.used == false
                      && "usedBy" in request.resource.data && request.resource.data.usedBy == request.auth.uid;
 
-
       allow delete: if false;
     }
 
     match /users/{userId}/transactions/{transactionId} {
+        // User can read and create their own transactions
         allow read, create: if request.auth != null && request.auth.uid == userId;
+
+        // Admins have full access to transactions
         allow get, list, update: if isAdmin();
         allow delete: if false;
         
-        // Allow a group creator to read the transactions of a user who has requested to join their group.
-        allow list: if request.auth != null && 
-                       exists(
-                         /databases/$(database)/documents/joinRequests/
-                         {requestId}
-                       ) where get(
-                         /databases/$(database)/documents/joinRequests/
-                         {requestId}
-                       ).data.groupCreatorUid == request.auth.uid && get(
-                         /databases/$(database)/documents/joinRequests/
-                         {requestId}
-                       ).data.requesterUid == userId;
-    }
-    
-     match /users/{userId}/transactions/{transactionId} {
-        // Allow a group creator to read transactions of a user who has a PENDING join request for one of their groups
+        // Group creator can read transactions of a user with a PENDING join request for their group
         allow list: if request.auth != null && exists(
             /databases/$(database)/documents/joinRequests/{joinRequestId}
-        ) && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.groupCreatorUid == request.auth.uid 
+        ) where get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.groupCreatorUid == request.auth.uid 
           && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.requesterUid == userId
-          && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.status == 'pending'
+          && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.status == 'pending';
     }
-
+    
     match /users/{userId}/goals/{goalId} {
         allow create, read, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    match /users/{userId}/notifications/{notificationId} {
+        allow read, list, update: if request.auth != null && request.auth.uid == userId;
+        // Allow server-side/trusted creation only. For now, relax to authenticated.
+        allow create: if request.auth != null; 
+        allow delete: if false;
     }
 
     match /admins/{userId} {
       allow read, get: if request.auth != null;
       allow create, delete: if request.auth.token.email == 'admin@xavef.com';
     }
+    
+    match /fcmTokens/{userId} {
+      // Only an admin user can create or update their own FCM token document.
+      allow read, write: if request.auth != null && request.auth.uid == userId && isAdmin();
+    }
 
     match /groups/{groupId} {
-        // Any authenticated user can see the list of available groups.
         allow read: if request.auth != null;
-        // Any authenticated user can create a group, as long as they are the creator.
         allow create: if request.auth != null && request.resource.data.creatorUid == request.auth.uid;
         
-        // Group creator can update the group (e.g. to add a member, or change status)
-        // This is simplified because the complex logic is now handled in a transaction.
+        // The group creator can update the group, but with specific constraints.
         allow update: if request.auth != null && resource.data.creatorUid == request.auth.uid;
     }
 
     match /joinRequests/{requestId} {
-        // A user can create a join request for themselves.
         allow create: if request.auth != null && request.resource.data.requesterUid == request.auth.uid;
-        // The group creator can read requests for their groups. The requester can read their own requests.
         allow read, list: if request.auth != null && (get(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.creatorUid == request.auth.uid || resource.data.requesterUid == request.auth.uid);
-        // The group creator can update the status (approve/decline).
-        allow update: if request.auth != null && resource.data.groupCreatorUid == request.auth.uid;
+        allow update: if request.auth != null && get(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.creatorUid == request.auth.uid;
         allow delete: if false;
     }
-    
+
     match /transfers/{transferId} {
         // A user can create a transfer document if they are the sender.
-        // This is used by the client transaction to securely process transfers.
+        // The rest of the logic is handled in the server-side action with a transaction.
         allow create: if request.auth != null && request.resource.data.senderUid == request.auth.uid;
         allow read, update, delete: if false; // No one can read/update/delete these directly
     }
   }
 }
-
-    

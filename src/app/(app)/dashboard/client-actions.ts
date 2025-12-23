@@ -19,7 +19,7 @@ import {
     writeBatch,
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
-import type { ReferralCode, UserData } from "@/lib/types";
+import type { ReferralCode, UserData, BankAccount } from "@/lib/types";
 
 async function generateUniqueXavefId(firestore: Firestore): Promise<string> {
     let xavefId;
@@ -180,7 +180,6 @@ export async function createUserProfile(
     }
 }
 
-
 export async function makeTransferClient(firestore: Firestore, data: {
   senderUid: string;
   recipientXavefId: string;
@@ -188,67 +187,39 @@ export async function makeTransferClient(firestore: Firestore, data: {
   amount: number;
 }): Promise<{ success: boolean; error?: string }> {
   
-    const { senderUid, recipientXavefId, amount } = data;
+  const { senderUid, recipientXavefId, amount, recipientName } = data;
 
-    if (amount <= 0) {
-        return { success: false, error: 'Transfer amount must be positive.' };
+  if (amount <= 0) {
+    return { success: false, error: 'Transfer amount must be positive.' };
+  }
+
+  const senderRef = doc(firestore, 'users', senderUid);
+  
+  try {
+    const senderDoc = await getDoc(senderRef);
+    if (!senderDoc.exists() || senderDoc.data().solidaraBalance < amount) {
+      return { success: false, error: 'Insufficient funds.' };
     }
 
-    const senderRef = doc(firestore, 'users', senderUid);
-    const usersRef = collection(firestore, 'users');
-    const q = query(usersRef, where('xavefId', '==', recipientXavefId), limit(1));
+    const transactionRef = collection(firestore, `users/${senderUid}/transactions`);
     
-    try {
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-            return { success: false, error: 'Recipient not found.' };
-        }
-        const recipientDoc = querySnapshot.docs[0];
-        const recipientRef = recipientDoc.ref;
-        const recipientData = recipientDoc.data() as UserData;
+    // Create a PENDING transaction for the sender. The admin will approve this.
+    await addDoc(transactionRef, {
+      date: serverTimestamp(),
+      amount: -amount, // Debited from sender
+      description: `Transfer to ${recipientName} (${recipientXavefId})`,
+      type: 'User Transfer',
+      status: 'Pending',
+      targetAccount: 'solidara',
+      // Add recipient info for the admin to process the transfer
+      recipientXavefId: recipientXavefId, 
+      recipientName: recipientName,
+    });
         
-        await runTransaction(firestore, async (transaction) => {
-            const senderDoc = await transaction.get(senderRef);
-            if (!senderDoc.exists() || senderDoc.data().solidaraBalance < amount) {
-                throw new Error('Insufficient funds.');
-            }
-            const senderData = senderDoc.data() as UserData;
-            
-            // 1. Debit sender's solidaraBalance
-            transaction.update(senderRef, { solidaraBalance: increment(-amount) });
-            
-            // 2. Credit recipient's solidaraBalance
-            transaction.update(recipientRef, { solidaraBalance: increment(amount) });
-            
-            const now = serverTimestamp();
-            
-            // 3. Create transaction record for sender
-            const senderTxRef = doc(collection(firestore, `users/${senderUid}/transactions`));
-            transaction.set(senderTxRef, {
-                amount: -amount,
-                date: now,
-                description: `Transfer to ${recipientData.displayName || recipientData.email}`,
-                type: 'User Transfer',
-                status: 'Completed',
-                targetAccount: 'solidara',
-            });
+    return { success: true };
 
-            // 4. Create transaction record for recipient
-            const recipientTxRef = doc(collection(firestore, `users/${recipientRef.id}/transactions`));
-            transaction.set(recipientTxRef, {
-                amount: amount,
-                date: now,
-                description: `Transfer from ${senderData.displayName || senderData.email}`,
-                type: 'User Transfer',
-                status: 'Completed',
-                targetAccount: 'solidara',
-            });
-        });
-        
-        return { success: true };
-
-    } catch (error: any) {
-        console.error('Error during user transfer transaction:', error);
-        return { success: false, error: error.message || 'An unexpected error occurred during the transfer.' };
-    }
+  } catch (error: any) {
+    console.error('Error during user transfer request:', error);
+    return { success: false, error: error.message || 'An unexpected error occurred during the transfer.' };
+  }
 }

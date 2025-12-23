@@ -65,6 +65,8 @@ export interface Transaction {
   proofOfPaymentUrl?: string;
   userId?: string; 
   groupId?: string; // For group contributions
+  recipientXavefId?: string; // For user transfers
+  recipientName?: string; // For user transfers
 }
 
 export interface TransactionWithUserDetails extends Transaction {

@@ -20,6 +20,7 @@ import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { addFundsToGoal } from '../savings/client-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { PendingTransferCard } from '@/components/dashboard/pending-transfer-card';
 
 function DashboardContent() {
   const { user, loading: userLoading } = useUser();
@@ -31,7 +32,6 @@ function DashboardContent() {
     return query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "==", "Pending"),
-      where("type", "==", "Deposit")
     );
   }, [user, firestore]);
   
@@ -56,11 +56,15 @@ function DashboardContent() {
 
 
   const pendingSolidaraDeposit = useMemo(
-    () => pendingTransactions?.find(tx => tx.targetAccount === 'solidara'),
+    () => pendingTransactions?.find(tx => tx.targetAccount === 'solidara' && tx.type === 'Deposit'),
     [pendingTransactions]
   );
   const pendingAnnualDeposit = useMemo(
     () => pendingTransactions?.find(tx => tx.targetAccount === 'annual'),
+    [pendingTransactions]
+  );
+  const pendingUserTransfer = useMemo(
+    () => pendingTransactions?.find(tx => tx.type === 'User Transfer'),
     [pendingTransactions]
   );
   
@@ -189,6 +193,11 @@ function DashboardContent() {
                 </CardDescription>
             </CardHeader>
         </Card>
+
+        {pendingUserTransfer && (
+            <PendingTransferCard transaction={pendingUserTransfer} />
+        )}
+
 
         {joinRequests && joinRequests.length > 0 && (
             <Alert variant="default" className="border-primary/50">
