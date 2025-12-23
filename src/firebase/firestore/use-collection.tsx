@@ -54,11 +54,16 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             setIndexCreationUrl(urlMatch[0]);
           }
         } else if (err.code === 'permission-denied') {
-            const permissionError = new FirestorePermissionError({
-                path: query.path,
-                operation: 'list',
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            // Safeguard against undefined query path
+            if (query.path) {
+                const permissionError = new FirestorePermissionError({
+                    path: query.path,
+                    operation: 'list',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            } else {
+                 console.error("Permission denied on a query with an undefined path.");
+            }
         }
         
         setError(err);
