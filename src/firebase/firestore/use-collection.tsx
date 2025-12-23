@@ -20,9 +20,13 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   
   // Use a ref to track the query and prevent re-running the effect on every render
   const queryRef = useRef(query);
-  queryRef.current = query;
 
   useEffect(() => {
+    // Only update the ref if the query has actually changed.
+    if (queryRef.current !== query) {
+        queryRef.current = query;
+    }
+
     // If the query is not valid, do not proceed.
     // Reset the state and wait for a valid query.
     if (!query) {
