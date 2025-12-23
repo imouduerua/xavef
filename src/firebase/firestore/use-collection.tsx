@@ -8,7 +8,7 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
@@ -17,8 +17,16 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
+  
+  // Use a ref to store the unsubscribe function
+  const unsubscribeRef = useRef<() => void | undefined>();
 
   useEffect(() => {
+    // If there's a previous subscription, unsubscribe from it before creating a new one.
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+    }
+
     if (!query) {
       setData(null);
       setLoading(false);
@@ -31,6 +39,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     setError(null);
     setIndexCreationUrl(null);
 
+    // Set up the new snapshot listener
     const unsubscribe = onSnapshot(
       query,
       (snapshot: QuerySnapshot<T>) => {
@@ -54,7 +63,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             setIndexCreationUrl(urlMatch[0]);
           }
         } else if (err.code === 'permission-denied') {
-            // Safeguard against undefined query path
             if (query.path) {
                 const permissionError = new FirestorePermissionError({
                     path: query.path,
@@ -71,10 +79,16 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setLoading(false);
       }
     );
+    
+    // Store the new unsubscribe function in the ref.
+    unsubscribeRef.current = unsubscribe;
 
-    return () => unsubscribe();
-  // We remove the query from the dependency array as it can cause infinite loops if not memoized correctly upstream.
-  // The hook should re-run based on its parent component's lifecycle.
+    // The cleanup function for when the component unmounts or query changes.
+    return () => {
+        if (unsubscribeRef.current) {
+            unsubscribeRef.current();
+        }
+    };
   }, [query]);
 
   return { data, loading, error, indexCreationUrl };
