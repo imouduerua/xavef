@@ -60,39 +60,6 @@ export async function updateTransactionStatus(
          
          const balanceUpdate = { [balanceFieldToUpdate]: increment(amount) };
          batch.update(userRef, balanceUpdate);
-       } else if (txData.type === 'User Transfer') {
-         
-         if (!txData.recipientXavefId) {
-            throw new Error("Recipient information is missing from the transfer.");
-         }
-         // 1. Debit the sender (amount is already negative)
-         batch.update(userRef, { solidaraBalance: increment(amount) });
-         
-         // 2. Find and credit the recipient
-         const recipientQuery = query(collection(firestore, 'users'), where('xavefId', '==', txData.recipientXavefId), limit(1));
-         const recipientSnapshot = await getDocs(recipientQuery);
-         
-         if (recipientSnapshot.empty) {
-            throw new Error(`Recipient with Xavef ID ${txData.recipientXavefId} not found.`);
-         }
-         
-         const recipientDoc = recipientSnapshot.docs[0];
-         const recipientRef = recipientDoc.ref;
-         const recipientData = recipientDoc.data() as UserData;
-         
-         // 3. Credit the recipient's balance
-         batch.update(recipientRef, { solidaraBalance: increment(Math.abs(amount)) });
-         
-         // 4. Create a transaction record for the recipient
-         const recipientTxCollection = collection(firestore, `users/${recipientRef.id}/transactions`);
-         batch.set(doc(recipientTxCollection), {
-            date: txData.date,
-            amount: Math.abs(amount),
-            description: `Transfer from ${userDoc.data()?.displayName || 'a user'}`,
-            type: 'User Transfer',
-            status: 'Completed',
-            targetAccount: 'solidara'
-         });
        }
     }
 

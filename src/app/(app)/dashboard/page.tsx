@@ -63,10 +63,6 @@ function DashboardContent() {
     () => pendingTransactions?.find(tx => tx.targetAccount === 'annual'),
     [pendingTransactions]
   );
-  const pendingUserTransfer = useMemo(
-    () => pendingTransactions?.find(tx => tx.type === 'User Transfer'),
-    [pendingTransactions]
-  );
   
   const balances = {
     solidara: userData?.solidaraBalance ?? 0.0,
@@ -193,11 +189,6 @@ function DashboardContent() {
                 </CardDescription>
             </CardHeader>
         </Card>
-
-        {pendingUserTransfer && (
-            <PendingTransferCard transaction={pendingUserTransfer} />
-        )}
-
 
         {joinRequests && joinRequests.length > 0 && (
             <Alert variant="default" className="border-primary/50">

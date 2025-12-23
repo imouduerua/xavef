@@ -113,8 +113,7 @@
             "Loan Payment",
             "Interest",
             "Group Contribution",
-            "Group Payout",
-            "User Transfer"
+            "Group Payout"
           ]
         },
         "status": {
@@ -144,14 +143,6 @@
         "groupId": {
           "type": "string",
           "description": "The ID of the group for group-related transactions."
-        },
-        "recipientXavefId": {
-          "type": "string",
-          "description": "The Xavef ID of the recipient for user-to-user transfers."
-        },
-        "recipientName": {
-          "type": "string",
-          "description": "The name of the recipient for user-to-user transfers."
         }
       },
       "required": [
@@ -161,19 +152,6 @@
         "status",
         "amount"
       ]
-    },
-    "transfer": {
-        "title": "Transfer",
-        "description": "A record of a user-to-user transfer.",
-        "type": "object",
-        "properties": {
-            "senderUid": { "type": "string" },
-            "recipientUid": { "type": "string" },
-            "amount": { "type": "number" },
-            "createdAt": { "type": "string", "format": "date-time" },
-            "status": { "type": "string", "enum": ["completed"] }
-        },
-        "required": ["senderUid", "recipientUid", "amount", "createdAt", "status"]
     },
     "referralCode": {
       "title": "Referral Code",
@@ -376,10 +354,6 @@
     "/joinRequests/{requestId}": {
         "schema": { "$ref": "#/entities/joinRequest" },
         "description": "Stores requests from users to join savings groups."
-    },
-    "/transfers/{transferId}": {
-        "schema": { "$ref": "#/entities/transfer" },
-        "description": "Atomically records a transfer between two users."
     },
     "/fcmTokens/{userId}": {
       "schema": {

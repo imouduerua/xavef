@@ -59,10 +59,6 @@ export function PendingTransferCard({ transaction }: PendingTransferCardProps) {
                 <CardDescription>Your transfer is being confirmed by an admin. This usually takes less than 15 minutes.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-                <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Sending To</span>
-                    <span className="font-medium">{transaction.recipientName || 'N/A'} ({transaction.recipientXavefId || 'N/A'})</span>
-                </div>
                 <div className="flex justify-between items-baseline pt-2 border-t">
                     <span className="text-muted-foreground">Amount Sent</span>
                     <span className="font-bold text-lg">₦{transferAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>

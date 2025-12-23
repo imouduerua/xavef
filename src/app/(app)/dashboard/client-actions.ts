@@ -43,48 +43,6 @@ interface CreateProfileData {
     referralCode: string;
 }
 
-export async function findUserByXavefIdClient(firestore: Firestore, xavefId: string, senderUid: string): Promise<{ success: boolean; name?: string; error?: string }> {
-    if (!xavefId) {
-        return { success: false, error: 'Xavef ID is required.' };
-    }
-     if (!senderUid) {
-        return { success: false, error: 'Sender not identified.' };
-    }
-
-    try {
-        const usersRef = collection(firestore, 'users');
-        const q = query(
-            usersRef, 
-            where('xavefId', '==', xavefId), 
-            where(documentId(), '!=', senderUid),
-            limit(1)
-        );
-
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            return { success: false, error: 'User not found.' };
-        }
-
-        const userData = querySnapshot.docs[0].data() as UserData;
-        
-        const fullName = (userData.firstName && userData.lastName) 
-            ? `${userData.firstName} ${userData.lastName}`.trim()
-            : userData.displayName;
-        
-        if (!fullName) {
-             return { success: false, error: 'User name not available.' };
-        }
-        
-        return { success: true, name: fullName };
-
-    } catch (error) {
-        console.error('Error finding user by Xavef ID:', error);
-        return { success: false, error: 'An unexpected error occurred.' };
-    }
-}
-
-
 export async function createUserProfile(
     firestore: Firestore,
     user: AuthUser,
@@ -178,48 +136,4 @@ export async function createUserProfile(
         console.error("[createUserProfile] Error during profile creation transaction:", error);
         return { success: false, error: `An unexpected error occurred during profile creation.` };
     }
-}
-
-export async function makeTransferClient(firestore: Firestore, data: {
-  senderUid: string;
-  recipientXavefId: string;
-  recipientName: string;
-  amount: number;
-}): Promise<{ success: boolean; error?: string }> {
-  
-  const { senderUid, recipientXavefId, amount, recipientName } = data;
-
-  if (amount <= 0) {
-    return { success: false, error: 'Transfer amount must be positive.' };
-  }
-
-  const senderRef = doc(firestore, 'users', senderUid);
-  
-  try {
-    const senderDoc = await getDoc(senderRef);
-    if (!senderDoc.exists() || senderDoc.data().solidaraBalance < amount) {
-      return { success: false, error: 'Insufficient funds.' };
-    }
-
-    const transactionRef = collection(firestore, `users/${senderUid}/transactions`);
-    
-    // Create a PENDING transaction for the sender. The admin will approve this.
-    await addDoc(transactionRef, {
-      date: serverTimestamp(),
-      amount: -amount, // Debited from sender
-      description: `Transfer to ${recipientName} (${recipientXavefId})`,
-      type: 'User Transfer',
-      status: 'Pending',
-      targetAccount: 'solidara',
-      // Add recipient info for the admin to process the transfer
-      recipientXavefId: recipientXavefId, 
-      recipientName: recipientName,
-    });
-        
-    return { success: true };
-
-  } catch (error: any) {
-    console.error('Error during user transfer request:', error);
-    return { success: false, error: error.message || 'An unexpected error occurred during the transfer.' };
-  }
 }
