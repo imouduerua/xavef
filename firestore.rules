@@ -17,8 +17,6 @@ service cloud.firestore {
 
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
       
-      allow get, list: if isAdmin();
-
       // A user can update their profile, but NOT their balance or sensitive fields managed by admin.
       allow update: if request.auth.uid == userId &&
                      !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
@@ -49,17 +47,15 @@ service cloud.firestore {
         // User can read and create their own transactions
         allow read, create: if request.auth != null && request.auth.uid == userId;
 
-        // Admins can update any transaction, and list all of them
-        allow update, list: if isAdmin();
-        
-        // Group creator can read transactions of a user with a PENDING join request for their group
-        allow list: if request.auth != null && exists(
-            /databases/$(database)/documents/joinRequests/{joinRequestId}
-        ) where get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.groupCreatorUid == request.auth.uid 
-          && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.requesterUid == userId
-          && get(/databases/$(database)/documents/joinRequests/{joinRequestId}).data.status == 'pending';
+        // Admins can update any transaction
+        allow update: if isAdmin();
         
         allow delete: if false;
+    }
+    
+    // This rule allows admins to perform a collectionGroup query on 'transactions'
+    match /{path=**}/transactions/{transactionId} {
+        allow list: if isAdmin();
     }
     
     match /users/{userId}/goals/{goalId} {
