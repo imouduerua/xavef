@@ -14,68 +14,70 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Admins have full read/write access to user data.
-    // Users can read their own data and update specific, non-sensitive fields.
     match /users/{userId} {
-      allow read: if isAuthOwner(userId) || isAdmin();
-      
-      // Admin can write to any field
-      allow write: if isAdmin();
-      
-      // User can only update their own non-balance fields.
-      allow update: if isAuthOwner(userId) &&
-                     !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                     !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                     !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                     !('referredBy' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                     !('isAdmin' in request.resource.data.diff(resource.data).affectedKeys());
-                     
       allow create: if isAuthOwner(userId)
                     && request.resource.data.uid == userId
                     && request.resource.data.email == request.auth.token.email
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
+
+      allow read: if isAuthOwner(userId) || isAdmin();
+      
+      // A user can update their own profile, but NOT their balance or sensitive fields managed by admin.
+      allow update: if isAuthOwner(userId) &&
+                     !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                     !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                     !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                     !('referredBy' in request.resource.data.diff(resource.data).affectedKeys());
+      
+      // An admin can ONLY update the balances of a user.
+      allow update: if isAdmin() &&
+                  request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
+
+      allow delete: if false;
     }
 
-    // Admins and users can read/create referral codes.
     match /referralCodes/{codeId} {
       allow read: if request.auth != null;
       allow create: if isAuthOwner(request.resource.data.creatorUid);
-      allow update: if request.resource.data.used == true 
+      
+      allow update: if isAuthOwner(request.resource.data.usedBy)
+                     && request.resource.data.used == true
                      && resource.data.used == false
-                     && "usedBy" in request.resource.data && isAuthOwner(request.resource.data.usedBy);
+                     && "usedBy" in request.resource.data;
+
+      allow delete: if false;
     }
 
-    // Admins and users can read/create their own transactions.
     match /users/{userId}/transactions/{transactionId} {
-        allow read: if isAuthOwner(userId) || isAdmin();
-        allow write: if isAdmin() || isAuthOwner(userId);
+        allow read, create: if isAuthOwner(userId);
+        // Admins can update a transaction status, or delete it (for declines)
+        allow update, delete: if isAdmin();
     }
     
-    // Collection group queries on transactions are only for admins.
+    // This rule allows admins to perform a collectionGroup query on 'transactions'
     match /{path=**}/transactions/{transactionId} {
         allow list: if isAdmin();
     }
     
-    // Users can manage their own goals.
     match /users/{userId}/goals/{goalId} {
         allow read, write: if isAuthOwner(userId);
     }
     
-    // Users can manage their own notifications. Admins can create them.
     match /users/{userId}/notifications/{notificationId} {
-        allow read, update: if isAuthOwner(userId);
-        allow create, list: if isAdmin() || isAuthOwner(userId);
+        allow read, list, update: if isAuthOwner(userId);
+        // Admin can create notifications for users.
+        allow create: if isAdmin(); 
+        allow delete: if false;
     }
 
-    // Super Admin can manage the admins collection.
     match /admins/{userId} {
-      allow read: if request.auth != null;
+      allow read, get: if request.auth != null;
       allow write: if request.auth.token.email == 'admin@xavef.com';
     }
     
-    // Admin users can manage their own FCM tokens.
     match /fcmTokens/{userId} {
+      // Only an admin user can create or update their own FCM token document.
       allow read, write: if isAuthOwner(userId) && isAdmin();
     }
 
