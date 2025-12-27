@@ -16,15 +16,18 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
+      // Admins can read any user profile. Users can read their own.
+      allow get: if isAuthOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+
+      // Users can be created.
       allow create: if isAuthOwner(userId)
                     && request.resource.data.uid == userId
                     && request.resource.data.email == request.auth.token.email
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      allow get: if isAuthOwner(userId) || isAdmin();
-      
-      // A user can update their own profile, but NOT their balance or sensitive fields managed by admin.
+      // A user can update their own non-sensitive profile info.
       allow update: if isAuthOwner(userId) &&
                      !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
@@ -35,33 +38,33 @@ service cloud.firestore {
       allow update: if isAdmin() &&
                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
 
-      allow delete: if false;
+      allow delete: if false; // Do not allow users to be deleted.
     }
 
     match /referralCodes/{codeId} {
       allow read: if request.auth != null;
       allow create: if isAuthOwner(request.resource.data.creatorUid);
       
-      // Allow the user who is USING the code to update it to used.
-      allow update: if (isAuthOwner(request.resource.data.usedBy))
-                     && request.resource.data.used == true
-                     && resource.data.used == false
-                     && "usedBy" in request.resource.data;
+      // Allow a user to claim a referral code.
+      allow update: if resource.data.used == false 
+                    && request.resource.data.used == true
+                    && isAuthOwner(request.resource.data.usedBy);
 
       allow delete: if false;
     }
 
     match /users/{userId}/transactions/{transactionId} {
+        // A user can create their own transactions.
         allow create: if isAuthOwner(userId);
         
-        // A user can list/get their own transactions. An admin can list/get ANY transaction.
+        // A user can read their own transactions. An admin can read ANY transaction.
         allow get, list: if isAuthOwner(userId) || isAdmin();
 
         // Admins can update a transaction status, or delete it (for declines)
         allow update, delete: if isAdmin();
     }
     
-    // This rule allows admins to perform a collectionGroup query on 'transactions'
+    // This rule allows admins to perform a collectionGroup query across all users' transactions.
     match /{path=**}/transactions/{transactionId} {
         allow list: if isAdmin();
     }
