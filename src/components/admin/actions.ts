@@ -20,21 +20,29 @@ export async function updateTransactionStatus(
 ): Promise<{ success: boolean; error?: string }> {
   
   const txRef = doc(firestore, `users/${userId}/transactions`, transactionId);
-  const txDoc = await getDoc(txRef);
-  if (!txDoc.exists()) {
-    return { success: false, error: 'Transaction not found.' };
+  
+  let txData: Transaction;
+  try {
+      const txDoc = await getDoc(txRef);
+      if (!txDoc.exists()) {
+        return { success: false, error: 'Transaction not found.' };
+      }
+      txData = txDoc.data() as Transaction;
+  } catch (e: any) {
+    return { success: false, error: `Failed to fetch transaction: ${e.message}`};
   }
-  const txData = txDoc.data() as Transaction;
+
   
   if (txData.status !== 'Pending') {
     return { success: false, error: `Transaction is already ${txData.status.toLowerCase()}.` };
   }
     
+  const batch = writeBatch(firestore);
+  const notificationRef = doc(collection(firestore, `users/${userId}/notifications`));
+
   // --- Logic for 'Failed' (Decline) status ---
   if (newStatus === 'Failed') {
-      const batch = writeBatch(firestore);
       batch.delete(txRef);
-      const notificationRef = doc(collection(firestore, `users/${userId}/notifications`));
       batch.set(notificationRef, {
           userId: userId,
           title: 'Transaction Declined',
@@ -52,23 +60,21 @@ export async function updateTransactionStatus(
             });
             errorEmitter.emit('permission-error', permissionError);
         });
+        
       return { success: true };
   }
 
   // --- Logic for 'Completed' (Approve) status ---
   const userRef = doc(firestore, 'users', userId);
-  const userDoc = await getDoc(userRef);
-  if (!userDoc.exists()) {
-      return { success: false, error: "User data not found. Cannot update balance." };
-  }
 
-  const batch = writeBatch(firestore);
   batch.update(txRef, { status: newStatus });
 
   const amount = Number(txData.amount);
   if (isNaN(amount)) {
       return { success: false, error: "Invalid transaction amount." };
   }
+  
+  let balanceUpdate: { solidaraBalance?: any, annualBalance?: any } = {};
 
   if (txData.type === 'Deposit' || txData.type === 'Withdrawal') {
       const targetAccount = txData.targetAccount || 'solidara';
@@ -77,13 +83,11 @@ export async function updateTransactionStatus(
          return { success: false, error: 'Invalid target account on the transaction.' };
       }
       
-      const balanceFieldToUpdate = `${targetAccount}Balance` as keyof UserData;
-      
-      const balanceUpdate = { [balanceFieldToUpdate]: increment(amount) };
+      const balanceFieldToUpdate = targetAccount === 'solidara' ? 'solidaraBalance' : 'annualBalance';
+      balanceUpdate = { [balanceFieldToUpdate]: increment(amount) };
       batch.update(userRef, balanceUpdate);
   }
   
-  const notificationRef = doc(collection(firestore, `users/${userId}/notifications`));
   batch.set(notificationRef, {
       userId: userId,
       title: 'Transaction Completed',
@@ -96,10 +100,11 @@ export async function updateTransactionStatus(
   // NO AWAIT HERE, CHAIN .catch()
   batch.commit()
     .catch(serverError => {
+        // The most likely permission error here is on the user balance update.
         const permissionError = new FirestorePermissionError({
-            path: userRef.path, // The user path is more likely to fail on balance updates
+            path: userRef.path,
             operation: 'update',
-            requestResourceData: { balanceUpdate: { amount: amount, account: txData.targetAccount } }
+            requestResourceData: balanceUpdate
         });
         errorEmitter.emit('permission-error', permissionError);
     });
