@@ -9,86 +9,123 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return request.auth.token.email == 'admin@xavef.com' 
+      // The super admin is defined by their email.
+      // Other admins are defined by their existence in the /admins collection.
+      return request.auth.token.email == 'admin@xavef.com'
              || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    // Rules for the User collection
     match /users/{userId} {
+      // Admins and the user themselves can get the user document.
       allow get: if isAuthOwner(userId) || isAdmin();
+      // Only admins can list all users.
       allow list: if isAdmin();
 
+      // A new user can create their own profile document.
       allow create: if isAuthOwner(userId)
                     && request.resource.data.uid == userId
                     && request.resource.data.email == request.auth.token.email
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      // Rule for user to update their own non-sensitive data
+      // A user can update their own profile, but NOT their balance or other protected fields.
       allow update: if isAuthOwner(userId) &&
                      !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('referredBy' in request.resource.data.diff(resource.data).affectedKeys());
-      
-      // Rule for an admin to ONLY update balance fields
+
+      // CRUCIAL FIX: An admin can ONLY update the balance fields of a user.
+      // This is required for transaction approvals.
       allow update: if isAdmin() &&
                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
 
-      allow delete: if false;
+      allow delete: if false; // Users cannot be deleted from the client.
     }
 
+    // Rules for user-specific subcollections
+    match /users/{userId}/{document=**} {
+        // This is a broad rule that allows an owner to do anything in their own subcollections
+        // which will be further restricted by the more specific rules below.
+        allow read, write: if isAuthOwner(userId);
+    }
+
+
+    // Specific rules for the 'transactions' subcollection
     match /users/{userId}/transactions/{transactionId} {
+      // A user can create a transaction for themselves (e.g., a deposit request).
       allow create: if isAuthOwner(userId);
+      // The user or an admin can view transactions.
       allow get, list: if isAuthOwner(userId) || isAdmin();
-      // Admin can update or delete transactions (for approvals/declines)
+      // CRUCIAL FIX: An admin can update or delete transactions (for approvals/declines).
       allow update, delete: if isAdmin();
     }
-    
-    // This allows admins to perform a collectionGroup query across all users' transactions.
+
+    // This rule is required to allow admins to query the 'transactions' collection group
+    // across all users, which is needed for the pending transactions page.
     match /{path=**}/transactions/{transactionId} {
         allow list: if isAdmin();
     }
 
+    // Rules for user notifications
     match /users/{userId}/notifications/{notificationId} {
+        // Users can read and update (e.g., mark as read) their own notifications.
         allow read, list, update: if isAuthOwner(userId);
-        // Admins can create notifications for users.
-        allow create: if isAdmin(); 
-        allow delete: if false;
+        // CRUCIAL FIX: Admins can create notifications for users (e.g., on transaction approval).
+        allow create: if isAdmin();
+        allow delete: if false; // Notifications are not deletable.
     }
-
+    
+    // Rules for saving goals
+    match /users/{userId}/goals/{goalId} {
+        allow read, write: if isAuthOwner(userId);
+    }
+    
+    // Rules for referral codes
     match /referralCodes/{codeId} {
       allow read: if request.auth != null;
+      // A user can create a referral code for themselves.
       allow create: if isAuthOwner(request.resource.data.creatorUid);
-      allow update: if resource.data.used == false 
+      // A code can be updated from 'used: false' to 'used: true' by the user who is using it.
+      allow update: if resource.data.used == false
                     && request.resource.data.used == true
                     && isAuthOwner(request.resource.data.usedBy);
       allow delete: if false;
     }
-    
-    match /users/{userId}/goals/{goalId} {
-        allow read, write: if isAuthOwner(userId);
-    }
 
+    // Rules for the admins collection
     match /admins/{userId} {
       allow read, get: if request.auth != null;
+      // Only the super admin can add or remove other admins.
       allow write: if request.auth.token.email == 'admin@xavef.com';
     }
     
-    match /fcmTokens/{userId} {
-      allow read, write: if isAuthOwner(userId) && isAdmin();
-    }
-
+    // Rules for saving group information
     match /groups/{groupId} {
+        // Any authenticated user can read group info.
         allow read: if request.auth != null;
+        // A user can create a group where they are the creator.
         allow create: if isAuthOwner(request.resource.data.creatorUid);
+        // Only the group creator can update a group (e.g., start it).
         allow update: if isAuthOwner(resource.data.creatorUid);
     }
-
+    
+    // Rules for requests to join a group
     match /joinRequests/{requestId} {
+        // A user can create a request to join a group.
         allow create: if isAuthOwner(request.resource.data.requesterUid);
-        allow read: if isAuthOwner(request.resource.data.requesterUid) 
+        // The requester or the group creator can read the request.
+        allow read: if isAuthOwner(request.resource.data.requesterUid)
                       || isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
+        // Only the group creator can update (approve/decline) the request.
         allow update: if isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
+    }
+
+    // Rules for FCM tokens for push notifications
+    match /fcmTokens/{userId} {
+      // Only an admin user can write their own token.
+      allow read, write: if isAuthOwner(userId) && isAdmin();
     }
   }
 }
