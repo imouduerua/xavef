@@ -31,7 +31,7 @@ service cloud.firestore {
                      !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('referredBy' in request.resource.data.diff(resource.data).affectedKeys());
       
-      // An admin can ONLY update the balances of a user. This rule is crucial for approvals.
+      // An admin can ONLY update the balance fields of a user. This rule is crucial for approvals.
       allow update: if isAdmin() &&
                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
 
@@ -51,7 +51,10 @@ service cloud.firestore {
     }
 
     match /users/{userId}/transactions/{transactionId} {
-        allow read, create: if isAuthOwner(userId);
+        // A user can read/create their own transactions. An admin can read ANY transaction.
+        allow create: if isAuthOwner(userId);
+        allow get, list: if isAuthOwner(userId) || isAdmin();
+
         // Admins can update a transaction status, or delete it (for declines)
         allow update, delete: if isAdmin();
     }
@@ -67,7 +70,7 @@ service cloud.firestore {
     
     match /users/{userId}/notifications/{notificationId} {
         allow read, list, update: if isAuthOwner(userId);
-        // Admin can create notifications for users.
+        // Admin can create notifications for users as part of a transaction batch.
         allow create: if isAdmin(); 
         allow delete: if false;
     }
@@ -87,6 +90,7 @@ service cloud.firestore {
     match /groups/{groupId} {
         allow read: if request.auth != null;
         allow create: if isAuthOwner(request.resource.data.creatorUid);
+        // Only the group creator can update the group (e.g. start it, add members via request approval)
         allow update: if isAuthOwner(resource.data.creatorUid);
     }
 
@@ -94,6 +98,7 @@ service cloud.firestore {
         allow create: if isAuthOwner(request.resource.data.requesterUid);
         allow read: if isAuthOwner(request.resource.data.requesterUid) 
                       || isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
+        // Only group creators can update the status of a request for their group
         allow update: if isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
     }
   }

@@ -30,15 +30,14 @@ export async function updateTransactionStatus(
             if (!txSnap.exists()) {
                 throw new Error('Transaction not found.');
             }
-            const txData = txSnap.data();
-
+            const txData = txSnap.data() as Transaction;
             const notificationRef = doc(collection(firestore, `users/${userId}/notifications`));
 
             transaction.delete(txRef);
             transaction.set(notificationRef, {
                 userId: userId,
                 title: 'Transaction Declined',
-                description: `Your ${txData.type.toLowerCase()} of ₦${Math.abs(txData.amount)} was declined.`,
+                description: `Your ${txData.type.toLowerCase()} of ₦${Math.abs(txData.amount)} was declined. Please contact support for details.`,
                 createdAt: serverTimestamp(),
                 read: false,
             });
@@ -65,6 +64,11 @@ export async function updateTransactionStatus(
         const txDoc = await transaction.get(txRef);
         if (!txDoc.exists() || txDoc.data().status !== 'Pending') {
             throw new Error('Transaction not found or is not in a pending state.');
+        }
+
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) {
+          throw new Error("User associated with this transaction could not be found.");
         }
 
         const txData = txDoc.data() as Transaction;
