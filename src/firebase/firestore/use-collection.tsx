@@ -24,7 +24,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
 
   useEffect(() => {
     // If the query is null, it means we don't have enough information to fetch data yet.
-    // Reset state and wait for a valid query.
+    // Reset state and wait for a valid query. This prevents errors from invalid queries
+    // on initial render.
     if (!query) {
       setData(null);
       setLoading(false); // Not loading if there's no query
@@ -68,9 +69,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
                     operation: 'list',
                 });
                 errorEmitter.emit('permission-error', permissionError);
-            } else {
-                 // This fallback prevents the app from crashing if the path is not found.
-                 console.error("Permission denied on a query where the path could not be determined.");
             }
         }
         
