@@ -24,37 +24,39 @@ export async function updateTransactionStatus(
 
   // --- Logic for 'Failed' (Decline) status ---
   if (newStatus === 'Failed') {
-      const batch = writeBatch(firestore);
-      const notificationRef = doc(collection(firestore, `users/${userId}/notifications`));
-      
-      let txData;
       try {
-        const txSnap = await getDoc(txRef);
-        if (!txSnap.exists()) return { success: false, error: 'Transaction not found.' };
-        txData = txSnap.data();
-      } catch (e: any) {
-        // This is likely a permission error on the get() call
-        const permissionError = new FirestorePermissionError({ path: txRef.path, operation: 'get' });
-        errorEmitter.emit('permission-error', permissionError);
-        return { success: false, error: 'Failed to fetch transaction details.'};
-      }
+        await runTransaction(firestore, async (transaction) => {
+            const txSnap = await transaction.get(txRef);
+            if (!txSnap.exists()) {
+                throw new Error('Transaction not found.');
+            }
+            const txData = txSnap.data();
 
-      batch.delete(txRef);
-      batch.set(notificationRef, {
-          userId: userId,
-          title: 'Transaction Declined',
-          description: `Your ${txData.type.toLowerCase()} of ₦${Math.abs(txData.amount)} was declined.`,
-          createdAt: serverTimestamp(),
-          read: false,
-      });
+            const notificationRef = doc(collection(firestore, `users/${userId}/notifications`));
 
-      batch.commit()
-        .catch(serverError => {
-            const permissionError = new FirestorePermissionError({ path: txRef.path, operation: 'delete' });
-            errorEmitter.emit('permission-error', permissionError);
+            transaction.delete(txRef);
+            transaction.set(notificationRef, {
+                userId: userId,
+                title: 'Transaction Declined',
+                description: `Your ${txData.type.toLowerCase()} of ₦${Math.abs(txData.amount)} was declined.`,
+                createdAt: serverTimestamp(),
+                read: false,
+            });
         });
+
+        return { success: true };
+
+      } catch (error: any) {
+        const permissionError = new FirestorePermissionError({
+            path: txRef.path,
+            operation: 'delete',
+            requestResourceData: { note: "This was part of a decline transaction batch."}
+        });
+        errorEmitter.emit('permission-error', permissionError);
         
-      return { success: true };
+        console.error("Decline transaction failed:", error);
+        return { success: false, error: error.message || 'Could not decline transaction.' };
+      }
   }
 
   // --- Logic for 'Completed' (Approve) status ---
@@ -95,18 +97,14 @@ export async function updateTransactionStatus(
     return { success: true };
 
   } catch (error: any) {
-    // If the transaction fails, it's highly likely a permissions issue on one of the operations.
-    // We emit a generic error for the batch, as it's hard to know which operation failed.
-    // The console error overlay from the listener will provide more specific details.
     const permissionError = new FirestorePermissionError({
-        path: userRef.path, // The user path is a likely culprit
+        path: userRef.path, 
         operation: 'update',
         requestResourceData: { note: 'This was part of a batch write for transaction approval.' }
     });
     errorEmitter.emit('permission-error', permissionError);
 
-    console.error("Transaction update failed:", error);
+    console.error("Transaction approval failed:", error);
     return { success: false, error: error.message || 'An unexpected error occurred during transaction approval.' };
   }
 }
-
