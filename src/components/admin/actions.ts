@@ -46,7 +46,15 @@ export async function updateTransactionStatus(
             createdAt: serverTimestamp(),
             read: false,
         });
-        await batch.commit();
+        await batch.commit().catch(serverError => {
+            if (serverError.code === 'permission-denied') {
+                throw new FirestorePermissionError({
+                    path: txRef.path,
+                    operation: 'delete',
+                });
+            }
+            throw serverError;
+        });
         return { success: true };
     }
 
@@ -92,18 +100,22 @@ export async function updateTransactionStatus(
     });
 
 
-    await batch.commit();
+    await batch.commit().catch(serverError => {
+        if (serverError.code === 'permission-denied') {
+            throw new FirestorePermissionError({
+                path: txRef.path,
+                operation: 'update',
+            });
+        }
+        throw serverError;
+    });
 
     return { success: true };
   } catch (error: any) {
     console.error('[updateTransactionStatus] Error:', error);
     
-    if (error.code === 'permission-denied') {
-        const permissionError = new FirestorePermissionError({
-            path: `users/${userId}/transactions/${transactionId}`,
-            operation: newStatus === 'Failed' ? 'delete' : 'update',
-        });
-        errorEmitter.emit('permission-error', permissionError);
+    if (error instanceof FirestorePermissionError) {
+        errorEmitter.emit('permission-error', error);
     }
 
     return { success: false, error: error.message || 'An unknown error occurred.' };
