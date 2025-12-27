@@ -32,22 +32,25 @@ export async function updateTransactionStatus(
       throw new Error(`Transaction is already ${txData.status.toLowerCase()}.`);
     }
     
-    // If declining, simply delete the transaction document.
+    // --- Logic for 'Failed' (Decline) status ---
     if (newStatus === 'Failed') {
-        await deleteDoc(txRef);
+        const batch = writeBatch(firestore);
+        // Delete the transaction document
+        batch.delete(txRef);
         // Create a notification for the user
-        const notificationRef = collection(firestore, `users/${userId}/notifications`);
-        await addDoc(notificationRef, {
+        const notificationRef = doc(collection(firestore, `users/${userId}/notifications`));
+        batch.set(notificationRef, {
             userId: userId,
             title: 'Transaction Declined',
             description: `Your ${txData.type.toLowerCase()} of ₦${Math.abs(txData.amount)} was declined.`,
             createdAt: serverTimestamp(),
             read: false,
         });
+        await batch.commit();
         return { success: true };
     }
 
-    // --- Logic for 'Completed' status ---
+    // --- Logic for 'Completed' (Approve) status ---
     const userRef = doc(firestore, 'users', userId);
     const userDoc = await getDoc(userRef);
     if (!userDoc.exists()) {
@@ -59,7 +62,6 @@ export async function updateTransactionStatus(
     // Update the original transaction status
     batch.update(txRef, { status: newStatus });
 
-    // If approving a transaction, update the relevant user's balance(s)
     const amount = Number(txData.amount);
     if (isNaN(amount)) {
         throw new Error("Invalid transaction amount.")
@@ -96,10 +98,9 @@ export async function updateTransactionStatus(
   } catch (error: any) {
     console.error('[updateTransactionStatus] Error:', error);
     
-    // Emit a more specific error for debugging permission issues.
     if (error.code === 'permission-denied') {
         const permissionError = new FirestorePermissionError({
-            path: newStatus === 'Failed' ? txRef.path : 'batch write',
+            path: `users/${userId}/transactions/${transactionId}`,
             operation: newStatus === 'Failed' ? 'delete' : 'update',
         });
         errorEmitter.emit('permission-error', permissionError);

@@ -24,7 +24,7 @@ service cloud.firestore {
                      !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('referredBy' in request.resource.data.diff(resource.data).affectedKeys());
       
-      // An admin can ONLY update the balances
+      // An admin can ONLY update the balances of a user.
       allow update: if isAdmin() &&
                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
 
