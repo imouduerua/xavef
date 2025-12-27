@@ -46,8 +46,7 @@ service cloud.firestore {
                      && "usedBy" in request.resource.data && isAuthOwner(request.resource.data.usedBy);
     }
 
-    // Admins have full access to transactions. 
-    // Users can read/create their own transactions.
+    // Admins and users can read/create their own transactions.
     match /users/{userId}/transactions/{transactionId} {
         allow read: if isAuthOwner(userId) || isAdmin();
         allow write: if isAdmin() || isAuthOwner(userId);
