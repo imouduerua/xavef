@@ -9,49 +9,38 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // The super admin is defined by a specific email address.
-      // Other admins are defined by their existence in the 'admins' collection.
       return request.auth.token.email == 'admin@xavef.com' 
              || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // --- USER PROFILES ---
     match /users/{userId} {
-      // Admins can read any user profile. Users can read their own.
       allow get: if isAuthOwner(userId) || isAdmin();
       allow list: if isAdmin();
 
-      // Users can be created with specific initial values.
       allow create: if isAuthOwner(userId)
                     && request.resource.data.uid == userId
                     && request.resource.data.email == request.auth.token.email
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      // A user can update their own non-sensitive profile info.
+      // Rule for user to update their own non-sensitive data
       allow update: if isAuthOwner(userId) &&
                      !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('referredBy' in request.resource.data.diff(resource.data).affectedKeys());
       
-      // An admin can ONLY update the balance fields of a user. This is crucial for approvals.
+      // Rule for an admin to ONLY update balance fields
       allow update: if isAdmin() &&
                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
 
-      // No one can delete a user document.
       allow delete: if false;
     }
 
-    // --- TRANSACTIONS ---
     match /users/{userId}/transactions/{transactionId} {
-      // A user can create their own transactions.
       allow create: if isAuthOwner(userId);
-      
-      // A user can read their own transactions. An admin can read ANY transaction.
       allow get, list: if isAuthOwner(userId) || isAdmin();
-
-      // Admins can update a transaction (e.g., status to 'Completed') or delete it (for 'Failed' declines).
+      // Admin can update or delete transactions (for approvals/declines)
       allow update, delete: if isAdmin();
     }
     
@@ -60,61 +49,45 @@ service cloud.firestore {
         allow list: if isAdmin();
     }
 
-    // --- NOTIFICATIONS ---
     match /users/{userId}/notifications/{notificationId} {
-        // Users can read and update their own notifications (e.g., mark as read).
         allow read, list, update: if isAuthOwner(userId);
-        
-        // Admins can create notifications for users as part of the transaction approval/decline batch.
+        // Admins can create notifications for users.
         allow create: if isAdmin(); 
-        
         allow delete: if false;
     }
 
-    // --- REFERRAL CODES ---
     match /referralCodes/{codeId} {
       allow read: if request.auth != null;
       allow create: if isAuthOwner(request.resource.data.creatorUid);
-      
       allow update: if resource.data.used == false 
                     && request.resource.data.used == true
                     && isAuthOwner(request.resource.data.usedBy);
-
       allow delete: if false;
     }
     
-    // --- SAVING GOALS ---
     match /users/{userId}/goals/{goalId} {
         allow read, write: if isAuthOwner(userId);
     }
 
-    // --- ADMINS ---
     match /admins/{userId} {
       allow read, get: if request.auth != null;
-      // Only the super admin can add or remove other admins.
       allow write: if request.auth.token.email == 'admin@xavef.com';
     }
     
-    // --- FCM TOKENS ---
     match /fcmTokens/{userId} {
-      // Only an admin user can create or update their own FCM token document.
       allow read, write: if isAuthOwner(userId) && isAdmin();
     }
 
-    // --- GROUPS ---
     match /groups/{groupId} {
         allow read: if request.auth != null;
         allow create: if isAuthOwner(request.resource.data.creatorUid);
-        // Only the group creator can update the group (e.g., start it, add members via request approval).
         allow update: if isAuthOwner(resource.data.creatorUid);
     }
 
-    // --- JOIN REQUESTS ---
     match /joinRequests/{requestId} {
         allow create: if isAuthOwner(request.resource.data.requesterUid);
         allow read: if isAuthOwner(request.resource.data.requesterUid) 
                       || isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
-        // Only group creators can update the status of a request for their group.
         allow update: if isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
     }
   }
