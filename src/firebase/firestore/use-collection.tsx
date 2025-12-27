@@ -12,37 +12,18 @@ import { useEffect, useState, useRef } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
-// Helper function to compare if two queries are equivalent
-function areQueriesEqual(q1: Query | null, q2: Query | null): boolean {
-  if (!q1 && !q2) return true;
-  if (!q1 || !q2) return false;
-  // This is a simplified check. Firestore's Query objects don't have a stable `isEqual` method on the client-side SDK.
-  // Comparing the string representation is a pragmatic approach for many cases.
-  try {
-    return q1.toString() === q2.toString();
-  } catch (e) {
-    // If toString() fails for some reason, assume they are not equal.
-    return false;
-  }
-}
-
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  const queryRef = useRef<Query | null>(null);
+  // Using a ref to track the query string representation to avoid re-running the effect
+  // for queries that are structurally identical but different object references.
+  const queryJson = query ? JSON.stringify((query as any)._query) : null;
 
   useEffect(() => {
-    // If query is the same as the one we're already listening to, do nothing.
-    if (areQueriesEqual(query, queryRef.current)) {
-      return;
-    }
-    
-    queryRef.current = query;
-
-    // If the query is null, it means we don't have enough information to fetch data yet (e.g., user is loading).
+    // If the query is null, it means we don't have enough information to fetch data yet.
     // Reset state and wait for a valid query.
     if (!query) {
       setData(null);
@@ -88,6 +69,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
                 });
                 errorEmitter.emit('permission-error', permissionError);
             } else {
+                 // This fallback prevents the app from crashing if the path is not found.
                  console.error("Permission denied on a query where the path could not be determined.");
             }
         }
@@ -98,8 +80,9 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       }
     );
     
+    // Cleanup function that runs when the component unmounts or the query changes.
     return () => unsubscribe();
-  }, [query]);
+  }, [queryJson]); // Effect dependencies: only re-run if the query itself changes.
 
   return { data, loading, error, indexCreationUrl };
 }
