@@ -1,7 +1,7 @@
 
 'use client';
 
-import { doc, runTransaction, Firestore, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, runTransaction, Firestore, collection, serverTimestamp, getDoc } from 'firebase/firestore';
 import type { Transaction } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -24,23 +24,18 @@ export async function updateTransactionStatus(
 
   try {
     await runTransaction(firestore, async (transaction) => {
-        // First, read the transaction document within the atomic transaction.
         const txSnap = await transaction.get(txRef);
         if (!txSnap.exists()) {
             throw new Error('Transaction not found or has already been processed.');
         }
         const txData = txSnap.data() as Transaction;
         
-        // Ensure we are not re-processing a completed/failed transaction.
         if (txData.status !== 'Pending') {
             throw new Error(`This transaction is already marked as ${txData.status}.`);
         }
 
-        // --- Logic for 'Failed' (Decline) status ---
         if (newStatus === 'Failed') {
-            // Delete the original transaction document.
             transaction.delete(txRef);
-            // Create a notification for the user about the decline.
             transaction.set(notificationRef, {
                 userId: userId,
                 title: 'Transaction Declined',
@@ -48,8 +43,6 @@ export async function updateTransactionStatus(
                 createdAt: serverTimestamp(),
                 read: false,
             });
-
-        // --- Logic for 'Completed' (Approve) status ---
         } else {
             const userSnap = await transaction.get(userRef);
             if (!userSnap.exists()) {
@@ -67,13 +60,9 @@ export async function updateTransactionStatus(
             const currentBalance = userSnap.data()[balanceFieldToUpdate] || 0;
             const newBalance = currentBalance + amount;
 
-            // Update the user's balance.
             transaction.update(userRef, { [balanceFieldToUpdate]: newBalance });
-            
-            // Update the transaction status to 'Completed'.
             transaction.update(txRef, { status: 'Completed' });
 
-            // Create a notification for the user about the approval.
             transaction.set(notificationRef, {
                 userId: userId,
                 title: 'Transaction Completed',
@@ -88,11 +77,6 @@ export async function updateTransactionStatus(
     return { success: true };
 
   } catch (error: any) {
-    // This will catch errors from within the transaction, like "document not found",
-    // or if the transaction itself fails due to permissions.
-    console.error("Error updating transaction status:", error);
-
-    // If the error is a Firestore permission error, emit it for debugging.
     if (error.code === 'permission-denied') {
         const permissionError = new FirestorePermissionError({
             path: txRef.path, 
