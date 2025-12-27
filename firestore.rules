@@ -5,7 +5,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      // Super admin email or user is in the admins collection
+      // Super admin can be configured here. Or check a user's custom claims.
+      // For this app, we check for a document in the 'admins' collection.
       return request.auth.token.email == 'admin@xavef.com' 
              || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
@@ -30,7 +31,7 @@ service cloud.firestore {
                      !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('referredBy' in request.resource.data.diff(resource.data).affectedKeys());
       
-      // An admin can ONLY update the balances of a user.
+      // An admin can ONLY update the balances of a user. This rule is crucial for approvals.
       allow update: if isAdmin() &&
                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
 
@@ -73,6 +74,7 @@ service cloud.firestore {
 
     match /admins/{userId} {
       allow read, get: if request.auth != null;
+      // Only the super admin can add or remove other admins.
       allow write: if request.auth.token.email == 'admin@xavef.com';
     }
     
