@@ -1,0 +1,113 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // Helper Functions
+    // =====================================================================
+    function isAuthOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      // The super admin email or any user ID present in the /admins collection is an admin.
+      return request.auth != null && (
+        request.auth.token.email == 'admin@xavef.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+    
+    // =====================================================================
+    // User Collection & Subcollections
+    // =====================================================================
+    match /users/{userId} {
+      // READ: Users can read their own profile. Admins can read any profile.
+      allow get: if isAuthOwner(userId) || isAdmin();
+      allow list: if isAdmin(); // For admin user list page
+
+      // WRITE: Users can update their own profile (but not balances). Admins can update any profile including balances.
+      allow write: if isAuthOwner(userId) || isAdmin();
+
+      // --- Subcollections ---
+      
+      // Transactions
+      match /transactions/{transactionId} {
+        // READ: A user can read their own transactions. Admins can read any transaction.
+        allow read: if isAuthOwner(userId) || isAdmin();
+        
+        // CREATE: A user can create their own transaction.
+        allow create: if isAuthOwner(userId);
+        
+        // WRITE/DELETE: An admin can update or delete any transaction.
+        allow update, delete: if isAdmin();
+      }
+      
+      // Notifications
+      match /notifications/{notificationId} {
+          // Users can read and update their own notifications (e.g., mark as read).
+          allow read, list, update: if isAuthOwner(userId);
+
+          // Admins can create notifications for users.
+          allow create: if isAdmin();
+          
+          allow delete: if false;
+      }
+      
+      // Goals
+      match /goals/{goalId} {
+          // Users have full control over their own goals.
+          allow read, write, delete: if isAuthOwner(userId);
+      }
+    }
+
+    // =====================================================================
+    // Root Collections
+    // =====================================================================
+
+    // Referral Codes
+    match /referralCodes/{codeId} {
+      allow read: if request.auth != null;
+      allow create: if isAuthOwner(request.resource.data.creatorUid);
+      allow update: if resource.data.used == false && request.resource.data.used == true && request.auth != null;
+      allow delete: if false;
+    }
+
+    // Admins
+    match /admins/{userId} {
+      // Admins can be read by any authenticated user (needed for client-side checks).
+      allow read: if request.auth != null;
+      // Only the super admin can add or remove other admins.
+      allow write: if request.auth.token.email == 'admin@xavef.com';
+    }
+    
+    // Groups
+    match /groups/{groupId} {
+        allow read: if request.auth != null;
+        allow create: if isAuthOwner(request.resource.data.creatorUid);
+        // The group creator or an admin can update a group.
+        allow update: if isAuthOwner(resource.data.creatorUid) || isAdmin();
+    }
+    
+    // Join Requests
+    match /joinRequests/{requestId} {
+        allow create: if isAuthOwner(request.resource.data.requesterUid);
+        // The requester or the group creator can read the request.
+        allow read: if isAuthOwner(request.resource.data.requesterUid) || isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
+        // Only the group creator can approve or decline the request.
+        allow update: if isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
+    }
+
+    // FCM Tokens for Push Notifications
+    match /fcmTokens/{userId} {
+      // Only an authenticated admin can read/write their own token.
+      allow read, write: if isAuthOwner(userId) && isAdmin();
+    }
+    
+    // This allows admins to perform the collectionGroup query needed for the admin pages.
+    match /{path=**}/transactions/{transactionId} {
+        allow list: if isAdmin();
+    }
+  }
+}

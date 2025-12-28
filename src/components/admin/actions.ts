@@ -1,8 +1,8 @@
 
 'use client';
 
-import { doc, runTransaction, Firestore, collection, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
-import type { Transaction, UserData } from '@/lib/types';
+import { doc, runTransaction, Firestore, collection, serverTimestamp } from 'firebase/firestore';
+import type { Transaction } from '@/lib/types';
 
 
 /**
