@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -7,80 +6,71 @@ service cloud.firestore {
     // =====================================================================
     // Helper Functions
     // =====================================================================
-
     function isAuthOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
     function isAdmin() {
-      // The super admin or any user in the 'admins' collection is an admin.
       return request.auth.token.email == 'admin@xavef.com'
              || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-
+    
     // =====================================================================
-    // User Collection Rules
+    // User Collection
     // =====================================================================
     match /users/{userId} {
       // Admins can read any user profile. Users can read their own.
-      allow get: if isAuthOwner(userId) || isAdmin();
-      // Only admins can list users.
+      allow read: if isAuthOwner(userId) || isAdmin();
       allow list: if isAdmin();
-
-      // New users can create their own profile with specific initial values.
-      allow create: if isAuthOwner(userId)
-                    && request.resource.data.uid == userId
-                    && request.resource.data.email == request.auth.token.email
-                    && request.resource.data.solidaraBalance == 0
-                    && request.resource.data.annualBalance == 0;
-
-      // Users can update their own non-critical profile information.
-      allow update: if isAuthOwner(userId) &&
-                     !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                     !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                     !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                     !('referredBy' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                     !('isAdmin' in request.resource.data.diff(resource.data).affectedKeys());
       
-      // Admins can ONLY update the balance fields of a user.
-      // This is the critical rule for transaction approvals.
-      allow update: if isAdmin() &&
-                  request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
-
-      allow delete: if false; 
-    }
-
-    // =====================================================================
-    // User Subcollection Rules
-    // =====================================================================
-
-    match /users/{userId}/transactions/{transactionId} {
-      // Users can create their own transactions (e.g., a deposit request).
+      // New users can create their own profile.
       allow create: if isAuthOwner(userId);
-      // Users and admins can view individual transactions.
-      allow get: if isAuthOwner(userId) || isAdmin();
-      // Users can list their own transactions.
-      allow list: if isAuthOwner(userId) || isAdmin();
-      // Admins can update or delete transactions (for approval/decline).
-      allow update, delete: if isAdmin();
-    }
-    
-    match /users/{userId}/notifications/{notificationId} {
-        // Users can read and update (e.g., mark as read) their own notifications.
-        allow read, list, update: if isAuthOwner(userId);
-        // Admins can create notifications for users.
-        allow create: if isAdmin();
-        allow delete: if false; // Notifications should not be deletable by client.
-    }
-    
-    match /users/{userId}/goals/{goalId} {
-        // Users have full control over their own saving goals.
-        allow read, write: if isAuthOwner(userId);
+      
+      // A user can update their own profile, but cannot change key fields.
+      allow update: if isAuthOwner(userId)
+                    && !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys())
+                    && !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys())
+                    && !('xavefId' in request.resource.data.diff(resource.data).affectedKeys());
+
+      // An admin can ONLY update the balance fields for a user.
+      // This is the critical rule for the transaction approval process.
+      allow update: if isAdmin()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
+                    
+      allow delete: if false;
+
+      // --- Subcollections ---
+      
+      match /transactions/{transactionId} {
+        // Users can create their own transactions (e.g., a deposit request).
+        allow create: if isAuthOwner(userId);
+        
+        // Users and admins can view individual transactions.
+        allow get: if isAuthOwner(userId) || isAdmin();
+        
+        // Users can list their own transactions. Admins can list all transactions via collection group query.
+        allow list: if isAuthOwner(userId) || isAdmin();
+        
+        // Admins can update or delete transactions (for approval/decline).
+        allow update, delete: if isAdmin();
+      }
+      
+      match /notifications/{notificationId} {
+          allow read, list, update: if isAuthOwner(userId);
+          // Admins can create notifications for users.
+          allow create: if isAdmin();
+          allow delete: if false;
+      }
+      
+      match /goals/{goalId} {
+          allow read, write: if isAuthOwner(userId);
+      }
     }
 
     // =====================================================================
-    // Global Collection Rules
+    // Root Collections
     // =====================================================================
+
     match /referralCodes/{codeId} {
       allow read: if request.auth != null;
       allow create: if isAuthOwner(request.resource.data.creatorUid);
