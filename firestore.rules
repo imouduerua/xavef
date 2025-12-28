@@ -52,11 +52,6 @@ service cloud.firestore {
     // User Subcollections
     // =====================================================================
 
-    // Broad rule for user subcollections, further restricted by specific rules below.
-    match /users/{userId}/{document=**} {
-        allow read, write: if isAuthOwner(userId);
-    }
-    
     // Specific rules for the 'transactions' subcollection
     match /users/{userId}/transactions/{transactionId} {
       // A user can create a transaction for themselves (e.g., a deposit request).
