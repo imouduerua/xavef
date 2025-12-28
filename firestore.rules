@@ -13,10 +13,11 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // The super admin or any user in the 'admins' collection is an admin.
       return request.auth.token.email == 'admin@xavef.com'
              || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-    
+
     // =====================================================================
     // User Collection Rules
     // =====================================================================
@@ -59,7 +60,7 @@ service cloud.firestore {
       // Users and admins can view individual transactions.
       allow get: if isAuthOwner(userId) || isAdmin();
       // Users can list their own transactions.
-      allow list: if isAuthOwner(userId);
+      allow list: if isAuthOwner(userId) || isAdmin();
       // Admins can update or delete transactions (for approval/decline).
       allow update, delete: if isAdmin();
     }
@@ -80,19 +81,9 @@ service cloud.firestore {
     // =====================================================================
     // Global Collection Rules
     // =====================================================================
-
-    // This collection group match is necessary for admins to query
-    // all transactions across all users for the admin dashboards.
-    match /{path=**}/transactions/{transactionId} {
-        allow list: if isAdmin();
-    }
-
     match /referralCodes/{codeId} {
-      // Any authenticated user can read a referral code to validate it.
       allow read: if request.auth != null;
-      // An authenticated user can create a referral code for themselves.
       allow create: if isAuthOwner(request.resource.data.creatorUid);
-      // A code can be updated from 'used: false' to 'used: true' by a new user.
       allow update: if resource.data.used == false
                     && request.resource.data.used == true
                     && request.auth != null;
@@ -100,33 +91,24 @@ service cloud.firestore {
     }
 
     match /admins/{userId} {
-      // Any authenticated user can see who is an admin.
       allow read: if request.auth != null;
-      // Only the super admin can add or remove other admins.
       allow write: if request.auth.token.email == 'admin@xavef.com';
     }
     
     match /groups/{groupId} {
-        // Any authenticated user can read group info.
         allow read: if request.auth != null;
-        // Users can create groups where they are the creator.
         allow create: if isAuthOwner(request.resource.data.creatorUid);
-        // Only the group creator can update a group (e.g., to start it).
         allow update: if isAuthOwner(resource.data.creatorUid);
     }
     
     match /joinRequests/{requestId} {
-        // Users can create requests to join groups.
         allow create: if isAuthOwner(request.resource.data.requesterUid);
-        // The requester and the group creator can read the request.
         allow read: if isAuthOwner(request.resource.data.requesterUid)
                       || isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
-        // Only the group creator can approve or decline a request.
         allow update: if isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
     }
 
     match /fcmTokens/{userId} {
-      // Only an admin user can write their own token.
       allow read, write: if isAuthOwner(userId) && isAdmin();
     }
   }

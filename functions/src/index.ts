@@ -1,3 +1,4 @@
+
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 
@@ -40,7 +41,7 @@ export const onNewPendingTransaction = functions.firestore
         title: "New Pending Transaction",
         body: `A new ${transaction.type} of ${amount} is awaiting approval.`,
         icon: "/xavef-logo-512.png", // Public URL to an icon
-        click_action: `${process.env.GCLOUD_PROJECT}.firebaseapp.com/admin/pending-transactions`,
+        click_action: `https://${process.env.GCLOUD_PROJECT}.web.app/admin/pending-transactions`,
       },
     };
     
