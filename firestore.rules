@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -30,17 +31,14 @@ service cloud.firestore {
       allow create: if isAuthOwner(userId);
       
       // Users can update their own profile, but cannot change sensitive fields.
-      // This is one part of the solution for the batch update problem.
-      allow update: if isAuthOwner(userId)
+      // Admins can ONLY update the balance fields for a user.
+      // The combined rules below handle the transaction approval process.
+      allow write: if (isAuthOwner(userId)
                     && !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys())
                     && !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys())
-                    && !('xavefId' in request.resource.data.diff(resource.data).affectedKeys());
-      
-      // Admins can ONLY update the balance fields for a user.
-      // This is the critical rule for the transaction approval process.
-      // It allows the runTransaction operation to succeed.
-      allow update: if isAdmin()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
+                    && !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()))
+                 || (isAdmin()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']));
                     
       allow delete: if false;
 
@@ -110,7 +108,7 @@ service cloud.firestore {
     // Admins need to be able to query the 'transactions' collection group
     // for the pending transactions and all transactions pages.
     match /{path=**}/transactions/{transactionId} {
-        allow list: if isAdmin();
+        allow read: if isAdmin();
     }
   }
 }

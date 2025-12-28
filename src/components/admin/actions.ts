@@ -1,8 +1,11 @@
 
 'use client';
 
-import { doc, runTransaction, Firestore, collection, serverTimestamp, getDoc } from 'firebase/firestore';
-import type { Transaction } from '@/lib/types';
+import { doc, runTransaction, Firestore, collection, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
+import type { Transaction, UserData } from '@/lib/types';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
+
 
 /**
  * Updates the status of a transaction and, if approved, the user's balance.
@@ -31,7 +34,6 @@ export async function updateTransactionStatus(
             throw new Error(`This transaction is already marked as ${txData.status}.`);
         }
         
-        // This ref is created inside the transaction to ensure it's unique
         const notificationRef = doc(collection(firestore, `users/${userId}/notifications`));
 
         if (newStatus === 'Failed') {
@@ -58,13 +60,9 @@ export async function updateTransactionStatus(
             
             const balanceFieldToUpdate = targetAccount === 'solidara' ? 'solidaraBalance' : 'annualBalance';
             
-            // This is the operation that likely requires specific admin permissions
             transaction.update(userRef, { [balanceFieldToUpdate]: userSnap.data()[balanceFieldToUpdate] + amount });
-
-            // This operation also needs permission
             transaction.update(txRef, { status: 'Completed' });
 
-            // And this one
             transaction.set(notificationRef, {
                 userId: userId,
                 title: 'Transaction Completed',
@@ -80,7 +78,6 @@ export async function updateTransactionStatus(
 
   } catch (error: any) {
     console.error('Error during transaction status update:', error);
-    // Return a user-friendly error message. The detailed error will still be in the browser console.
     return { success: false, error: error.message || 'An unexpected error occurred.' };
   }
 }
