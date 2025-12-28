@@ -32,8 +32,7 @@ service cloud.firestore {
       
       // Users can update their own profile, but cannot change sensitive fields.
       // Admins can ONLY update the balance fields for a user.
-      // The combined rules below handle the transaction approval process.
-      allow write: if (isAuthOwner(userId)
+      allow update: if (isAuthOwner(userId)
                     && !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys())
                     && !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys())
                     && !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()))
