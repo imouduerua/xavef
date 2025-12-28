@@ -12,7 +12,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // The super admin email or any user ID present in the /admins collection is an admin.
+      // Super admin email OR any user ID present in the /admins collection is an admin.
       return request.auth != null && (
         request.auth.token.email == 'admin@xavef.com' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
@@ -23,24 +23,38 @@ service cloud.firestore {
     // User Collection & Subcollections
     // =====================================================================
     match /users/{userId} {
-      // READ: Users can read their own profile. Admins can read any profile.
+      // READ: A user can read their own profile. An admin can read any profile.
       allow read: if isAuthOwner(userId) || isAdmin();
       
-      // WRITE: Users can update their own profile. Admins can update any user profile.
-      allow write: if isAuthOwner(userId) || isAdmin();
+      // LIST: Admins can list all users for the user management page.
+      allow list: if isAdmin();
+      
+      // UPDATE (User): A user can update their own profile, but cannot change balance fields.
+      allow update: if isAuthOwner(userId)
+                      && !('solidaraBalance' in request.resource.data)
+                      && !('annualBalance' in request.resource.data);
+      
+      // UPDATE (Admin): An admin can ONLY update the balance fields.
+      // This is the critical rule for the transaction approval process.
+      allow update: if isAdmin()
+                      && request.resource.data.keys().hasOnly(['solidaraBalance', 'annualBalance']);
+
+      // CREATE: Users cannot create their own profile documents directly.
+      allow create: if false;
+
 
       // --- Subcollections ---
       
       // Transactions
       match /transactions/{transactionId} {
-        // READ: A user can read their own transactions. Admins can read any transaction.
-        allow read: if isAuthOwner(userId) || isAdmin();
+        // A user can read their own transactions.
+        allow read: if isAuthOwner(userId);
         
-        // CREATE: A user can create their own transaction.
+        // A user can create their own transaction (e.g. initiating a deposit/withdrawal).
         allow create: if isAuthOwner(userId);
         
-        // WRITE/DELETE: An admin can update or delete any transaction.
-        allow write, delete: if isAdmin();
+        // Admins can read and write any transaction. This is necessary for approvals.
+        allow read, write: if isAdmin();
       }
       
       // Notifications
@@ -48,7 +62,7 @@ service cloud.firestore {
           // Users can read and update their own notifications (e.g., mark as read).
           allow read, list, update: if isAuthOwner(userId);
 
-          // Admins can create notifications.
+          // Admins can create notifications for users.
           allow create: if isAdmin();
           
           allow delete: if false;
@@ -75,8 +89,10 @@ service cloud.firestore {
 
     // Admins
     match /admins/{userId} {
+      // Admins can be read by any authenticated user (needed for client-side checks).
+      allow read: if request.auth != null;
       // Only the super admin can add or remove other admins.
-      allow read, write: if request.auth.token.email == 'admin@xavef.com';
+      allow write: if request.auth.token.email == 'admin@xavef.com';
     }
     
     // Groups
