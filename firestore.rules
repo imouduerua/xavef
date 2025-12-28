@@ -7,13 +7,16 @@ service cloud.firestore {
     // =====================================================================
     // Helper Functions
     // =====================================================================
+
+    // Checks if the requesting user is the owner of the document.
     function isAuthOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    // Checks if the requesting user has admin privileges.
+    // The super admin is defined by their email.
+    // Other admins are defined by their existence in the /admins collection.
     function isAdmin() {
-      // The super admin is defined by their email.
-      // Other admins are defined by their existence in the /admins collection.
       return request.auth.token.email == 'admin@xavef.com'
              || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
@@ -28,7 +31,7 @@ service cloud.firestore {
       // Only admins can list all users.
       allow list: if isAdmin();
 
-      // A new user can create their own profile document.
+      // A new user can create their own profile document with specific initial values.
       allow create: if isAuthOwner(userId)
                     && request.resource.data.uid == userId
                     && request.resource.data.email == request.auth.token.email
@@ -42,12 +45,13 @@ service cloud.firestore {
                      !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('referredBy' in request.resource.data.diff(resource.data).affectedKeys());
 
-      // CRUCIAL FIX: An admin can ONLY update the balance fields of a user.
+      // CRITICAL FIX: An admin can ONLY update the balance fields of a user.
       // This is required for transaction approvals.
       allow update: if isAdmin() &&
                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
 
-      allow delete: if false; // Users cannot be deleted from the client.
+      // Users cannot be deleted from the client.
+      allow delete: if false; 
     }
 
     // =====================================================================
@@ -98,7 +102,7 @@ service cloud.firestore {
       // A code can be updated from 'used: false' to 'used: true' by a new user.
       allow update: if resource.data.used == false
                     && request.resource.data.used == true
-                    && request.resource.data.usedBy != null;
+                    && request.auth != null;
       allow delete: if false;
     }
 
