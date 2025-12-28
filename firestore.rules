@@ -11,29 +11,33 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // The primary super admin email OR any user in the /admins collection.
       return request.auth.token.email == 'admin@xavef.com'
              || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-    
+
     // =====================================================================
-    // User Collection
+    // User Collection & Subcollections
     // =====================================================================
     match /users/{userId} {
-      // Admins can read any user profile. Users can read their own.
+      // Users can read their own profile. Admins can read any profile.
       allow read: if isAuthOwner(userId) || isAdmin();
+      
+      // Admins can list all users for the user management page.
       allow list: if isAdmin();
       
-      // New users can create their own profile.
+      // Users can create their own profile upon signup.
       allow create: if isAuthOwner(userId);
       
-      // A user can update their own profile, but cannot change key fields.
+      // Users can update their own profile, but cannot change sensitive fields.
       allow update: if isAuthOwner(userId)
                     && !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys())
                     && !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys())
                     && !('xavefId' in request.resource.data.diff(resource.data).affectedKeys());
-
-      // An admin can ONLY update the balance fields for a user.
+      
+      // Admins can ONLY update the balance fields for a user.
       // This is the critical rule for the transaction approval process.
+      // It allows the runTransaction operation to succeed.
       allow update: if isAdmin()
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
                     
@@ -42,22 +46,20 @@ service cloud.firestore {
       // --- Subcollections ---
       
       match /transactions/{transactionId} {
-        // Users can create their own transactions (e.g., a deposit request).
+        // Users can read and list their own transactions.
+        allow read, list: if isAuthOwner(userId);
+        
+        // Users can create new transactions (e.g., a deposit request).
         allow create: if isAuthOwner(userId);
         
-        // Users and admins can view individual transactions.
-        allow get: if isAuthOwner(userId) || isAdmin();
-        
-        // Users can list their own transactions. Admins can list all transactions via collection group query.
-        allow list: if isAuthOwner(userId) || isAdmin();
-        
-        // Admins can update or delete transactions (for approval/decline).
-        allow update, delete: if isAdmin();
+        // Admins can read, update, or delete any transaction in any user's subcollection.
+        // This is necessary for the approval/decline workflow.
+        allow get, update, delete: if isAdmin();
       }
       
       match /notifications/{notificationId} {
           allow read, list, update: if isAuthOwner(userId);
-          // Admins can create notifications for users.
+          // Admins can create notifications for users as part of the transaction workflow.
           allow create: if isAdmin();
           allow delete: if false;
       }
@@ -82,6 +84,7 @@ service cloud.firestore {
 
     match /admins/{userId} {
       allow read: if request.auth != null;
+      // Only the super admin can add other admins.
       allow write: if request.auth.token.email == 'admin@xavef.com';
     }
     
@@ -99,7 +102,14 @@ service cloud.firestore {
     }
 
     match /fcmTokens/{userId} {
+      // Admins can write their own FCM token.
       allow read, write: if isAuthOwner(userId) && isAdmin();
+    }
+    
+    // Admins need to be able to query the 'transactions' collection group
+    // for the pending transactions and all transactions pages.
+    match /{path=**}/transactions/{transactionId} {
+        allow list: if isAdmin();
     }
   }
 }
