@@ -23,25 +23,41 @@ service cloud.firestore {
     // User Collection & Subcollections
     // =====================================================================
     match /users/{userId} {
-      // READ: Users can read their own profile. Admins can read any profile.
+      // Admin can get any user doc (needed for transaction reads).
+      // User can only get their own.
       allow get: if isAuthOwner(userId) || isAdmin();
-      allow list: if isAdmin(); // For admin user list page
+      
+      // Admins can list all users for the user management page.
+      allow list: if isAdmin();
 
-      // WRITE: Users can update their own profile (but not balances). Admins can update any profile including balances.
-      allow write: if isAuthOwner(userId) || isAdmin();
+      // Users can update their own profile, but cannot change balance fields.
+      allow update: if isAuthOwner(userId)
+                      && !('solidaraBalance' in request.resource.data)
+                      && !('annualBalance' in request.resource.data);
+                      
+      // Admins can update any user's profile, including balances.
+      allow update: if isAdmin();
+
+      // Users cannot create their own profile documents directly (handled by a function).
+      // Admins should not create user profiles this way either.
+      allow create: if false;
+
 
       // --- Subcollections ---
       
       // Transactions
       match /transactions/{transactionId} {
-        // READ: A user can read their own transactions. Admins can read any transaction.
+        // A user can read their own transactions. Admins can read any transaction.
         allow read: if isAuthOwner(userId) || isAdmin();
         
-        // CREATE: A user can create their own transaction.
+        // A user can create their own transaction (e.g. initiating a deposit).
         allow create: if isAuthOwner(userId);
         
-        // WRITE/DELETE: An admin can update or delete any transaction.
-        allow update, delete: if isAdmin();
+        // An admin can update any transaction (e.g. to approve/fail it).
+        allow update: if isAdmin();
+
+        // Admins can delete transactions if necessary.
+        allow delete: if isAdmin();
       }
       
       // Notifications
