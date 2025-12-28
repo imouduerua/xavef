@@ -7,7 +7,6 @@ import type { Transaction, UserData } from '@/lib/types';
 
 /**
  * Updates the status of a transaction and, if approved, the user's balance.
- * If declined ('Failed'), the transaction document is deleted and a notification is created.
  * All operations are performed within a single atomic Firestore transaction.
  */
 export async function updateTransactionStatus(
@@ -35,7 +34,7 @@ export async function updateTransactionStatus(
         const notificationRef = doc(collection(firestore, `users/${userId}/notifications`));
 
         if (newStatus === 'Failed') {
-            transaction.delete(txRef);
+            transaction.update(txRef, { status: 'Failed' });
             transaction.set(notificationRef, {
                 userId: userId,
                 title: 'Transaction Declined',

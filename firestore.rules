@@ -24,35 +24,23 @@ service cloud.firestore {
     // =====================================================================
     match /users/{userId} {
       // READ: Users can read their own profile. Admins can read any profile.
-      // The `get` is critical for the transaction approval process (reading the user's current balance).
-      allow get: if isAuthOwner(userId) || isAdmin();
+      allow read: if isAuthOwner(userId) || isAdmin();
       
-      // LIST: Only admins can list all user profiles (e.g., in the admin user list).
-      allow list: if isAdmin();
-
-      // CREATE: A user can create their own document during signup.
-      allow create: if isAuthOwner(userId);
-      
-      // WRITE: Admins can update any user profile (for balance changes).
-      // Users can update their own profile.
-      allow write: if isAdmin() || isAuthOwner(userId);
-
-      // DELETE: No one can delete user profiles.
-      allow delete: if false;
+      // WRITE: Users can update their own profile. Admins can update any user profile.
+      allow write: if isAuthOwner(userId) || isAdmin();
 
       // --- Subcollections ---
       
       // Transactions
       match /transactions/{transactionId} {
-        // READ: A user can read their own transactions.
-        allow read: if isAuthOwner(userId);
+        // READ: A user can read their own transactions. Admins can read any transaction.
+        allow read: if isAuthOwner(userId) || isAdmin();
         
-        // CREATE: A user can create a new transaction (e.g., a deposit or withdrawal request).
+        // CREATE: A user can create their own transaction.
         allow create: if isAuthOwner(userId);
-
-        // WRITE: An admin can update or delete any transaction. 
-        // This is necessary for the approval/decline workflow.
-        allow write: if isAdmin();
+        
+        // WRITE/DELETE: An admin can update or delete any transaction.
+        allow write, delete: if isAdmin();
       }
       
       // Notifications
@@ -60,7 +48,7 @@ service cloud.firestore {
           // Users can read and update their own notifications (e.g., mark as read).
           allow read, list, update: if isAuthOwner(userId);
 
-          // Admins can create notifications as part of the transaction workflow.
+          // Admins can create notifications.
           allow create: if isAdmin();
           
           allow delete: if false;
@@ -116,7 +104,7 @@ service cloud.firestore {
     
     // This allows admins to perform the collectionGroup query needed for the admin pages.
     match /{path=**}/transactions/{transactionId} {
-        allow read: if isAdmin();
+        allow list: if isAdmin();
     }
   }
 }
