@@ -24,7 +24,7 @@ service cloud.firestore {
     // =====================================================================
     match /users/{userId} {
       // READ: Users can read their own profile. Admins can read any profile.
-      // This 'get' is CRITICAL for the transaction approval process.
+      // The `get` permission is CRITICAL for the transaction approval process.
       allow get: if isAuthOwner(userId) || isAdmin();
       
       // LIST: Only admins can list all user profiles.
@@ -34,7 +34,8 @@ service cloud.firestore {
       allow create: if isAuthOwner(userId);
       
       // UPDATE: This is the most critical section for fixing the bug.
-      // We need two separate rules for updates.
+      // We need two separate rules for updates to handle different permissions.
+      
       // 1. A user can update their own non-sensitive, non-balance fields.
       allow update: if isAuthOwner(userId) && 
                       !('solidaraBalance' in request.resource.data) &&
@@ -45,7 +46,10 @@ service cloud.firestore {
       // This rule is what allows the transaction approval to succeed.
       // It checks that the only keys being changed are the balance keys.
       allow update: if isAdmin() && 
-                      request.resource.data.keys().hasOnly(['solidaraBalance', 'annualBalance']);
+                      request.resource.data.keys().hasOnly(['solidaraBalance', 'annualBalance']) &&
+                      request.resource.data.solidaraBalance == resource.data.solidaraBalance + request.resource.data.amount &&
+                      request.resource.data.annualBalance == resource.data.annualBalance;
+
 
       // DELETE: No one can delete user profiles.
       allow delete: if false;
