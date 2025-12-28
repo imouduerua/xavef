@@ -30,6 +30,7 @@ service cloud.firestore {
       allow create: if isAuthOwner(userId);
       
       // Users can update their own profile, but cannot change sensitive fields.
+      // This is one part of the solution for the batch update problem.
       allow update: if isAuthOwner(userId)
                     && !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys())
                     && !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys())
@@ -54,7 +55,7 @@ service cloud.firestore {
         
         // Admins can read, update, or delete any transaction in any user's subcollection.
         // This is necessary for the approval/decline workflow.
-        allow get, update, delete: if isAdmin();
+        allow write, delete: if isAdmin();
       }
       
       match /notifications/{notificationId} {

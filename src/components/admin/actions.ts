@@ -3,8 +3,6 @@
 
 import { doc, runTransaction, Firestore, collection, serverTimestamp, getDoc } from 'firebase/firestore';
 import type { Transaction } from '@/lib/types';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 /**
  * Updates the status of a transaction and, if approved, the user's balance.
@@ -81,20 +79,8 @@ export async function updateTransactionStatus(
     return { success: true };
 
   } catch (error: any) {
-    // If the transaction fails, check if it's a permission error and emit a detailed,
-    // debuggable error for the developer overlay.
-    if (error.code === 'permission-denied' || error.name === 'FirebaseError' && error.message.includes('permission-denied')) {
-        const permissionError = new FirestorePermissionError({
-            path: `BATCHED_WRITE on /users/${userId} and /users/${userId}/transactions/${transactionId}`, 
-            operation: 'update',
-            requestResourceData: { note: 'This was part of a batch write for transaction approval/decline.' }
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        // Return a more user-friendly error message
-        return { success: false, error: "You do not have sufficient permissions to perform this action." };
-    }
-    
-    // For other types of errors, return the original message.
+    console.error('Error during transaction status update:', error);
+    // Return a user-friendly error message. The detailed error will still be in the browser console.
     return { success: false, error: error.message || 'An unexpected error occurred.' };
   }
 }
