@@ -20,7 +20,6 @@ export async function updateTransactionStatus(
   
   const txRef = doc(firestore, `users/${userId}/transactions`, transactionId);
   const userRef = doc(firestore, 'users', userId);
-  const notificationRef = doc(collection(firestore, `users/${userId}/notifications`));
 
   try {
     await runTransaction(firestore, async (transaction) => {
@@ -33,6 +32,9 @@ export async function updateTransactionStatus(
         if (txData.status !== 'Pending') {
             throw new Error(`This transaction is already marked as ${txData.status}.`);
         }
+        
+        // This ref is created inside the transaction to ensure it's unique
+        const notificationRef = doc(collection(firestore, `users/${userId}/notifications`));
 
         if (newStatus === 'Failed') {
             transaction.delete(txRef);
@@ -43,7 +45,7 @@ export async function updateTransactionStatus(
                 createdAt: serverTimestamp(),
                 read: false,
             });
-        } else {
+        } else { // Completed
             const userSnap = await transaction.get(userRef);
             if (!userSnap.exists()) {
                 throw new Error("User data not found for this transaction.");
@@ -57,12 +59,14 @@ export async function updateTransactionStatus(
             }
             
             const balanceFieldToUpdate = targetAccount === 'solidara' ? 'solidaraBalance' : 'annualBalance';
-            const currentBalance = userSnap.data()[balanceFieldToUpdate] || 0;
-            const newBalance = currentBalance + amount;
+            
+            // This is the operation that likely requires specific admin permissions
+            transaction.update(userRef, { [balanceFieldToUpdate]: userSnap.data()[balanceFieldToUpdate] + amount });
 
-            transaction.update(userRef, { [balanceFieldToUpdate]: newBalance });
+            // This operation also needs permission
             transaction.update(txRef, { status: 'Completed' });
 
+            // And this one
             transaction.set(notificationRef, {
                 userId: userId,
                 title: 'Transaction Completed',
@@ -77,15 +81,20 @@ export async function updateTransactionStatus(
     return { success: true };
 
   } catch (error: any) {
-    if (error.code === 'permission-denied') {
+    // If the transaction fails, check if it's a permission error and emit a detailed,
+    // debuggable error for the developer overlay.
+    if (error.code === 'permission-denied' || error.name === 'FirebaseError' && error.message.includes('permission-denied')) {
         const permissionError = new FirestorePermissionError({
-            path: txRef.path, 
+            path: `BATCHED_WRITE on /users/${userId} and /users/${userId}/transactions/${transactionId}`, 
             operation: 'update',
             requestResourceData: { note: 'This was part of a batch write for transaction approval/decline.' }
         });
         errorEmitter.emit('permission-error', permissionError);
+        // Return a more user-friendly error message
+        return { success: false, error: "You do not have sufficient permissions to perform this action." };
     }
     
+    // For other types of errors, return the original message.
     return { success: false, error: error.message || 'An unexpected error occurred.' };
   }
 }

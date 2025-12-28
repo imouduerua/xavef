@@ -8,14 +8,10 @@ service cloud.firestore {
     // Helper Functions
     // =====================================================================
 
-    // Checks if the requesting user is the owner of the document.
     function isAuthOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Checks if the requesting user has admin privileges.
-    // The super admin is defined by their email.
-    // Other admins are defined by their existence in the /admins collection.
     function isAdmin() {
       return request.auth.token.email == 'admin@xavef.com'
              || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
@@ -25,32 +21,31 @@ service cloud.firestore {
     // User Collection Rules
     // =====================================================================
     match /users/{userId} {
-      // Admins and the user themselves can get the user document.
+      // Admins can read any user profile. Users can read their own.
       allow get: if isAuthOwner(userId) || isAdmin();
-      
-      // Only admins can list all users.
+      // Only admins can list users.
       allow list: if isAdmin();
 
-      // A new user can create their own profile document with specific initial values.
+      // New users can create their own profile with specific initial values.
       allow create: if isAuthOwner(userId)
                     && request.resource.data.uid == userId
                     && request.resource.data.email == request.auth.token.email
                     && request.resource.data.solidaraBalance == 0
                     && request.resource.data.annualBalance == 0;
 
-      // A user can update their own profile, but NOT their balance or other protected fields.
+      // Users can update their own non-critical profile information.
       allow update: if isAuthOwner(userId) &&
                      !('solidaraBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('annualBalance' in request.resource.data.diff(resource.data).affectedKeys()) &&
                      !('xavefId' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                     !('referredBy' in request.resource.data.diff(resource.data).affectedKeys());
-
-      // CRITICAL FIX: An admin can ONLY update the balance fields of a user.
-      // This is required for transaction approvals.
+                     !('referredBy' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                     !('isAdmin' in request.resource.data.diff(resource.data).affectedKeys());
+      
+      // Admins can ONLY update the balance fields of a user.
+      // This is the critical rule for transaction approvals.
       allow update: if isAdmin() &&
                   request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solidaraBalance', 'annualBalance']);
 
-      // Users cannot be deleted from the client.
       allow delete: if false; 
     }
 
@@ -58,29 +53,27 @@ service cloud.firestore {
     // User Subcollection Rules
     // =====================================================================
 
-    // Rules for the 'transactions' subcollection
     match /users/{userId}/transactions/{transactionId} {
-      // A user can create a transaction for themselves (e.g., a deposit request).
+      // Users can create their own transactions (e.g., a deposit request).
       allow create: if isAuthOwner(userId);
-      // The user or an admin can view individual transactions.
+      // Users and admins can view individual transactions.
       allow get: if isAuthOwner(userId) || isAdmin();
-       // A user can view their own list of transactions.
+      // Users can list their own transactions.
       allow list: if isAuthOwner(userId);
-      // An admin can update or delete transactions (for approvals/declines).
+      // Admins can update or delete transactions (for approval/decline).
       allow update, delete: if isAdmin();
     }
     
-    // Rule for the 'notifications' subcollection
     match /users/{userId}/notifications/{notificationId} {
         // Users can read and update (e.g., mark as read) their own notifications.
         allow read, list, update: if isAuthOwner(userId);
-        // Admins can create notifications for users (e.g., on transaction approval).
+        // Admins can create notifications for users.
         allow create: if isAdmin();
-        allow delete: if false; // Notifications are not deletable.
+        allow delete: if false; // Notifications should not be deletable by client.
     }
     
-    // Rules for saving goals
     match /users/{userId}/goals/{goalId} {
+        // Users have full control over their own saving goals.
         allow read, write: if isAuthOwner(userId);
     }
 
@@ -88,16 +81,16 @@ service cloud.firestore {
     // Global Collection Rules
     // =====================================================================
 
-    // Required for admins to query the 'transactions' collection group
-    // for the pending transactions page.
+    // This collection group match is necessary for admins to query
+    // all transactions across all users for the admin dashboards.
     match /{path=**}/transactions/{transactionId} {
         allow list: if isAdmin();
     }
 
-    // Rules for referral codes
     match /referralCodes/{codeId} {
+      // Any authenticated user can read a referral code to validate it.
       allow read: if request.auth != null;
-      // A user can create a referral code for themselves.
+      // An authenticated user can create a referral code for themselves.
       allow create: if isAuthOwner(request.resource.data.creatorUid);
       // A code can be updated from 'used: false' to 'used: true' by a new user.
       allow update: if resource.data.used == false
@@ -106,35 +99,32 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Rules for the admins collection
     match /admins/{userId} {
-      allow read, get: if request.auth != null;
+      // Any authenticated user can see who is an admin.
+      allow read: if request.auth != null;
       // Only the super admin can add or remove other admins.
       allow write: if request.auth.token.email == 'admin@xavef.com';
     }
     
-    // Rules for saving groups
     match /groups/{groupId} {
         // Any authenticated user can read group info.
         allow read: if request.auth != null;
-        // A user can create a group where they are the creator.
+        // Users can create groups where they are the creator.
         allow create: if isAuthOwner(request.resource.data.creatorUid);
-        // Only the group creator can update a group (e.g., start it).
+        // Only the group creator can update a group (e.g., to start it).
         allow update: if isAuthOwner(resource.data.creatorUid);
     }
     
-    // Rules for requests to join a group
     match /joinRequests/{requestId} {
-        // A user can create a request to join a group.
+        // Users can create requests to join groups.
         allow create: if isAuthOwner(request.resource.data.requesterUid);
-        // The requester or the group creator can read the request.
+        // The requester and the group creator can read the request.
         allow read: if isAuthOwner(request.resource.data.requesterUid)
                       || isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
-        // Only the group creator can update (approve/decline) the request.
+        // Only the group creator can approve or decline a request.
         allow update: if isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
     }
 
-    // Rules for FCM tokens for push notifications
     match /fcmTokens/{userId} {
       // Only an admin user can write their own token.
       allow read, write: if isAuthOwner(userId) && isAdmin();
