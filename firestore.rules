@@ -49,15 +49,15 @@ service cloud.firestore {
         // Users can create new transactions (e.g., a deposit request).
         allow create: if isAuthOwner(userId);
 
-        // Admins can read, update, or delete any transaction.
-        allow write, delete: if isAdmin();
+        // Admins can read, update, or delete any transaction. This is necessary for the approval workflow.
+        allow read, write, delete: if isAdmin();
       }
       
       // Notifications
       match /notifications/{notificationId} {
           // Users can read and modify their own notifications (e.g., mark as read).
           allow read, list, update: if isAuthOwner(userId);
-          // Admins can create notifications for users.
+          // Admins can create notifications for users as part of transaction approvals/declines.
           allow create: if isAdmin();
           allow delete: if false;
       }
