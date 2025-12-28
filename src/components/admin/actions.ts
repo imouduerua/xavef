@@ -1,7 +1,7 @@
 
 'use client';
 
-import { doc, runTransaction, Firestore, collection, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, runTransaction, Firestore, collection, serverTimestamp } from 'firebase/firestore';
 import type { Transaction } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -74,10 +74,11 @@ export async function updateTransactionStatus(
     }).catch((serverError) => {
         // This is the crucial part for debugging.
         // It captures the permission error from the transaction and emits it.
-        if (serverError.code === 'permission-denied') {
+        if (serverError.code === 'permission-denied' || serverError.code === 'PERMISSION_DENIED') {
             const permissionError = new FirestorePermissionError({
                 path: `users/${userId}/transactions/${transactionId}`,
                 operation: 'update', // This is a simplification; it's a multi-write operation
+                requestResourceData: { userId, transactionId, newStatus }
             });
             errorEmitter.emit('permission-error', permissionError);
         }
