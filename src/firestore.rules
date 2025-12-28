@@ -12,7 +12,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // The super admin email or any user ID present in the /admins collection is an admin.
+      // Super admin email OR any user ID present in the /admins collection is an admin.
       return request.auth != null && (
         request.auth.token.email == 'admin@xavef.com' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
@@ -23,20 +23,21 @@ service cloud.firestore {
     // User Collection & Subcollections
     // =====================================================================
     match /users/{userId} {
-      // Admin can get any user doc (needed for transaction reads).
-      // User can only get their own.
-      allow get: if isAuthOwner(userId) || isAdmin();
+      // READ: Admins can read any user doc (needed for transaction reads).
+      // Users can only read their own.
+      allow read: if isAuthOwner(userId) || isAdmin();
       
       // Admins can list all users for the user management page.
       allow list: if isAdmin();
-
-      // Users can update their own profile, but cannot change balance fields.
+      
+      // UPDATE: A user can update their own profile, but cannot change balance fields.
       allow update: if isAuthOwner(userId)
                       && !('solidaraBalance' in request.resource.data)
                       && !('annualBalance' in request.resource.data);
-                      
-      // Admins can update any user's profile, including balances.
-      allow update: if isAdmin();
+
+      // CRITICAL FIX: An admin can update any user's profile, including balances.
+      // This is required for the transaction approval to work.
+      allow write: if isAdmin();
 
       // Users cannot create their own profile documents directly (handled by a function).
       // Admins should not create user profiles this way either.
@@ -47,17 +48,14 @@ service cloud.firestore {
       
       // Transactions
       match /transactions/{transactionId} {
-        // A user can read their own transactions. Admins can read any transaction.
-        allow read: if isAuthOwner(userId) || isAdmin();
+        // A user can read their own transactions.
+        allow read: if isAuthOwner(userId);
         
         // A user can create their own transaction (e.g. initiating a deposit).
         allow create: if isAuthOwner(userId);
         
-        // An admin can update any transaction (e.g. to approve/fail it).
-        allow update: if isAdmin();
-
-        // Admins can delete transactions if necessary.
-        allow delete: if isAdmin();
+        // Admins can read and write any transaction. This is necessary for approvals.
+        allow read, write: if isAdmin();
       }
       
       // Notifications

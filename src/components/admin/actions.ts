@@ -3,6 +3,8 @@
 
 import { doc, runTransaction, Firestore, collection, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import type { Transaction } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 /**
@@ -69,12 +71,28 @@ export async function updateTransactionStatus(
                 actionUrl: '/transactions'
             });
         }
+    }).catch((serverError) => {
+        // This is the crucial part for debugging.
+        // It captures the permission error from the transaction and emits it.
+        if (serverError.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: `users/${userId}/transactions/${transactionId}`,
+                operation: 'update', // This is a simplification; it's a multi-write operation
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        }
+        // Re-throw the original error to be caught by the outer try/catch
+        throw serverError;
     });
 
     return { success: true };
 
   } catch (error: any) {
     console.error('Error during transaction status update:', error);
-    return { success: false, error: error.message || 'An unexpected error occurred.' };
+    // This will now catch the re-thrown error from the .catch() block as well
+    const errorMessage = error.name === 'FirestorePermissionError' 
+        ? 'A security rule is preventing this operation. See the console for details.'
+        : error.message || 'An unexpected error occurred.';
+    return { success: false, error: errorMessage };
   }
 }
