@@ -125,8 +125,8 @@ export async function transferToAnnual(
                 amount: amount,
                 date: serverTimestamp(),
                 description: "Transfer to Annual Savings",
-                type: 'Internal Transfer', // New type
-                status: 'Completed',
+                type: 'Internal Transfer',
+                status: 'Completed', // Set status to Completed directly
                 targetAccount: 'annual',
             });
         });
