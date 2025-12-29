@@ -22,14 +22,6 @@ export default function LoginPage() {
 
                 <LoginForm />
 
-                <div className="text-center text-sm text-muted-foreground">
-                    <p>
-                        Don&apos;t have an account?{" "}
-                        <Button variant="link" asChild className="p-0">
-                            <Link href="/register">Register</Link>
-                        </Button>
-                    </p>
-                </div>
             </div>
         </div>
     </div>
