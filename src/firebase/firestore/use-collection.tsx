@@ -7,30 +7,36 @@ import {
   QuerySnapshot,
   DocumentData,
   FirestoreError,
+  queryEqual,
 } from 'firebase/firestore';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
+
+// A stable string representation of the query is needed for useEffect dependencies.
+// This function safely extracts the necessary parts of the query.
+const getQueryKey = (query: Query<any>): string => {
+  const q = query as any;
+  // Access public properties or methods if available.
+  // This is a simplified but more stable approach than accessing private _query properties.
+  const path = q.path || (q._query?.path?.segments || []).join('/');
+  
+  const constraints = (q._query?.constraints || []).map((c: any) => {
+    return `${c.type}-${c.field?.segments?.join('.') || ''}-${c.op || ''}-${c.value || ''}`;
+  }).join(',');
+
+  return `${path}?${constraints}`;
+}
+
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
-
-  const queryKey = useMemo(() => {
-    if (!query) return null;
-    // A simplified key generation. This might not be perfect for all complex queries,
-    // but is more stable than stringifying the whole object.
-    const q = query as any;
-    try {
-      const path = q._query.path.segments.join('/');
-      const constraints = (q._query.explicitOrderBy || []).map((c: any) => `${c.field.segments.join('.')}:${c.dir}`).join(',');
-      return `${path}|${constraints}`;
-    } catch {
-       return String(query);
-    }
-  }, [query]);
+  
+  // Create a stable key from the query to use in the dependency array.
+  const queryKey = query ? getQueryKey(query) : null;
 
   useEffect(() => {
     if (!query) {
@@ -51,6 +57,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           path: doc.ref.path,
           ...doc.data(),
         } as T));
+        
         setData(resultData);
         setLoading(false);
         setError(null);
@@ -89,7 +96,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [queryKey]);
+  // Use the stable queryKey as the dependency.
+  }, [queryKey]); 
 
   return { data, loading, error, indexCreationUrl };
 }
