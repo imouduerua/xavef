@@ -18,12 +18,10 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  // Use a ref to hold the current data to avoid it being a dependency of useEffect
-  const dataRef = useRef<T[] | null>(null);
-  dataRef.current = data;
+  // Use a ref to hold a stringified version of the current data to avoid it being a dependency.
+  const dataRef = useRef<string | null>(null);
 
-  // useMemo on the query object itself is not sufficient if it's created inline
-  // in the parent component. We handle stability inside the effect.
+  // The canonical path of the query is a stable string representation.
   const queryPath = useMemo(() => (query as any)?._query?.path?.canonical, [query]);
 
   useEffect(() => {
@@ -49,11 +47,13 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           } as T;
         });
 
+        const resultDataString = JSON.stringify(resultData);
         // CRITICAL FIX: Prevent infinite loops by only setting state if the
         // actual data has changed. The `useCollection` hook was causing
         // re-renders because it always returned a new array instance.
-        if (JSON.stringify(dataRef.current) !== JSON.stringify(resultData)) {
+        if (dataRef.current !== resultDataString) {
             setData(resultData);
+            dataRef.current = resultDataString;
         }
 
         setLoading(false);
@@ -94,7 +94,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
 
     return () => unsubscribe();
     // Depend on a stable representation of the query path.
-    // The stability of the data itself is handled inside the snapshot listener.
   }, [queryPath]);
 
   return { data, loading, error, indexCreationUrl };
