@@ -8,7 +8,7 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
@@ -18,20 +18,17 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  const dataRef = useRef<string | null>(null);
-
-  // We stringify the query path and constraints to create a stable key for the useEffect dependency array.
-  // This is more reliable than depending on the query object itself.
   const queryKey = useMemo(() => {
     if (!query) return null;
+    // A simplified key generation. This might not be perfect for all complex queries,
+    // but is more stable than stringifying the whole object.
+    const q = query as any;
     try {
-      const q = query as any;
-      const path = q._query.path.canonical;
-      const constraints = (q._query.constraints || []).map((c: any) => `${c._field.canonical}${c._op}${c._value}`).join(',');
+      const path = q._query.path.segments.join('/');
+      const constraints = (q._query.explicitOrderBy || []).map((c: any) => `${c.field.segments.join('.')}:${c.dir}`).join(',');
       return `${path}|${constraints}`;
     } catch {
-      // Fallback for safety, though it might not be perfectly stable
-      return JSON.stringify(query);
+       return String(query);
     }
   }, [query]);
 
@@ -49,22 +46,12 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     const unsubscribe = onSnapshot(
       query,
       (snapshot: QuerySnapshot<T>) => {
-        const resultData = snapshot.docs.map((doc) => {
-          const docData = doc.data();
-          return {
-            id: doc.id,
-            path: doc.ref.path,
-            ...docData,
-          } as T;
-        });
-
-        // Deep compare the new data with the existing data to prevent unnecessary re-renders.
-        const resultDataString = JSON.stringify(resultData);
-        if (dataRef.current !== resultDataString) {
-          dataRef.current = resultDataString;
-          setData(resultData);
-        }
-
+        const resultData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          path: doc.ref.path,
+          ...doc.data(),
+        } as T));
+        setData(resultData);
         setLoading(false);
         setError(null);
         setIndexCreationUrl(null);
