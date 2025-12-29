@@ -8,28 +8,24 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
 // This function attempts to create a stable key from a Firestore query object.
-// It accesses internal properties, which is not ideal but necessary for dependency arrays.
 const getQueryKey = (q: Query | null): string => {
     if (!q) return 'null';
     try {
-        // Access internal properties to build a stable key.
-        // This is fragile and may break with Firebase SDK updates.
         const internalQuery = (q as any)._query;
+        if (!internalQuery) return JSON.stringify(q); // Fallback for safety
         const path = internalQuery.path.canonical;
         const filters = internalQuery.filters.map((f: any) => `${f.field.canonical}${f.op}${JSON.stringify(f.value)}`).join(',');
         const orders = internalQuery.explicitOrderBy.map((o: any) => `${o.field.canonical}${o.dir}`).join(',');
         return `${path}|${filters}|${orders}`;
     } catch {
-        // Fallback for safety, though it may cause re-renders if the query object changes identity.
-        return JSON.stringify(q);
+        return JSON.stringify(q); // Fallback for safety
     }
 };
-
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
@@ -38,6 +34,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
   const queryKey = useMemo(() => getQueryKey(query), [query]);
+  const dataRef = useRef(data);
+  dataRef.current = data;
 
   useEffect(() => {
     if (!query) {
@@ -61,7 +59,13 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             ...docData,
           } as T;
         });
-        setData(resultData);
+
+        // This is the critical fix: Only update state if the data has actually changed.
+        // This prevents infinite loops caused by new array references on every snapshot.
+        if (JSON.stringify(dataRef.current) !== JSON.stringify(resultData)) {
+            setData(resultData);
+        }
+
         setLoading(false);
         setError(null);
         setIndexCreationUrl(null);
@@ -99,7 +103,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [queryKey]); // Depend on the stable key
+  }, [queryKey]);
 
   return { data, loading, error, indexCreationUrl };
 }
