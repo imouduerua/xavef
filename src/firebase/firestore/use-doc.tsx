@@ -7,11 +7,14 @@ import {
   DocumentSnapshot,
   DocumentData,
 } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // The path is a stable string, so we can use it as a dependency.
+  const docPath = useMemo(() => ref?.path, [ref]);
 
   useEffect(() => {
     if (!ref) {
@@ -42,7 +45,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [ref]);
+  }, [docPath]); // Depend on the stable path
 
   return { data, loading };
 }

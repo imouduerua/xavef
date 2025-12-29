@@ -8,9 +8,27 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
+
+// This function attempts to create a stable key from a Firestore query object.
+// It accesses internal properties, which is not ideal but necessary for dependency arrays.
+const getQueryKey = (q: Query | null): string => {
+    if (!q) return 'null';
+    try {
+        // Access internal properties to build a stable key.
+        // This is fragile and may break with Firebase SDK updates.
+        const internalQuery = (q as any)._query;
+        const path = internalQuery.path.canonical;
+        const filters = internalQuery.filters.map((f: any) => `${f.field.canonical}${f.op}${JSON.stringify(f.value)}`).join(',');
+        const orders = internalQuery.explicitOrderBy.map((o: any) => `${o.field.canonical}${o.dir}`).join(',');
+        return `${path}|${filters}|${orders}`;
+    } catch {
+        // Fallback for safety, though it may cause re-renders if the query object changes identity.
+        return JSON.stringify(q);
+    }
+};
 
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
@@ -18,6 +36,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
+
+  const queryKey = useMemo(() => getQueryKey(query), [query]);
 
   useEffect(() => {
     if (!query) {
@@ -60,12 +80,10 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             setIndexCreationUrl(urlMatch[0]);
           }
         } else if (err.code === 'permission-denied') {
-          // Attempt to get the path for the error message
           let queryPath = 'unknown path';
-          try {
-            // This is not a public API, but it's the best we can do for logging
-            queryPath = (query as any)._query.path.canonical;
-          } catch {}
+           try {
+             queryPath = (query as any)._query.path.canonical;
+           } catch {}
           
           const permissionError = new FirestorePermissionError({
               path: queryPath,
@@ -81,7 +99,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [query]);
+  }, [queryKey]); // Depend on the stable key
 
   return { data, loading, error, indexCreationUrl };
 }

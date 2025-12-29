@@ -7,7 +7,7 @@ import {
   TransactionStatus,
 } from '@/lib/types';
 import { collection, orderBy, query } from 'firebase/firestore';
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Table,
   TableBody,
