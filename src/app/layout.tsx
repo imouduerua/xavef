@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import { Share_Tech } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase";
 
-const shareTech = Share_Tech({
+const inter = Inter({
   subsets: ["latin"],
-  weight: "400",
-  variable: "--font-share-tech",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -22,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${shareTech.variable} font-body antialiased`}>
+      <body className={`${inter.variable} font-body antialiased`}>
           <FirebaseClientProvider>
             {children}
           </FirebaseClientProvider>

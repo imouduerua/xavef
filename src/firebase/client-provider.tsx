@@ -5,30 +5,20 @@ import { FirebaseProvider } from '@/firebase/provider';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode } from 'react';
 
-type FirebaseServices = {
-  app: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
-};
+// Initialize Firebase services immediately and only once.
+const firebaseServices = initializeFirebase();
 
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
-  const [firebase, setFirebase] = useState<FirebaseServices | null>(null);
-
-  useEffect(() => {
-    const firebaseServices = initializeFirebase();
-    setFirebase(firebaseServices);
-  }, []);
-
-  if (!firebase) {
-    return null;
-  }
+  // The services are stable and created only once, so we can pass them directly.
+  // This avoids using useState and causing a re-render on initialization,
+  // which was the source of the infinite loop.
   return (
     <FirebaseProvider
-      app={firebase.app}
-      auth={firebase.auth}
-      firestore={firebase.firestore}
+      app={firebaseServices.app}
+      auth={firebaseServices.auth}
+      firestore={firebaseServices.firestore}
     >
       {children}
     </FirebaseProvider>
