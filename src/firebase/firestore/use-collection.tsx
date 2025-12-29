@@ -8,7 +8,7 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
@@ -18,20 +18,17 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  // Using a ref to track the query string representation to avoid re-running the effect
+  // Memoize the string representation of the query to prevent re-running the effect
   // for queries that are structurally identical but different object references.
-  const queryJson = query ? JSON.stringify((query as any)._query) : null;
+  const queryKey = useMemo(() => query ? JSON.stringify((query as any)._query) : null, [query]);
 
   useEffect(() => {
-    // If the query is null, it means we don't have enough information to fetch data yet.
-    // Reset state and wait for a valid query. This prevents errors from invalid queries
-    // on initial render.
     if (!query) {
       setData(null);
-      setLoading(false); // Not loading if there's no query
+      setLoading(false);
       setError(null);
       setIndexCreationUrl(null);
-      return; // Stop here and wait for the next effect run with a valid query.
+      return;
     }
 
     setLoading(true);
@@ -78,9 +75,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       }
     );
     
-    // Cleanup function that runs when the component unmounts or the query changes.
     return () => unsubscribe();
-  }, [queryJson]); // Effect dependencies: only re-run if the query itself changes.
+  }, [queryKey]); // Use the memoized query key as the dependency
 
   return { data, loading, error, indexCreationUrl };
 }
