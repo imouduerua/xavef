@@ -89,7 +89,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [queryKey, query]);
+  }, [queryKey]);
 
   return { data, loading, error, indexCreationUrl };
 }

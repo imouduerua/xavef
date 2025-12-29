@@ -61,7 +61,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
 
     // This useEffect will re-run only if the document path changes.
     return () => unsubscribe();
-  }, [docPath, ref]); // `ref` is included in case it changes while path is same (not typical but safe)
+  }, [docPath]);
 
   return { data, loading, error };
 }
