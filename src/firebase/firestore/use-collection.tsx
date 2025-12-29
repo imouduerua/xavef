@@ -8,7 +8,7 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
@@ -18,9 +18,15 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  // Use the query's internal path as a stable dependency.
-  // This is a protected property but it's the most reliable way to get a stable key.
-  const queryPath = (query as any)?._query?.path?.canonical;
+  // Create a stable key from the query object to use as a dependency.
+  const queryKey = useMemo(() => {
+    return query ? JSON.stringify({
+        path: (query as any)._query.path,
+        filters: (query as any)._query.explicitOrderBy,
+        limit: (query as any)._query.limit,
+    }) : null;
+  }, [query]);
+
 
   useEffect(() => {
     if (!query) {
@@ -63,6 +69,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             setIndexCreationUrl(urlMatch[0]);
           }
         } else if (err.code === 'permission-denied') {
+           const queryPath = (query as any)?._query?.path?.canonical;
           if (queryPath) {
             const permissionError = new FirestorePermissionError({
               path: queryPath,
@@ -80,7 +87,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
 
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryPath]); // Depend on the stable query path string.
+  }, [queryKey]); // Depend on the stable query key.
 
   return { data, loading, error, indexCreationUrl };
 }
