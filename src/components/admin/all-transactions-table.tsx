@@ -39,11 +39,10 @@ const statusVariant: Record<
 // New inner component to handle its own async data processing
 function AllTransactionsTableContent({
   rawTransactions,
-  firestore,
 }: {
   rawTransactions: Transaction[] | null;
-  firestore: any;
 }) {
+  const firestore = useFirestore();
   const [processedTransactions, setProcessedTransactions] = useState<
     TransactionWithUserDetails[] | null
   >(null);
@@ -52,8 +51,10 @@ function AllTransactionsTableContent({
   useEffect(() => {
     let isMounted = true;
     if (!rawTransactions || !firestore) {
-      setProcessedTransactions([]);
-      setProcessing(false);
+      if (isMounted) {
+        setProcessedTransactions([]);
+        setProcessing(false);
+      }
       return;
     }
 
@@ -196,7 +197,5 @@ function AllTransactionsTableContent({
 export function AllTransactionsTable({
   transactions: rawTransactions,
 }: AllTransactionsTableProps) {
-  const firestore = useFirestore();
-
-  return <AllTransactionsTableContent rawTransactions={rawTransactions} firestore={firestore} />;
+  return <AllTransactionsTableContent rawTransactions={rawTransactions} />;
 }
