@@ -1,8 +1,8 @@
 
 'use client';
 
-import type { TransactionWithUserDetails } from '@/lib/types';
-import React from 'react';
+import type { TransactionWithUserDetails, UserData } from '@/lib/types';
+import React, { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -17,20 +17,90 @@ import { toast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { updateTransactionStatus } from './actions';
 import Link from 'next/link';
+import { doc, getDoc } from 'firebase/firestore';
+import { Skeleton } from '../ui/skeleton';
 
 interface PendingTransactionsTableProps {
     transactions: TransactionWithUserDetails[];
 }
 
-export function PendingTransactionsTable({ transactions: initialTransactions }: PendingTransactionsTableProps) {
-  const [transactions, setTransactions] = React.useState<TransactionWithUserDetails[]>(initialTransactions);
+
+// New inner component to handle its own async data processing
+function PendingTransactionsTableContent({
+  rawTransactions,
+  firestore,
+}: {
+  rawTransactions: any[] | null;
+  firestore: any;
+}) {
+  const [transactions, setTransactions] = useState<TransactionWithUserDetails[] | null>(null);
+  const [processing, setProcessing] = useState(true);
   const [updatingId, setUpdatingId] = React.useState<string | null>(null);
-  const firestore = useFirestore();
 
-  React.useEffect(() => {
-    setTransactions(initialTransactions);
-  }, [initialTransactions]);
+  useEffect(() => {
+    let isMounted = true;
+    if (!rawTransactions || !firestore) {
+      setTransactions([]);
+      setProcessing(false);
+      return;
+    }
 
+    const processTransactions = async () => {
+      setProcessing(true);
+      try {
+        const userCache = new Map<string, UserData>();
+        const transactionsWithDetails = await Promise.all(
+          rawTransactions.map(async (tx) => {
+            const pathParts = tx.path.split('/');
+            const userId = pathParts[pathParts.indexOf('users') + 1];
+            let user: UserData | undefined = userCache.get(userId);
+
+            if (!user) {
+              const userRef = doc(firestore, 'users', userId);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists()) {
+                const fetchedUser = {
+                  id: userSnap.id,
+                  ...userSnap.data(),
+                } as UserData;
+                userCache.set(userId, fetchedUser);
+                user = fetchedUser;
+              }
+            }
+
+            return {
+              ...tx,
+              userId,
+              userEmail: user?.email || 'Unknown User',
+              xavefId: user?.xavefId || 'N/A',
+            } as TransactionWithUserDetails;
+          })
+        );
+        if (isMounted) {
+          setTransactions(transactionsWithDetails);
+        }
+      } catch (err) {
+        console.error('Error attaching user details:', err);
+        if (isMounted) {
+          toast({
+            variant: 'destructive',
+            title: 'Error Processing Data',
+            description: 'Could not process transaction details.',
+          });
+          setTransactions([]);
+        }
+      } finally {
+        if (isMounted) {
+          setProcessing(false);
+        }
+      }
+    };
+
+    processTransactions();
+    
+    return () => { isMounted = false; };
+  }, [rawTransactions, firestore]);
+  
   const handleUpdateStatus = async (
     userId: string,
     transactionId: string,
@@ -45,7 +115,7 @@ export function PendingTransactionsTable({ transactions: initialTransactions }: 
                 description: `Transaction has been marked as ${newStatus}.`,
             });
             // Optimistically remove the transaction from the table
-            setTransactions(prev => prev.filter(tx => tx.id !== transactionId));
+            setTransactions(prev => prev ? prev.filter(tx => tx.id !== transactionId) : []);
         } else {
              toast({
                 variant: 'destructive',
@@ -65,7 +135,17 @@ export function PendingTransactionsTable({ transactions: initialTransactions }: 
   };
 
 
-  if (transactions.length === 0) {
+  if (processing) {
+    return (
+       <div className="space-y-2">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
+  }
+  
+  if (!transactions || transactions.length === 0) {
     return (
        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
         <Clock className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -184,4 +264,13 @@ export function PendingTransactionsTable({ transactions: initialTransactions }: 
       </Table>
     </div>
   );
+}
+
+
+export function PendingTransactionsTable({
+  transactions: rawTransactions,
+}: PendingTransactionsTableProps) {
+  const firestore = useFirestore();
+
+  return <PendingTransactionsTableContent rawTransactions={rawTransactions} firestore={firestore} />;
 }
