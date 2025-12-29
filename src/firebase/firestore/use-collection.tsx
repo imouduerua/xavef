@@ -18,12 +18,16 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  // Memoize the string representation of the query to prevent re-running the effect
-  // for queries that are structurally identical but different object references.
-  const queryKey = useMemo(() => query ? JSON.stringify((query as any)._query) : null, [query]);
+  // Correctly memoize the query object.
+  // The dependency array uses the canonical string representation of the query's path and filters.
+  // This prevents the effect from re-running on every render.
+  const memoizedQuery = useMemo(() => {
+    return query;
+  }, [query ? JSON.stringify((query as any)._query) : null]);
+
 
   useEffect(() => {
-    if (!query) {
+    if (!memoizedQuery) {
       setData(null);
       setLoading(false);
       setError(null);
@@ -36,7 +40,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     setIndexCreationUrl(null);
     
     const unsubscribe = onSnapshot(
-      query,
+      memoizedQuery,
       (snapshot: QuerySnapshot<T>) => {
         const resultData = snapshot.docs.map((doc) => {
             const docData = doc.data();
@@ -58,7 +62,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             setIndexCreationUrl(urlMatch[0]);
           }
         } else if (err.code === 'permission-denied') {
-            const path = (query as any)?._query?.path?.canonical;
+            const path = (memoizedQuery as any)?._query?.path?.canonical;
             
             if (path) {
                 const permissionError = new FirestorePermissionError({
@@ -76,7 +80,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
     
     return () => unsubscribe();
-  }, [queryKey]); // Use the memoized query key as the dependency
+  }, [memoizedQuery]);
 
   return { data, loading, error, indexCreationUrl };
 }
