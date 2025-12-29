@@ -12,13 +12,17 @@ import { useEffect, useState } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
-// Helper to create a stable key from a query
+// Helper to create a stable key from a query's properties
 const getQueryKey = (q: Query) => {
+  if (!q) return null;
+  // Access the internal _query property which contains the query's definition
   const queryInternals = (q as any)._query;
   const path = queryInternals.path.canonical;
-  const filters = queryInternals.filters.map((f: any) => `${f.op}${f.field.canonical}${f.value}`).join(',');
+  // Create a string from all filters
+  const filters = queryInternals.filters.map((f: any) => `${f.field?.canonical || ''}${f.op || ''}${JSON.stringify(f.value)}`).join(',');
   const limit = queryInternals.limit;
   const limitToLast = queryInternals.limitToLast;
+  // Create a string from all orderBy clauses
   const orderBy = queryInternals.explicitOrderBy.map((o: any) => `${o.field.canonical}${o.dir}`).join(',');
 
   return `${path}|${filters}|${limit}|${limitToLast}|${orderBy}`;
@@ -31,7 +35,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  const queryKey = query ? getQueryKey(query) : null;
+  // Generate a stable key representing the query.
+  const queryKey = getQueryKey(query);
 
   useEffect(() => {
     if (!query) {
@@ -87,6 +92,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
     
     return () => unsubscribe();
+  // The effect now depends on the stable queryKey, preventing infinite loops.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryKey]);
 
