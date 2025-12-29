@@ -3,7 +3,7 @@
 
 import { Copy, Users } from 'lucide-react';
 import Link from 'next/link';
-import React, { Suspense, useMemo } from 'react';
+import React, { Suspense, useMemo, useCallback } from 'react';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
 import { SolidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
@@ -61,7 +61,7 @@ function DashboardContent() {
 
   const totalSavings = balances.solidara + balances.annual;
 
-  const handleSelfTransfer = async (
+  const handleSelfTransfer = useCallback(async (
     amount: number,
     from: AccountType,
     to: string // Can be 'annual' or a goal ID
@@ -104,7 +104,7 @@ function DashboardContent() {
     }
 
     return false; // Fallback
-  };
+  }, [user, firestore, balances, goals]);
 
 
   const copyToClipboard = (text: string, type: 'ID') => {
