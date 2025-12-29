@@ -20,11 +20,18 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
 
   const dataRef = useRef<string | null>(null);
 
-  const queryPath = useMemo(() => {
+  // We stringify the query path and constraints to create a stable key for the useEffect dependency array.
+  // This is more reliable than depending on the query object itself.
+  const queryKey = useMemo(() => {
+    if (!query) return null;
     try {
-      return (query as any)?._query.path.canonical;
+      const q = query as any;
+      const path = q._query.path.canonical;
+      const constraints = (q._query.constraints || []).map((c: any) => `${c._field.canonical}${c._op}${c._value}`).join(',');
+      return `${path}|${constraints}`;
     } catch {
-      return null;
+      // Fallback for safety, though it might not be perfectly stable
+      return JSON.stringify(query);
     }
   }, [query]);
 
@@ -51,8 +58,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           } as T;
         });
 
+        // Deep compare the new data with the existing data to prevent unnecessary re-renders.
         const resultDataString = JSON.stringify(resultData);
-
         if (dataRef.current !== resultDataString) {
           dataRef.current = resultDataString;
           setData(resultData);
@@ -95,7 +102,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [queryPath, query]);
+  }, [queryKey, query]);
 
   return { data, loading, error, indexCreationUrl };
 }

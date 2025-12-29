@@ -31,7 +31,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
         let resultData: T | null = null;
         if (snapshot.exists()) {
           const docData = snapshot.data();
-          // Ensure id is part of the object for consistent stringification
+          // Ensure id is part of the object
           resultData = { id: snapshot.id, ...docData } as T;
         }
 
