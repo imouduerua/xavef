@@ -29,7 +29,8 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
       ref,
       (snapshot: DocumentSnapshot<T>) => {
         if (snapshot.exists()) {
-          setData({ ...snapshot.data(), id: snapshot.id } as T);
+          const docData = snapshot.data();
+          setData({ ...docData, id: snapshot.id } as T);
         } else {
           // Document does not exist
           setData(null);
