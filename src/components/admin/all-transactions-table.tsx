@@ -7,7 +7,7 @@ import type {
   TransactionWithUserDetails,
   UserData,
 } from '@/lib/types';
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -36,7 +36,7 @@ const statusVariant: Record<
   Failed: 'destructive',
 };
 
-// New inner component to handle its own async data processing
+// This component handles its own async data processing to prevent loops
 function AllTransactionsTableContent({
   rawTransactions,
   firestore,
@@ -200,6 +200,5 @@ export function AllTransactionsTable({
 }: AllTransactionsTableProps) {
   const firestore = useFirestore();
 
-  // The AllTransactionsTable now just passes props to the inner component
   return <AllTransactionsTableContent rawTransactions={rawTransactions} firestore={firestore} />;
 }
