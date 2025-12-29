@@ -3,7 +3,7 @@
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 type AdminData = {
   isAdmin: boolean;
@@ -16,9 +16,9 @@ export function useAdminStatus() {
   // Super admin check
   const isSuperAdmin = user?.email === 'admin@xavef.com';
 
-  const adminDocRef = React.useMemo(() => {
+  const adminDocRef = useMemo(() => {
     // If the user is the super admin, we don't need to check Firestore.
-    if (!user || isSuperAdmin) return null;
+    if (!user || isSuperAdmin || !firestore) return null;
     return doc(firestore, 'admins', user.uid);
   }, [user, firestore, isSuperAdmin]);
 

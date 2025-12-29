@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import type { UserData, Transaction } from "@/lib/types";
 import { WithdrawalForm } from "@/components/withdrawal/withdrawal-form";
 import { useCollection, useFirestore, useUser } from "@/firebase";
-import React from "react";
+import React, { useMemo } from "react";
 import { collection, query, where } from "firebase/firestore";
 import { PendingWithdrawalCard } from "@/components/withdrawal/pending-withdrawal-card";
 

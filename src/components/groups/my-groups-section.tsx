@@ -63,7 +63,12 @@ export function MyGroupsSection() {
   const hasRequests = joinRequests && joinRequests.length > 0;
 
   if (!hasGroups && !hasRequests) {
-      return null; // Don't render the section if there's nothing to show
+      return (
+        <div>
+            <h3 className="text-xl font-semibold mb-4">My Groups</h3>
+            <MyGroupsList groups={[]} />
+        </div>
+      );
   }
 
   return (

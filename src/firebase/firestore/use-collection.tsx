@@ -18,16 +18,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  // Correctly memoize the query object.
-  // The dependency array uses the canonical string representation of the query's path and filters.
-  // This prevents the effect from re-running on every render.
-  const memoizedQuery = useMemo(() => {
-    return query;
-  }, [query ? JSON.stringify((query as any)._query) : null]);
-
-
   useEffect(() => {
-    if (!memoizedQuery) {
+    if (!query) {
       setData(null);
       setLoading(false);
       setError(null);
@@ -40,7 +32,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     setIndexCreationUrl(null);
     
     const unsubscribe = onSnapshot(
-      memoizedQuery,
+      query,
       (snapshot: QuerySnapshot<T>) => {
         const resultData = snapshot.docs.map((doc) => {
             const docData = doc.data();
@@ -62,7 +54,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             setIndexCreationUrl(urlMatch[0]);
           }
         } else if (err.code === 'permission-denied') {
-            const path = (memoizedQuery as any)?._query?.path?.canonical;
+            const path = (query as any)?._query?.path?.canonical;
             
             if (path) {
                 const permissionError = new FirestorePermissionError({
@@ -80,7 +72,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
     
     return () => unsubscribe();
-  }, [memoizedQuery]);
+  }, [query]);
 
   return { data, loading, error, indexCreationUrl };
 }

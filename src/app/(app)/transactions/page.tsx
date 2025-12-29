@@ -136,8 +136,6 @@ export default function TransactionsPage() {
 
   const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 
-  // The query now handles sorting, so client-side sorting is not strictly necessary
-  // but we keep it as a good practice in case the query changes.
   const sortedTransactions = useMemo(() => {
     if (!transactions) return [];
     return [...transactions];

@@ -28,10 +28,7 @@ import { Skeleton } from '../ui/skeleton';
 
 const formatDate = (date: any) => {
     if (!date) return '';
-    if (date.toDate) {
-        return date.toDate().toLocaleDateString();
-    }
-    const d = new Date(date);
+    const d = date.toDate ? date.toDate() : new Date(date);
     if (isNaN(d.getTime())) return '';
     return d.toLocaleDateString();
 };
@@ -47,24 +44,24 @@ export function AppHeader() {
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');
 
-  const joinRequestsQuery = (user && firestore) ? query(
+  const joinRequestsQuery = useMemo(() => (user && firestore) ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    ) : null;
+    ) : null, [user, firestore]);
   
-  const notificationsQuery = (user && firestore) ? query(
+  const notificationsQuery = useMemo(() => (user && firestore) ? query(
           collection(firestore, `users/${user.uid}/notifications`),
           orderBy('createdAt', 'desc'),
           limit(10) // Limit to the 10 most recent notifications
-      ) : null;
+      ) : null, [user, firestore]);
 
   const { data: joinRequests, loading: joinRequestsLoading } = useCollection<GroupJoinRequest>(joinRequestsQuery);
   const { data: notifications, loading: notificationsLoading } = useCollection<Notification>(notificationsQuery);
 
 
   const combinedNotifications = useMemo(() => {
-    const allNotifs: Notification[] = [];
+    const allNotifs: (Notification & { date: any })[] = [];
 
     if (joinRequests) {
         joinRequests.forEach(req => {
@@ -81,7 +78,7 @@ export function AppHeader() {
 
     if (notifications) {
         notifications.forEach(notif => {
-            allNotifs.push(notif);
+            allNotifs.push({ ...notif, date: notif.createdAt });
         });
     }
 
