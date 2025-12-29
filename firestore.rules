@@ -16,7 +16,6 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Super admin email OR any user ID present in the /admins collection is an admin.
       return isSuperAdmin() || (request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
     }
     
@@ -25,24 +24,21 @@ service cloud.firestore {
     // =====================================================================
     match /users/{userId} {
       // READ: An admin can read any user's profile. A user can read their own.
-      allow read: if isAuthOwner(userId) || isAdmin();
+      allow get, read: if isAuthOwner(userId) || isAdmin();
       
       // LIST: Admins can list all users for the user management page.
       allow list: if isAdmin();
       
-      // UPDATE (User): A user can update their own profile, but cannot change balance fields or other protected fields.
+      // UPDATE (User): A user can update their own profile, but cannot change protected fields.
       allow update: if isAuthOwner(userId)
                       && !('solidaraBalance' in request.resource.data)
                       && !('annualBalance' in request.resource.data);
       
-      // WRITE (Admin): An admin can update any part of a user's profile. 
-      // This is the critical rule for the transaction approval process.
+      // WRITE (Admin): An admin can update any part of a user's profile.
       allow write: if isAdmin();
 
-      // CREATE: A user can create their own profile document, typically right after signing up.
-      // The createUserProfile function handles this securely.
-      allow create: if request.auth != null;
-
+      // CREATE: A newly authenticated user can create their own profile document.
+      allow create: if isAuthOwner(userId);
 
       // --- Subcollections ---
       
@@ -60,12 +56,8 @@ service cloud.firestore {
       
       // Notifications
       match /notifications/{notificationId} {
-          // Users can read and update their own notifications (e.g., mark as read).
           allow read, list, update: if isAuthOwner(userId);
-
-          // Admins can create notifications for users.
           allow create: if isAdmin();
-          
           allow delete: if false;
       }
       
@@ -82,17 +74,21 @@ service cloud.firestore {
 
     // Referral Codes
     match /referralCodes/{codeId} {
-      allow read: if request.auth != null;
+      // Allow authenticated users to read/list to find a code during registration.
+      allow read, list: if request.auth != null;
       allow create: if isAuthOwner(request.resource.data.creatorUid);
-      allow update: if resource.data.used == false && request.resource.data.used == true && request.auth != null;
+      // Allow an authenticated user to update a code ONLY to mark it as used.
+      allow update: if request.auth != null
+                      && resource.data.used == false 
+                      && request.resource.data.used == true
+                      && request.resource.data.keys().hasAll(['used', 'usedBy', 'usedAt'])
+                      && request.resource.data.size() == 3;
       allow delete: if false;
     }
 
     // Admins
     match /admins/{userId} {
-      // Admins can be read by any authenticated user (needed for client-side checks).
       allow read: if request.auth != null;
-      // Only the super admin can add or remove other admins.
       allow write: if isSuperAdmin();
     }
     
@@ -100,22 +96,18 @@ service cloud.firestore {
     match /groups/{groupId} {
         allow read: if request.auth != null;
         allow create: if isAuthOwner(request.resource.data.creatorUid);
-        // The group creator or an admin can update a group.
         allow update: if isAuthOwner(resource.data.creatorUid) || isAdmin();
     }
     
     // Join Requests
     match /joinRequests/{requestId} {
         allow create: if isAuthOwner(request.resource.data.requesterUid);
-        // The requester or the group creator can read the request.
         allow read: if isAuthOwner(request.resource.data.requesterUid) || isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
-        // Only the group creator can approve or decline the request.
         allow update: if isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
     }
 
     // FCM Tokens for Push Notifications
     match /fcmTokens/{userId} {
-      // Only an authenticated admin can read/write their own token.
       allow read, write: if isAuthOwner(userId) && isAdmin();
     }
     
