@@ -73,11 +73,6 @@ export function RegisterForm() {
         const displayName = `${values.firstName} ${values.lastName}`;
         await updateProfile(user, { displayName });
 
-        toast({
-            title: "Account Created",
-            description: "Finalizing your profile setup...",
-        });
-
         // Step 3: Create the Firestore user profile document
         const profileResult = await createUserProfile(firestore, user, {
             firstName: values.firstName,
@@ -87,22 +82,8 @@ export function RegisterForm() {
         });
 
         if (!profileResult.success) {
-            // This is a critical failure.
-            // We must delete the orphaned auth user and show the error to the user.
-            if (userCredential) {
-              await deleteUser(userCredential.user).catch(deleteError => {
-                  console.error("Failed to clean up orphaned auth user:", deleteError);
-              });
-            }
-
-            toast({
-                variant: "destructive",
-                title: "Registration Failed",
-                description: profileResult.error || "Failed to create user profile. Please check your details and try again.",
-                duration: 10000,
-            });
-            setIsLoading(false);
-            return; // Stop execution here.
+            // This is a critical failure. The user auth record must be deleted.
+            throw new Error(profileResult.error || "Failed to create user profile.");
         }
         
         toast({
@@ -116,11 +97,10 @@ export function RegisterForm() {
     } catch (error: any) {
         console.error("Registration Error:", error);
         
-        // This catch block will now primarily handle auth errors like "email-already-in-use"
+        // Cleanup the created auth user if any part of the process fails
         if (userCredential) {
-            // If an auth user was created but another error occurred, clean it up.
             await deleteUser(userCredential.user).catch(deleteError => {
-                console.error("Failed to clean up orphaned auth user during general error:", deleteError);
+                console.error("Failed to clean up orphaned auth user:", deleteError);
             });
         }
         
@@ -137,12 +117,7 @@ export function RegisterForm() {
             description: errorMessage,
             duration: 10000,
         });
-
-    } finally {
-        // Only set loading to false if we haven't navigated away
-        if (router.asPath === '/register') { 
-            setIsLoading(false);
-        }
+        setIsLoading(false);
     }
   }
 
