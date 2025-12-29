@@ -89,8 +89,7 @@
         "uid",
         "email",
         "xavefId",
-        "createdAt",
-        "referredBy"
+        "createdAt"
       ]
     },
     "transaction": {

@@ -40,7 +40,7 @@ interface CreateProfileData {
     lastName: string;
     displayName: string;
     email: string;
-    referralCode: string | null;
+    referralCode: string;
 }
 
 export async function createUserProfile(
@@ -55,36 +55,37 @@ export async function createUserProfile(
     await runTransaction(firestore, async (transaction) => {
       let referredBy: string | null = null;
       
-      // Temporarily bypass referral code logic if it's not provided
-      if (data.referralCode) {
-        const referralQuery = query(
-          referralCodesRef,
-          where('code', '==', data.referralCode),
-          limit(1)
-        );
+      const referralQuery = query(
+        referralCodesRef,
+        where('code', '==', data.referralCode),
+        limit(1)
+      );
 
-        const referralQuerySnapshot = await getDocs(referralQuery);
+      // Note: Transaction `get` works on DocumentReference, not Query.
+      // We must perform the query outside the main transaction logic if we need its result
+      // to decide what to write. A more complex pattern is needed for read-then-write transactions.
+      // For simplicity here, we'll perform the read before the transaction.
+      const referralQuerySnapshot = await getDocs(referralQuery);
 
-        if (referralQuerySnapshot.empty) {
-          throw new Error('The provided referral code is invalid.');
-        }
-
-        const referralDoc = referralQuerySnapshot.docs[0];
-        const referralData = referralDoc.data() as ReferralCode;
-
-        if (referralData.used) {
-          throw new Error('The provided referral code has already been used.');
-        }
-        
-        referredBy = referralData.creatorUid;
-
-        // Mark the referral code as used
-        transaction.update(referralDoc.ref, {
-          used: true,
-          usedBy: user.uid,
-          usedAt: serverTimestamp(),
-        });
+      if (referralQuerySnapshot.empty) {
+        throw new Error('The provided referral code is invalid.');
       }
+
+      const referralDoc = referralQuerySnapshot.docs[0];
+      const referralData = referralDoc.data() as ReferralCode;
+
+      if (referralData.used) {
+        throw new Error('The provided referral code has already been used.');
+      }
+      
+      referredBy = referralData.creatorUid;
+
+      // Mark the referral code as used inside the transaction
+      transaction.update(referralDoc.ref, {
+        used: true,
+        usedBy: user.uid,
+        usedAt: serverTimestamp(),
+      });
       
       const userSnap = await transaction.get(userDocRef);
       if (userSnap.exists()) {
@@ -106,7 +107,7 @@ export async function createUserProfile(
         country: null,
         xavefId,
         createdAt: serverTimestamp(),
-        referredBy, // Can be null if no code was used
+        referredBy,
         solidaraBalance: 0,
         annualBalance: 0,
         bankAccounts: [],

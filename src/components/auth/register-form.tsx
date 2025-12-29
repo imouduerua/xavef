@@ -205,7 +205,7 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
-        <FormField
+         <FormField
           control={form.control}
           name="referralCode"
           render={({ field }) => (
