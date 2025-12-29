@@ -16,11 +16,10 @@ import { collection, collectionGroup, query, where } from 'firebase/firestore';
 import {
   Users,
   Clock,
-  Landmark,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  Activity,
   PiggyBank,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Activity,
 } from 'lucide-react';
 import Link from 'next/link';
 import React, { useMemo } from 'react';
@@ -63,23 +62,13 @@ function StatCard({
 export default function AdminDashboardPage() {
   const firestore = useFirestore();
 
-  const usersQuery = useMemo(() => firestore ? collection(firestore, 'users') : null, [firestore]);
-  const groupsQuery = useMemo(() => firestore
-        ? query(collection(firestore, 'groups'), where('status', '==', 'active'))
-        : null, [firestore]);
-  const transactionsQuery = useMemo(() => firestore
-        ? query(
-            collectionGroup(firestore, 'transactions'),
-            where('status', '==', 'Completed')
-          )
-        : null, [firestore]);
+  const usersQuery = firestore ? collection(firestore, 'users') : null;
+  const groupsQuery = firestore ? query(collection(firestore, 'groups'), where('status', '==', 'active')) : null;
+  const transactionsQuery = firestore ? query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Completed')) : null;
 
-  const { data: users, loading: usersLoading } =
-    useCollection<UserData>(usersQuery);
-  const { data: activeGroups, loading: groupsLoading } =
-    useCollection<Group>(groupsQuery);
-  const { data: transactions, loading: txsLoading } =
-    useCollection<Transaction>(transactionsQuery);
+  const { data: users, loading: usersLoading } = useCollection<UserData>(usersQuery);
+  const { data: activeGroups, loading: groupsLoading } = useCollection<Group>(groupsQuery);
+  const { data: transactions, loading: txsLoading } = useCollection<Transaction>(transactionsQuery);
 
   const stats = useMemo(() => {
     const totalUsers = users?.length ?? 0;
