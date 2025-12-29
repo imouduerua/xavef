@@ -7,7 +7,7 @@ import type {
   TransactionWithUserDetails,
   UserData,
 } from '@/lib/types';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -36,26 +36,32 @@ const statusVariant: Record<
   Failed: 'destructive',
 };
 
-export function AllTransactionsTable({
-  transactions: rawTransactions,
-}: AllTransactionsTableProps) {
+// New inner component to handle its own async data processing
+function AllTransactionsTableContent({
+  rawTransactions,
+  firestore,
+}: {
+  rawTransactions: Transaction[] | null;
+  firestore: any;
+}) {
   const [processedTransactions, setProcessedTransactions] = useState<
     TransactionWithUserDetails[] | null
   >(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const firestore = useFirestore();
+  const [processing, setProcessing] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     if (!rawTransactions || !firestore) {
-      setIsLoading(false);
+      setProcessedTransactions([]);
+      setProcessing(false);
       return;
     }
 
-    setIsLoading(true);
     const processTransactions = async () => {
+      setProcessing(true);
       try {
         const userCache = new Map<string, UserData>();
-        const processed = await Promise.all(
+        const transactionsWithDetails = await Promise.all(
           rawTransactions.map(async (tx) => {
             const pathParts = tx.path.split('/');
             const userId = pathParts[pathParts.indexOf('users') + 1];
@@ -82,37 +88,32 @@ export function AllTransactionsTable({
             } as TransactionWithUserDetails;
           })
         );
-        setProcessedTransactions(processed);
+        if (isMounted) {
+          setProcessedTransactions(transactionsWithDetails);
+        }
       } catch (err) {
         console.error('Error attaching user details:', err);
-        toast({
-          variant: 'destructive',
-          title: 'Error Processing Data',
-          description: 'Could not process transaction details.',
-        });
-        setProcessedTransactions([]); // Set to empty array on error
+        if (isMounted) {
+          toast({
+            variant: 'destructive',
+            title: 'Error Processing Data',
+            description: 'Could not process transaction details.',
+          });
+          setProcessedTransactions([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setProcessing(false);
+        }
       }
     };
 
     processTransactions();
+
+    return () => {
+      isMounted = false;
+    };
   }, [rawTransactions, firestore]);
-
-  if (isLoading) {
-    return (
-      <div className="space-y-2">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-      </div>
-    );
-  }
-
-  if (!processedTransactions || processedTransactions.length === 0) {
-    return <p>No transactions found.</p>;
-  }
 
   const formatDate = (date: any) => {
     if (!date) return 'N/A';
@@ -129,6 +130,21 @@ export function AllTransactionsTable({
     const sign = amount >= 0 ? '+' : '-';
     return `${sign}₦${Math.abs(amount).toFixed(2)}`;
   };
+
+  if (processing) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
+  }
+
+  if (!processedTransactions || processedTransactions.length === 0) {
+    return <p>No transactions found.</p>;
+  }
 
   return (
     <div className="w-full overflow-x-auto">
@@ -176,4 +192,14 @@ export function AllTransactionsTable({
       </Table>
     </div>
   );
+}
+
+
+export function AllTransactionsTable({
+  transactions: rawTransactions,
+}: AllTransactionsTableProps) {
+  const firestore = useFirestore();
+
+  // The AllTransactionsTable now just passes props to the inner component
+  return <AllTransactionsTableContent rawTransactions={rawTransactions} firestore={firestore} />;
 }

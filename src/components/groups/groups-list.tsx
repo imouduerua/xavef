@@ -1,86 +1,204 @@
-
 'use client';
 
-import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
-import React from 'react';
+import type {
+  Transaction,
+  TransactionStatus,
+  TransactionWithUserDetails,
+  UserData,
+} from '@/lib/types';
+import React, { useEffect, useState, useMemo } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table';
+import Link from 'next/link';
+import { Badge } from '../ui/badge';
+import { doc, getDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '../ui/skeleton';
-import { Card } from '../ui/card';
-import { Users } from 'lucide-react';
-import type { Group } from '@/lib/types';
-import { GroupCard } from './group-card';
-import { MissingIndexAlert } from '../admin/missing-index-alert';
 
-
-function GroupSkeleton() {
-    return (
-        <Card>
-            <div className="p-6 space-y-4">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <div className='flex justify-between items-center'>
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-4 w-1/4" />
-                </div>
-                 <Skeleton className="h-10 w-full" />
-            </div>
-        </Card>
-    )
+interface AllTransactionsTableProps {
+  transactions: Transaction[];
 }
 
+const statusVariant: Record<
+  TransactionStatus,
+  'default' | 'secondary' | 'destructive'
+> = {
+  Completed: 'default',
+  Pending: 'secondary',
+  Failed: 'destructive',
+};
 
-export function AvailableGroupsList() {
-  const firestore = useFirestore();
-  const { user } = useUser();
+// New inner component to handle its own async data processing
+function AllTransactionsTableContent({
+  rawTransactions,
+  firestore,
+}: {
+  rawTransactions: Transaction[] | null;
+  firestore: any;
+}) {
+  const [processedTransactions, setProcessedTransactions] = useState<
+    TransactionWithUserDetails[] | null
+  >(null);
+  const [processing, setProcessing] = useState(true);
 
-  const groupsQuery = React.useMemo(() => {
-    if (!firestore || !user) return null;
-    // Query for groups that are open for new members and the user is not already a member
-    return query(
-        collection(firestore, `groups`), 
-        where('status', '==', 'forming'),
-        orderBy('createdAt', 'desc')
-    );
-  }, [firestore, user]);
+  useEffect(() => {
+    let isMounted = true;
+    if (!rawTransactions || !firestore) {
+      setProcessedTransactions([]);
+      setProcessing(false);
+      return;
+    }
 
-  const { data: groups, loading, indexCreationUrl } = useCollection<Group>(groupsQuery);
-  
-  const availableGroups = React.useMemo(() => {
-    if (!groups || !user) return [];
-    return groups.filter(group => !group.members.includes(user.uid));
-  }, [groups, user]);
+    const processTransactions = async () => {
+      setProcessing(true);
+      try {
+        const userCache = new Map<string, UserData>();
+        const transactionsWithDetails = await Promise.all(
+          rawTransactions.map(async (tx) => {
+            const pathParts = tx.path.split('/');
+            const userId = pathParts[pathParts.indexOf('users') + 1];
+            let user: UserData | undefined = userCache.get(userId);
 
-  if (loading) {
+            if (!user) {
+              const userRef = doc(firestore, 'users', userId);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists()) {
+                const fetchedUser = {
+                  id: userSnap.id,
+                  ...userSnap.data(),
+                } as UserData;
+                userCache.set(userId, fetchedUser);
+                user = fetchedUser;
+              }
+            }
+
+            return {
+              ...tx,
+              userId,
+              userEmail: user?.email || 'Unknown User',
+              xavefId: user?.xavefId || 'N/A',
+            } as TransactionWithUserDetails;
+          })
+        );
+        if (isMounted) {
+          setProcessedTransactions(transactionsWithDetails);
+        }
+      } catch (err) {
+        console.error('Error attaching user details:', err);
+        if (isMounted) {
+          toast({
+            variant: 'destructive',
+            title: 'Error Processing Data',
+            description: 'Could not process transaction details.',
+          });
+          setProcessedTransactions([]);
+        }
+      } finally {
+        if (isMounted) {
+          setProcessing(false);
+        }
+      }
+    };
+
+    processTransactions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rawTransactions, firestore]);
+
+  const formatDate = (date: any) => {
+    if (!date) return 'N/A';
+    if (date.toDate) {
+      return date.toDate().toLocaleString();
+    }
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleString();
+  };
+
+  const formatCurrency = (amount?: number) => {
+    if (amount === undefined || amount === null) return 'N/A';
+    const sign = amount >= 0 ? '+' : '-';
+    return `${sign}₦${Math.abs(amount).toFixed(2)}`;
+  };
+
+  if (processing) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <GroupSkeleton />
-        <GroupSkeleton />
-        <GroupSkeleton />
+      <div className="space-y-2">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
       </div>
     );
   }
 
-  if (indexCreationUrl) {
-    return <MissingIndexAlert url={indexCreationUrl} />;
-  }
-
-  if (!availableGroups || availableGroups.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
-        <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-semibold">No Available Groups</h3>
-        <p className="mb-4 mt-2 text-sm text-muted-foreground">
-          There are currently no savings groups looking for new members. Why not create one?
-        </p>
-      </div>
-    );
+  if (!processedTransactions || processedTransactions.length === 0) {
+    return <p>No transactions found.</p>;
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {availableGroups.map((group) => (
-        <GroupCard key={group.id} group={group} />
-      ))}
+    <div className="w-full overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>User Email</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {processedTransactions.map((tx) => {
+            const amount = Number(tx.amount);
+            return (
+              <TableRow key={tx.id}>
+                <TableCell className="font-medium break-all">
+                  <Link
+                    href={`/admin/users/${tx.userId}`}
+                    className="hover:underline"
+                  >
+                    {tx.userEmail}
+                  </Link>
+                </TableCell>
+                <TableCell>{formatDate(tx.date)}</TableCell>
+                <TableCell>{tx.description}</TableCell>
+                <TableCell>{tx.type}</TableCell>
+                <TableCell>
+                  <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
+                </TableCell>
+                <TableCell
+                  className={`text-right font-semibold ${
+                    amount > 0 ? 'text-green-600' : 'text-red-600'
+                  }`}
+                >
+                  {formatCurrency(amount)}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
+}
+
+
+export function AllTransactionsTable({
+  transactions: rawTransactions,
+}: AllTransactionsTableProps) {
+  const firestore = useFirestore();
+
+  // The AllTransactionsTable now just passes props to the inner component
+  return <AllTransactionsTableContent rawTransactions={rawTransactions} firestore={firestore} />;
 }
