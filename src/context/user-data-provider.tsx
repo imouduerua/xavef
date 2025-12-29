@@ -24,9 +24,7 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
 
   const { data: userData, loading: docLoading } = useDoc<UserData>(userDocRef);
 
-  // The overall loading state depends on both user authentication and Firestore document loading.
-  // We are loading if auth is loading, or if auth is done but the document is still loading.
-  const loading = userLoading || docLoading;
+  const loading = userLoading || (user && !userData && docLoading);
 
   const value = useMemo(() => ({ userData, loading }), [userData, loading]);
 

@@ -18,11 +18,15 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  // Use a ref to hold a stringified version of the current data to avoid it being a dependency.
   const dataRef = useRef<string | null>(null);
 
-  // The canonical path of the query is a stable string representation.
-  const queryPath = useMemo(() => (query as any)?._query?.path?.canonical, [query]);
+  const queryPath = useMemo(() => {
+    try {
+      return (query as any)?._query.path.canonical;
+    } catch {
+      return null;
+    }
+  }, [query]);
 
   useEffect(() => {
     if (!query) {
@@ -48,12 +52,10 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         });
 
         const resultDataString = JSON.stringify(resultData);
-        // CRITICAL FIX: Prevent infinite loops by only setting state if the
-        // actual data has changed. The `useCollection` hook was causing
-        // re-renders because it always returned a new array instance.
+
         if (dataRef.current !== resultDataString) {
-            setData(resultData);
-            dataRef.current = resultDataString;
+          dataRef.current = resultDataString;
+          setData(resultData);
         }
 
         setLoading(false);
@@ -93,7 +95,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-    // Depend on a stable representation of the query path.
   }, [queryPath, query]);
 
   return { data, loading, error, indexCreationUrl };

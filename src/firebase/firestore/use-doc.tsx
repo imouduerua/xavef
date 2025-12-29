@@ -13,7 +13,6 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // The path is a stable string, so we can use it as a dependency.
   const docPath = useMemo(() => ref?.path, [ref]);
   const dataRef = useRef<string | null>(null);
 
@@ -32,15 +31,16 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
         let resultData: T | null = null;
         if (snapshot.exists()) {
           const docData = snapshot.data();
-          resultData = { ...docData, id: snapshot.id } as T;
+          // Ensure id is part of the object for consistent stringification
+          resultData = { id: snapshot.id, ...docData } as T;
         }
 
         const resultDataString = JSON.stringify(resultData);
         if (dataRef.current !== resultDataString) {
-          setData(resultData);
           dataRef.current = resultDataString;
+          setData(resultData);
         }
-
+        
         setLoading(false);
       },
       (error) => {
@@ -51,7 +51,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [docPath]); // Depend on the stable path
+  }, [docPath, ref]);
 
   return { data, loading };
 }
