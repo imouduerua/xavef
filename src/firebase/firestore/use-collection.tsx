@@ -8,7 +8,7 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
@@ -17,23 +17,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
-
-  // Create a stable key from the query object to use as a dependency.
-  // This prevents re-renders if the query object is re-created but logically the same.
-  const queryKey = useMemo(() => {
-    if (!query) return null;
-    // Accessing internal but stable properties of the query object.
-    const internalQuery = (query as any)._query;
-    if (!internalQuery) return null;
-    
-    const path = internalQuery.path?.canonical ?? '';
-    const filters = internalQuery.filters?.map((f: any) => `${f.field.canonical}${f.op}${f.value}`).join(',') ?? '';
-    const orderBy = internalQuery.explicitOrderBy?.map((o: any) => `${o.field.canonical}${o.dir}`).join(',') ?? '';
-    const limit = internalQuery.limit ?? '';
-    
-    return `${path}|${filters}|${orderBy}|${limit}`;
-  }, [query]);
-
 
   useEffect(() => {
     if (!query) {
@@ -93,8 +76,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryKey]); // Depend on the stable query key.
+  }, [query]);
 
   return { data, loading, error, indexCreationUrl };
 }
