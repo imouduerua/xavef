@@ -20,6 +20,7 @@ import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { addFundsToGoal } from '../savings/client-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { transferToAnnual } from './actions';
 
 function DashboardContent() {
   const { user, loading: userLoading } = useUser();
@@ -110,11 +111,21 @@ function DashboardApp({ user, userData }: { user: import('firebase/auth').User, 
     }
     
     if (to === 'annual') {
-        toast({
-            title: "Feature not implemented",
-            description: "Transfers to the Annual account will be enabled soon.",
-        });
-        return false; // Return false because it's not implemented
+        const result = await transferToAnnual(firestore, user.uid, amount);
+        if (result.success) {
+            toast({
+                title: "Transfer Successful!",
+                description: `You transferred ₦${amount.toFixed(2)} to your Annual Savings.`
+            });
+            return true;
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Transfer Failed",
+                description: result.error,
+            });
+            return false;
+        }
     }
 
     // Handle transfer to a saving goal

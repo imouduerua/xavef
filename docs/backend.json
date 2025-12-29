@@ -112,7 +112,8 @@
             "Loan Payment",
             "Interest",
             "Group Contribution",
-            "Group Payout"
+            "Group Payout",
+            "Internal Transfer"
           ]
         },
         "status": {
@@ -175,7 +176,7 @@
         "code",
         "creatorUid",
         "used",
-        "createdAt"
+createdAt"
       ]
     },
     "admin": {

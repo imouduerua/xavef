@@ -92,3 +92,47 @@ export async function createUserProfile(
     };
   }
 }
+
+export async function transferToAnnual(
+  firestore: Firestore,
+  userId: string,
+  amount: number
+): Promise<{ success: boolean; error?: string }> {
+    const userDocRef = doc(firestore, 'users', userId);
+    const userTransactionsRef = collection(userDocRef, 'transactions');
+
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            const userSnap = await transaction.get(userDocRef);
+            if (!userSnap.exists()) {
+                throw new Error("User not found.");
+            }
+
+            const userData = userSnap.data() as UserData;
+            if (userData.solidaraBalance < amount) {
+                throw new Error("Insufficient Olidara balance.");
+            }
+
+            // 1. Debit Olidara and credit Annual
+            transaction.update(userDocRef, {
+                solidaraBalance: increment(-amount),
+                annualBalance: increment(amount)
+            });
+
+            // 2. Create a transaction record
+            const newTxRef = doc(userTransactionsRef);
+            transaction.set(newTxRef, {
+                amount: amount,
+                date: serverTimestamp(),
+                description: "Transfer to Annual Savings",
+                type: 'Internal Transfer', // New type
+                status: 'Completed',
+                targetAccount: 'annual',
+            });
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error transferring to annual account:', error);
+        return { success: false, error: error.message || "Failed to complete transfer." };
+    }
+}
