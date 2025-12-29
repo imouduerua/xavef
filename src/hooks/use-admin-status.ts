@@ -13,14 +13,14 @@ export function useAdminStatus() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
-  // Super admin check
+  // Super admin check based on a stable property
   const isSuperAdmin = user?.email === 'admin@xavef.com';
 
   const adminDocRef = useMemo(() => {
-    // If the user is the super admin, we don't need to check Firestore.
-    if (!user || isSuperAdmin || !firestore) return null;
+    // Depend on `user.uid`, which is a stable string, NOT the `user` object itself.
+    if (!user?.uid || isSuperAdmin || !firestore) return null;
     return doc(firestore, 'admins', user.uid);
-  }, [user, firestore, isSuperAdmin]);
+  }, [user?.uid, firestore, isSuperAdmin]); // Using stable user.uid
 
   const { data: adminData, loading: docLoading } = useDoc<AdminData>(adminDocRef);
 
