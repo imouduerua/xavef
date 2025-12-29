@@ -19,7 +19,6 @@ import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 
 
 export default function AdminPendingTransactionsPage() {
-  const [transactions, setTransactions] = useState<TransactionWithUserDetails[] | null>(null);
   const firestore = useFirestore();
 
   const pendingTxsQuery = useMemo(() => {
@@ -32,13 +31,24 @@ export default function AdminPendingTransactionsPage() {
   }, [firestore]);
 
   const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
+  const [processedTransactions, setProcessedTransactions] = useState<TransactionWithUserDetails[] | null>(null);
+  const [processing, setProcessing] = useState(true);
 
   useEffect(() => {
-    if (rawLoading || !rawTransactions || !firestore) {
+    if (rawLoading) {
+      setProcessing(true);
+      return;
+    }
+    if (!rawTransactions || !firestore) {
+      setProcessedTransactions([]);
+      setProcessing(false);
       return;
     };
     
+    let isMounted = true;
+    
     const processTransactions = async () => {
+      setProcessing(true);
       try {
         const userCache = new Map<string, UserData>();
         const transactionsWithDetails = await Promise.all(
@@ -68,30 +78,44 @@ export default function AdminPendingTransactionsPage() {
             } as TransactionWithUserDetails;
           })
         );
-        setTransactions(transactionsWithDetails);
+        if (isMounted) {
+            setProcessedTransactions(transactionsWithDetails);
+        }
       } catch (err) {
         console.error("Error attaching user details:", err);
-        toast({
-            variant: "destructive",
-            title: "Error Processing Data",
-            description: "Could not process transaction details.",
-        });
-        setTransactions([]);
+        if (isMounted) {
+            toast({
+                variant: "destructive",
+                title: "Error Processing Data",
+                description: "Could not process transaction details.",
+            });
+            setProcessedTransactions([]);
+        }
+      } finally {
+        if (isMounted) {
+            setProcessing(false);
+        }
       }
     };
 
     processTransactions();
+    
+    return () => {
+        isMounted = false;
+    }
   }, [rawTransactions, firestore, rawLoading]);
+
+  const isLoading = rawLoading || processing;
 
   const renderContent = () => {
     if (indexCreationUrl) {
         return <MissingIndexAlert url={indexCreationUrl} />;
     }
-    if (rawLoading || (rawTransactions && !transactions)) {
+    if (isLoading) {
         return <Skeleton className="h-40 w-full" />;
     }
-    if (transactions) {
-        return <PendingTransactionsTable transactions={transactions} />;
+    if (processedTransactions) {
+        return <PendingTransactionsTable transactions={processedTransactions} />;
     }
     return <Skeleton className="h-40 w-full" />;
   }
