@@ -19,12 +19,19 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
   // Create a stable key from the query object to use as a dependency.
+  // This prevents re-renders if the query object is re-created but logically the same.
   const queryKey = useMemo(() => {
-    return query ? JSON.stringify({
-        path: (query as any)._query.path,
-        filters: (query as any)._query.explicitOrderBy,
-        limit: (query as any)._query.limit,
-    }) : null;
+    if (!query) return null;
+    // Accessing internal but stable properties of the query object.
+    const internalQuery = (query as any)._query;
+    if (!internalQuery) return null;
+    
+    const path = internalQuery.path?.canonical ?? '';
+    const filters = internalQuery.filters?.map((f: any) => `${f.field.canonical}${f.op}${f.value}`).join(',') ?? '';
+    const orderBy = internalQuery.explicitOrderBy?.map((o: any) => `${o.field.canonical}${o.dir}`).join(',') ?? '';
+    const limit = internalQuery.limit ?? '';
+    
+    return `${path}|${filters}|${orderBy}|${limit}`;
   }, [query]);
 
 
