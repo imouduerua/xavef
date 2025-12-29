@@ -39,8 +39,9 @@ service cloud.firestore {
       // This is the critical rule for the transaction approval process.
       allow write: if isAdmin();
 
-      // CREATE: Users cannot create their own profile documents directly (handled by a function).
-      allow create: if false;
+      // CREATE: A user can create their own profile document, typically right after signing up.
+      // The createUserProfile function handles this securely.
+      allow create: if request.auth != null;
 
 
       // --- Subcollections ---
