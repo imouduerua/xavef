@@ -55,61 +55,55 @@ export async function createUserProfile(
   const userDocRef = doc(firestore, 'users', user.uid);
 
   try {
-    await runTransaction(firestore, async (transaction) => {
-      
-      const userSnap = await transaction.get(userDocRef);
-      if (userSnap.exists()) {
-        throw new Error("A user profile for this account already exists.");
-      }
+    const xavefId = await generateUniqueXavefId(firestore);
 
-      const xavefId = await generateUniqueXavefId(firestore);
+    const newUserProfile: UserData = {
+      uid: user.uid,
+      email: data.email,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      displayName: data.displayName,
+      dateOfBirth: null,
+      phoneNumber: null,
+      address: null,
+      state: null,
+      country: null,
+      xavefId,
+      createdAt: serverTimestamp(),
+      referredBy: null,
+      solidaraBalance: 0,
+      annualBalance: 0,
+      bankAccounts: [],
+    };
+    
+    await setDoc(userDocRef, newUserProfile);
 
-      const newUserProfile: UserData = {
-        uid: user.uid,
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        displayName: data.displayName,
-        dateOfBirth: null,
-        phoneNumber: null,
-        address: null,
-        state: null,
-        country: null,
-        xavefId,
+    // Create default saving goals in a separate batch
+    const goalsCollectionRef = collection(firestore, `users/${user.uid}/goals`);
+    const defaultGoals = [
+      { name: 'House Rent', targetAmount: 0, emoji: '🏠' },
+      { name: 'School Fees', targetAmount: 0, emoji: '🎓' },
+    ];
+    
+    const goalsBatch = writeBatch(firestore);
+    for (const goal of defaultGoals) {
+      const newGoalRef = doc(goalsCollectionRef);
+      goalsBatch.set(newGoalRef, {
+        userId: user.uid,
+        name: goal.name,
+        targetAmount: goal.targetAmount,
+        currentAmount: 0,
         createdAt: serverTimestamp(),
-        referredBy: null,
-        solidaraBalance: 0,
-        annualBalance: 0,
-        bankAccounts: [],
-      };
+        emoji: goal.emoji,
+      });
+    }
+    await goalsBatch.commit();
 
-      // Create the new user's profile document.
-      transaction.set(userDocRef, newUserProfile);
-
-      // Create default saving goals.
-      const goalsCollectionRef = collection(firestore, `users/${user.uid}/goals`);
-      const defaultGoals = [
-        { name: 'House Rent', targetAmount: 0, emoji: '🏠' },
-        { name: 'School Fees', targetAmount: 0, emoji: '🎓' },
-      ];
-
-      for (const goal of defaultGoals) {
-        const newGoalRef = doc(goalsCollectionRef);
-        transaction.set(newGoalRef, {
-          userId: user.uid,
-          name: goal.name,
-          targetAmount: goal.targetAmount,
-          currentAmount: 0,
-          createdAt: serverTimestamp(),
-          emoji: goal.emoji,
-        });
-      }
-    });
 
     return { success: true };
   } catch (error: any) {
     console.error(
-      '[createUserProfile] Error during profile creation transaction:',
+      '[createUserProfile] Error during profile creation:',
       error
     );
     return {
