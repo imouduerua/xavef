@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -12,11 +13,10 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Memoize the ref object to prevent re-running the effect on every render
-  const memoizedRef = useMemo(() => ref, [ref]);
+  const docPath = ref?.path;
 
   useEffect(() => {
-    if (!memoizedRef) {
+    if (!ref) {
       setData(null);
       setLoading(false);
       return;
@@ -25,10 +25,10 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
     setLoading(true);
 
     const unsubscribe = onSnapshot(
-      memoizedRef,
+      ref,
       (snapshot: DocumentSnapshot<T>) => {
         if (snapshot.exists()) {
-          setData({ ...snapshot.data(), id: snapshot.id });
+          setData({ ...snapshot.data(), id: snapshot.id } as T);
         } else {
           // Document does not exist
           setData(null);
@@ -44,7 +44,8 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [memoizedRef]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docPath]);
 
   return { data, loading };
 }
