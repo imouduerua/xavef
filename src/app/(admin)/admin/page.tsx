@@ -62,9 +62,9 @@ function StatCard({
 export default function AdminDashboardPage() {
   const firestore = useFirestore();
 
-  const usersQuery = useMemo(() => firestore ? collection(firestore, 'users') : null, [firestore]);
-  const groupsQuery = useMemo(() => firestore ? query(collection(firestore, 'groups'), where('status', '==', 'active')) : null, [firestore]);
-  const transactionsQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Completed')) : null, [firestore]);
+  const usersQuery = firestore ? collection(firestore, 'users') : null;
+  const groupsQuery = firestore ? query(collection(firestore, 'groups'), where('status', '==', 'active')) : null;
+  const transactionsQuery = firestore ? query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Completed')) : null;
 
 
   const { data: users, loading: usersLoading } = useCollection<UserData>(usersQuery);

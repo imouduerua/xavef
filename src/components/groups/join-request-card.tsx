@@ -7,7 +7,7 @@ import { toast } from '@/hooks/use-toast';
 import type { GroupJoinRequest, Transaction } from '@/lib/types';
 import { collection, query, where, Timestamp } from 'firebase/firestore';
 import { Check, Loader2, User, X, TrendingUp } from 'lucide-react';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
@@ -33,7 +33,7 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
   const firestore = useFirestore();
   const [isResponding, setIsResponding] = React.useState(false);
   
-  const transactionsQuery = useMemo(() => {
+  const transactionsQuery = React.useMemo(() => {
     if (!firestore) return null;
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);

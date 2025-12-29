@@ -3,7 +3,7 @@
 
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Skeleton } from '../ui/skeleton';
 import { Card } from '../ui/card';
 import { Users } from 'lucide-react';
@@ -33,11 +33,11 @@ export function AvailableGroupsList() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const groupsQuery = useMemo(() => firestore ? query(
+  const groupsQuery = firestore ? query(
         collection(firestore, `groups`), 
         where('status', '==', 'forming'),
         orderBy('createdAt', 'desc')
-    ) : null, [firestore]);
+    ) : null;
 
   const { data: groups, loading, indexCreationUrl } = useCollection<Group>(groupsQuery);
   

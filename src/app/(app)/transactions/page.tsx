@@ -129,10 +129,10 @@ export default function TransactionsPage() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const transactionsQuery = useMemo(() => (user && firestore) ? query(
+  const transactionsQuery = (user && firestore) ? query(
       collection(firestore, "users", user.uid, "transactions"),
       orderBy("date", "desc")
-    ) : null, [user, firestore]);
+    ) : null;
 
   const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 
@@ -143,8 +143,8 @@ export default function TransactionsPage() {
 
 
   const all = sortedTransactions ?? [];
-  const deposits = all.filter((tx) => tx.type === "Deposit" || tx.type === "Interest");
-  const withdrawals = all.filter((tx) => tx.type === "Withdrawal");
+  const deposits = all.filter((tx) => tx.type === "Deposit" || tx.type === "Interest" || tx.type === "Group Payout");
+  const withdrawals = all.filter((tx) => tx.type === "Withdrawal" || tx.type === "Internal Transfer" || tx.type === "Group Contribution");
   const payments = all.filter((tx) => tx.type === "Loan Payment");
 
   return (
@@ -158,8 +158,8 @@ export default function TransactionsPage() {
       <Tabs defaultValue="all">
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="deposits">Deposits</TabsTrigger>
-          <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+          <TabsTrigger value="deposits">Credits</TabsTrigger>
+          <TabsTrigger value="withdrawals">Debits</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
         <TabsContent value="all">

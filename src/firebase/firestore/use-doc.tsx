@@ -21,7 +21,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const docPath = useMemo(() => ref?.path, [ref]);
 
   useEffect(() => {
-    if (!ref) {
+    if (!docPath || !ref) {
       setData(null);
       setLoading(false);
       setError(null);
@@ -61,7 +61,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
 
     // This useEffect will re-run only if the document path changes.
     return () => unsubscribe();
-  }, [docPath]);
+  }, [docPath, ref]);
 
   return { data, loading, error };
 }

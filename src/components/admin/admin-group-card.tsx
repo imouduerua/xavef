@@ -1,11 +1,11 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirestore } from '@/firebase';
-import { toast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
-import { Loader2, PlayCircle, UserPlus, Users, ArrowRight, HandCoins } from 'lucide-react';
+import { Users, ArrowRight } from 'lucide-react';
 import React from 'react';
 import Link from 'next/link';
 
@@ -14,11 +14,6 @@ interface AdminGroupCardProps {
 }
 
 export function AdminGroupCard({ group }: AdminGroupCardProps) {
-  const { user } = useUser();
-  const firestore = useFirestore();
-
-  const isGroupAdmin = user?.uid === group.creatorUid;
-  const isGroupFull = group.members.length === group.numberOfMembers;
 
   const formatCurrency = (amount: number) =>
     `₦${amount.toLocaleString('en-US', {
@@ -46,7 +41,7 @@ export function AdminGroupCard({ group }: AdminGroupCardProps) {
         <CardTitle>{group.name}</CardTitle>
         <CardDescription>
             {group.status === 'forming' 
-                ? isGroupFull ? 'This group is full and ready to start.' : 'A weekly savings group.'
+                ? 'A weekly savings group.'
                 : `This group is ${group.status}.`
             }
         </CardDescription>

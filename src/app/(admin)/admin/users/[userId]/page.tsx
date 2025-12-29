@@ -14,7 +14,7 @@ import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ArrowLeft, Landmark, PiggyBank } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import type { UserData } from '@/lib/types';
@@ -31,15 +31,8 @@ export default function UserDetailPage() {
   const { isSuperAdmin } = useAdminStatus();
   const [isUpdatingPermission, setIsUpdatingPermission] = React.useState(false);
 
-  const userDocRef = useMemo(
-    () => (userId && firestore ? doc(firestore, 'users', userId) : null),
-    [userId, firestore]
-  );
-  
-  const adminDocRef = useMemo(
-    () => (userId && firestore ? doc(firestore, 'admins', userId) : null),
-    [userId, firestore]
-  );
+  const userDocRef = userId && firestore ? doc(firestore, 'users', userId) : null;
+  const adminDocRef = userId && firestore ? doc(firestore, 'admins', userId) : null;
 
   const { data: userData, loading: userLoading } = useDoc<UserData>(userDocRef);
   const { data: adminStatusData, loading: adminStatusLoading } = useDoc(adminDocRef);
