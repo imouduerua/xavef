@@ -36,14 +36,10 @@ const statusVariant: Record<
   Failed: 'destructive',
 };
 
-// This component handles its own async data processing to prevent loops
-function AllTransactionsTableContent({
-  rawTransactions,
-  firestore,
-}: {
-  rawTransactions: Transaction[] | null;
-  firestore: any;
-}) {
+export function AllTransactionsTable({
+  transactions: rawTransactions,
+}: AllTransactionsTableProps) {
+  const firestore = useFirestore();
   const [processedTransactions, setProcessedTransactions] = useState<
     TransactionWithUserDetails[] | null
   >(null);
@@ -192,13 +188,4 @@ function AllTransactionsTableContent({
       </Table>
     </div>
   );
-}
-
-
-export function AllTransactionsTable({
-  transactions: rawTransactions,
-}: AllTransactionsTableProps) {
-  const firestore = useFirestore();
-
-  return <AllTransactionsTableContent rawTransactions={rawTransactions} firestore={firestore} />;
 }
