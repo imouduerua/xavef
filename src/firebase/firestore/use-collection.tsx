@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -16,6 +17,9 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
+
+  // Use the query's path as a stable dependency if available
+  const queryPath = (query as any)?._query?.path?.canonical;
 
   useEffect(() => {
     if (!query) {
@@ -59,7 +63,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           }
         } else if (err.code === 'permission-denied') {
           // Attempt to get the path from the query object for the error context.
-          // This property is not part of the public API and may change.
           const path = (query as any)?._query?.path?.canonical;
 
           if (path) {
@@ -78,7 +81,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [query]); // Depend directly on the memoized query object.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryPath]); // Depend on the stable query path string.
 
   return { data, loading, error, indexCreationUrl };
 }
