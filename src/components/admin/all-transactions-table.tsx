@@ -7,7 +7,7 @@ import type {
   TransactionWithUserDetails,
   UserData,
 } from '@/lib/types';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
