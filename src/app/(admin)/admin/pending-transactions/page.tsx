@@ -34,9 +34,7 @@ export default function AdminPendingTransactionsPage() {
   const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
 
   useEffect(() => {
-    // Halt processing if there's no data, it's loading, or an index is needed.
     if (rawLoading || indexCreationUrl || !rawTransactions || !firestore) {
-      // Also clear stale data if we enter a loading/error state
       if (transactions) setTransactions(null);
       return;
     };
@@ -85,22 +83,19 @@ export default function AdminPendingTransactionsPage() {
 
     processTransactions();
   // We only want to re-run this effect when the raw, unprocessed data changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawTransactions, firestore, indexCreationUrl, rawLoading]);
 
   const renderContent = () => {
-    // Priority 1: Show index creation alert if needed.
     if (indexCreationUrl) {
         return <MissingIndexAlert url={indexCreationUrl} />;
     }
-    // Priority 2: Show skeleton while the initial query or the detailed processing is happening.
     if (rawLoading || (rawTransactions && !transactions)) {
         return <Skeleton className="h-40 w-full" />;
     }
-    // Priority 3: If we have the fully processed data, show the table.
     if (transactions) {
         return <PendingTransactionsTable transactions={transactions} />;
     }
-    // Fallback for any other state (e.g., initial render before first effect run)
     return <Skeleton className="h-40 w-full" />;
   }
   
