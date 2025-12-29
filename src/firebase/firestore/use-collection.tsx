@@ -12,30 +12,19 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
-// This function attempts to create a stable key from a Firestore query object.
-const getQueryKey = (q: Query | null): string => {
-    if (!q) return 'null';
-    try {
-        const internalQuery = (q as any)._query;
-        if (!internalQuery) return JSON.stringify(q); // Fallback for safety
-        const path = internalQuery.path.canonical;
-        const filters = internalQuery.filters.map((f: any) => `${f.field.canonical}${f.op}${JSON.stringify(f.value)}`).join(',');
-        const orders = internalQuery.explicitOrderBy.map((o: any) => `${o.field.canonical}${o.dir}`).join(',');
-        return `${path}|${filters}|${orders}`;
-    } catch {
-        return JSON.stringify(q); // Fallback for safety
-    }
-};
-
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  const queryKey = useMemo(() => getQueryKey(query), [query]);
-  const dataRef = useRef(data);
+  // Use a ref to hold the current data to avoid it being a dependency of useEffect
+  const dataRef = useRef<T[] | null>(null);
   dataRef.current = data;
+
+  // useMemo on the query object itself is not sufficient if it's created inline
+  // in the parent component. We handle stability inside the effect.
+  const queryPath = useMemo(() => (query as any)?._query?.path?.canonical, [query]);
 
   useEffect(() => {
     if (!query) {
@@ -60,8 +49,9 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           } as T;
         });
 
-        // This is the critical fix: Only update state if the data has actually changed.
-        // This prevents infinite loops caused by new array references on every snapshot.
+        // CRITICAL FIX: Prevent infinite loops by only setting state if the
+        // actual data has changed. The `useCollection` hook was causing
+        // re-renders because it always returned a new array instance.
         if (JSON.stringify(dataRef.current) !== JSON.stringify(resultData)) {
             setData(resultData);
         }
@@ -84,13 +74,13 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             setIndexCreationUrl(urlMatch[0]);
           }
         } else if (err.code === 'permission-denied') {
-          let queryPath = 'unknown path';
+          let queryPathStr = 'unknown path';
            try {
-             queryPath = (query as any)._query.path.canonical;
+             queryPathStr = (query as any)._query.path.canonical;
            } catch {}
           
           const permissionError = new FirestorePermissionError({
-              path: queryPath,
+              path: queryPathStr,
               operation: 'list',
           });
           errorEmitter.emit('permission-error', permissionError);
@@ -103,7 +93,9 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [queryKey]);
+    // Depend on a stable representation of the query path.
+    // The stability of the data itself is handled inside the snapshot listener.
+  }, [queryPath]);
 
   return { data, loading, error, indexCreationUrl };
 }
