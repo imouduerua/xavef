@@ -63,7 +63,6 @@ export default function GroupDetailsPage() {
     const groupRef = useMemo(() => (firestore && groupId) ? doc(firestore, 'groups', groupId) : null, [firestore, groupId]);
     const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
     
-    // Determine the start and end of the current collection week
     const [weekStart, weekEnd] = React.useMemo(() => {
         if (!group?.startedAt) return [null, null];
         const startDate = group.startedAt.toDate();
@@ -79,16 +78,19 @@ export default function GroupDetailsPage() {
         end.setHours(0, 0, 0, 0);
 
         return [Timestamp.fromDate(start), Timestamp.fromDate(end)];
-    }, [group]);
+    }, [group?.startedAt, group?.currentCollectionWeek]);
 
 
-    const weeklyContributionsQuery = useMemo(() => (firestore && group && group.members.length > 0 && weekStart && weekEnd) ? query(
+    const weeklyContributionsQuery = useMemo(() => {
+        if (!firestore || !group || group.members.length === 0 || !weekStart || !weekEnd) return null;
+        return query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             where('type', '==', 'Group Contribution'),
             where('date', '>=', weekStart),
             where('date', '<', weekEnd)
-        ) : null, [firestore, group, weekStart, weekEnd, groupId]);
+        )
+    }, [firestore, group, weekStart, weekEnd, groupId]);
     
     const groupTransactionsQuery = useMemo(() => (firestore && groupId) ? query(
             collectionGroup(firestore, 'transactions'),
@@ -107,28 +109,36 @@ export default function GroupDetailsPage() {
 
 
     useEffect(() => {
-        if (group && group.members.length > 0 && firestore) {
-            const fetchMembersData = async () => {
-                setLoadingMembers(true);
-                try {
-                    const usersRef = collection(firestore, 'users');
-                    // Firestore 'in' queries are limited to 30 elements in a disjunction.
-                    // For larger groups, this would need pagination.
-                    const q = query(usersRef, where(documentId(), 'in', group.members));
-                    const querySnapshot = await getDocs(q);
+        if (!group?.members || group.members.length === 0 || !firestore) {
+            setLoadingMembers(false);
+            return;
+        }
+        
+        let isMounted = true;
+        const fetchMembersData = async () => {
+            setLoadingMembers(true);
+            try {
+                const usersRef = collection(firestore, 'users');
+                const q = query(usersRef, where(documentId(), 'in', group.members));
+                const querySnapshot = await getDocs(q);
+                if (isMounted) {
                     const users = querySnapshot.docs.map(d => ({ ...d.data(), uid: d.id } as UserData));
                     setMembersData(users);
-                } catch (error) {
-                    console.error("Error fetching members' data: ", error);
-                } finally {
+                }
+            } catch (error) {
+                console.error("Error fetching members' data: ", error);
+            } finally {
+                if (isMounted) {
                     setLoadingMembers(false);
                 }
-            };
-            fetchMembersData();
-        } else if (group && group.members.length === 0) {
-            setLoadingMembers(false);
-        }
-    }, [group, firestore]);
+            }
+        };
+        fetchMembersData();
+        
+        return () => {
+            isMounted = false;
+        };
+    }, [group?.members, firestore]);
     
     const isLoading = groupLoading || loadingMembers || contributionsLoading || allTxsLoading;
 
@@ -158,7 +168,6 @@ export default function GroupDetailsPage() {
         }
     };
     
-    // Map member data for quick lookup
     const memberMap = new Map(membersData.map(m => [m.uid, m]));
 
     return (
