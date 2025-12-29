@@ -4,13 +4,14 @@ import { useDoc, useFirestore, useUser } from '@/firebase';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import {
   doc,
-  collectionGroup,
+  collection,
   Timestamp,
   orderBy,
   query,
   where,
   getDocs,
   documentId,
+  collectionGroup,
 } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
 import React, { useEffect, useState, useMemo } from 'react';
@@ -255,6 +256,10 @@ export default function GroupDetailsPage() {
   const currentPayoutIndex = group.payoutOrder
     ? (currentWeek - 1) % group.members.length
     : null;
+    
+  const memoizedMemberIds = useMemo(() => group.members, [group]);
+  const memoizedPayoutOrder = useMemo(() => group.payoutOrder || [], [group]);
+
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -335,15 +340,15 @@ export default function GroupDetailsPage() {
 
           <Separator />
           
-          {group.payoutOrder && group.payoutOrder.length > 0 && (
+          {memoizedPayoutOrder && memoizedPayoutOrder.length > 0 && (
              <div>
                 <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
                     <ListOrdered />
                     Payout Order
                 </h3>
                  <GroupMembers 
-                    memberIds={group.members}
-                    payoutOrder={group.payoutOrder}
+                    memberIds={memoizedMemberIds}
+                    payoutOrder={memoizedPayoutOrder}
                     currentPayoutIndex={currentPayoutIndex}
                 />
             </div>
