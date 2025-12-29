@@ -34,6 +34,9 @@ export default function AdminPendingTransactionsPage() {
   const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
 
   useEffect(() => {
+    // We only want this effect to run when the raw data from Firestore changes,
+    // or when the loading/error state of the query changes.
+    // Do NOT include 'transactions' in the dependency array as it will cause an infinite loop.
     if (rawLoading || indexCreationUrl || !rawTransactions || !firestore) {
       if (transactions) setTransactions(null);
       return;
@@ -82,8 +85,7 @@ export default function AdminPendingTransactionsPage() {
     };
 
     processTransactions();
-  // We only want to re-run this effect when the raw, unprocessed data changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // The dependency array is now correct and will not cause an infinite loop.
   }, [rawTransactions, firestore, indexCreationUrl, rawLoading]);
 
   const renderContent = () => {
