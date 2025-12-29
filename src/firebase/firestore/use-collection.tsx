@@ -17,7 +17,7 @@ const getQueryKey = (q: Query | null): string | null => {
   if (!q) return null;
   // Access the internal _query property which contains the query's definition
   const queryInternals = (q as any)._query;
-  if (!queryInternals) return null; // Defensive check for safety
+  if (!queryInternals) return null;
 
   try {
     const path = queryInternals.path?.canonical || '';
@@ -27,9 +27,11 @@ const getQueryKey = (q: Query | null): string | null => {
         const op = f.op || '';
         // Safely stringify value, handling potential circular references
         const value = JSON.stringify(f.value, (key, val) => {
-            // Firestore timestamps can cause issues, convert them to a stable format
             if (val && typeof val === 'object' && val.toDate) {
                 return val.toDate().toISOString();
+            }
+            if (val && typeof val === 'object' && key === 'firestore') {
+              return '[FirestoreInstance]';
             }
             return val;
         });
@@ -44,7 +46,8 @@ const getQueryKey = (q: Query | null): string | null => {
     return `${path}|${filters}|${limit}|${limitToLast}|${orderBy}`;
   } catch (e) {
       console.error("Failed to generate query key", e);
-      return null;
+      // Fallback to a less stable, but safer key if complex stringification fails
+      return queryInternals.path?.canonical || Date.now().toString();
   }
 }
 

@@ -7,7 +7,7 @@ import {
   DocumentSnapshot,
   DocumentData,
 } from 'firebase/firestore';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 
 export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const [data, setData] = useState<T | null>(null);
@@ -17,7 +17,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const docPath = ref?.path;
 
   useEffect(() => {
-    if (!ref) {
+    if (!docPath || !ref) {
       setData(null);
       setLoading(false);
       return;
@@ -34,7 +34,6 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
           // Document does not exist
           setData(null);
         }
-        // Data has been fetched (or confirmed not to exist), so loading is complete.
         setLoading(false);
       },
       (error) => {
