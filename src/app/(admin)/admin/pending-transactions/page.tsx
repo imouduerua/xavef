@@ -34,8 +34,7 @@ export default function AdminPendingTransactionsPage() {
   const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
 
   useEffect(() => {
-    if (rawLoading || indexCreationUrl || !rawTransactions || !firestore) {
-      if (transactions) setTransactions(null);
+    if (rawLoading || !rawTransactions || !firestore) {
       return;
     };
     
@@ -82,7 +81,7 @@ export default function AdminPendingTransactionsPage() {
     };
 
     processTransactions();
-  }, [rawTransactions, firestore, indexCreationUrl, rawLoading]);
+  }, [rawTransactions, firestore, rawLoading]);
 
   const renderContent = () => {
     if (indexCreationUrl) {

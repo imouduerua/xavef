@@ -18,7 +18,7 @@ export interface UserData {
   id?: string;
   uid: string;
   email: string;
-  displayName: string; // This might become redundant, but let's keep for now
+  displayName: string; 
   firstName: string;
   lastName: string;
   dateOfBirth: string | null;
@@ -75,12 +75,13 @@ export interface TransactionWithUserDetails extends Transaction {
 
 export interface Notification {
   id: string;
+  createdAt: any;
   title: string;
   description: string;
-  date: any;
   read: boolean;
   actionUrl?: string;
 }
+
 
 export interface ReferralCode {
     id: string;

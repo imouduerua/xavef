@@ -29,7 +29,12 @@ async function generateUniqueXavefId(firestore: Firestore): Promise<string> {
     while (!isUnique) {
         const length = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
         xavefId = Math.floor(Math.pow(10, length - 1) + Math.random() * 9 * Math.pow(10, length - 1)).toString();
-        isUnique = true; // For this app, we'll assume collisions are unlikely enough.
+        
+        const q = query(collection(firestore, 'users'), where('xavefId', '==', xavefId), limit(1));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+            isUnique = true;
+        }
     }
     return xavefId!;
 }
@@ -94,7 +99,7 @@ export async function createUserProfile(
 
       const xavefId = await generateUniqueXavefId(firestore);
 
-      const newUserProfile = {
+      const newUserProfile: UserData = {
         uid: user.uid,
         email: data.email,
         firstName: data.firstName,
