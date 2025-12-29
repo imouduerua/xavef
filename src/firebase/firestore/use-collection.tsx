@@ -13,44 +13,30 @@ import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
 // Helper to create a stable key from a query's properties
-const getQueryKey = (q: Query | null): string | null => {
-  if (!q) return null;
-  // Access the internal _query property which contains the query's definition
-  const queryInternals = (q as any)._query;
-  if (!queryInternals) return null;
+const getQueryKey = (q: Query | null): string => {
+    if (!q) return 'null';
+    // Access the internal _query property which contains the query's definition
+    const queryInternals = (q as any)._query;
+    if (!queryInternals) return 'null';
+  
+    // A simplified but more stable key generation.
+    // We rely on the canonical path and a JSON representation of filters/order.
+    try {
+        const path = queryInternals.path?.canonical || '';
+        
+        const filters = queryInternals.filters?.map((f: any) => {
+            return `${f.field.canonical}${f.op}${JSON.stringify(f.value)}`;
+        }).join(',') || '';
 
-  try {
-    const path = queryInternals.path?.canonical || '';
-    
-    const filters = queryInternals.filters?.map((f: any) => {
-        const fieldPath = f.field?.canonical || '';
-        const op = f.op || '';
-        // Safely stringify value, handling potential circular references
-        const value = JSON.stringify(f.value, (key, val) => {
-            if (val && typeof val === 'object' && val.toDate) {
-                return val.toDate().toISOString();
-            }
-            if (val && typeof val === 'object' && key === 'firestore') {
-              return '[FirestoreInstance]';
-            }
-            return val;
-        });
-        return `${fieldPath}${op}${value}`;
-    }).join(',') || '';
+        const orderBy = queryInternals.explicitOrderBy?.map((o: any) => `${o.field.canonical}${o.dir}`).join(',') || '';
 
-    const limit = queryInternals.limit !== undefined ? `limit:${queryInternals.limit}` : '';
-    const limitToLast = queryInternals.limitToLast !== undefined ? `limitToLast:${queryInternals.limitToLast}`: '';
-    
-    const orderBy = queryInternals.explicitOrderBy?.map((o: any) => `${o.field.canonical}${o.dir}`).join(',') || '';
-
-    return `${path}|${filters}|${limit}|${limitToLast}|${orderBy}`;
-  } catch (e) {
-      console.error("Failed to generate query key", e);
-      // Fallback to a less stable, but safer key if complex stringification fails
-      return queryInternals.path?.canonical || Date.now().toString();
-  }
+        return `${path}|${filters}|${orderBy}|${queryInternals.limit || ''}|${queryInternals.limitToLast || ''}`;
+    } catch (e) {
+        console.error("Failed to generate stable query key", e);
+        // Fallback to a less stable key if complex stringification fails
+        return queryInternals.path?.canonical || `fallback-${Date.now()}`;
+    }
 }
-
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
@@ -62,21 +48,15 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const queryKey = useMemo(() => getQueryKey(query), [query]);
 
   useEffect(() => {
-    // This now correctly depends on queryKey. If query is null, key is null, and we do nothing.
-    if (!queryKey) {
+    if (!query) {
       setData(null);
       setLoading(false);
       setError(null);
       setIndexCreationUrl(null);
       return;
     }
-    
-    // The query object itself is needed for onSnapshot
-    if (!query) return;
 
     setLoading(true);
-    setError(null);
-    setIndexCreationUrl(null);
     
     const unsubscribe = onSnapshot(
       query,
@@ -91,6 +71,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         });
         setData(resultData);
         setLoading(false);
+        setError(null);
+        setIndexCreationUrl(null);
       },
       (err: FirestoreError) => {
         console.error('Error fetching collection:', err);
@@ -119,7 +101,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
     
     return () => unsubscribe();
-  // The effect now depends on the stable queryKey, preventing infinite loops.
+  // The effect now depends on the stable queryKey.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryKey]);
 

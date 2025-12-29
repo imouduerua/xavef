@@ -17,7 +17,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const docPath = ref?.path;
 
   useEffect(() => {
-    if (!docPath || !ref) {
+    if (!ref) {
       setData(null);
       setLoading(false);
       return;
@@ -44,7 +44,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
     );
 
     return () => unsubscribe();
-  // The effect now depends on the stable document path, preventing infinite loops.
+  // The effect now depends on the stable document path.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docPath]);
 
