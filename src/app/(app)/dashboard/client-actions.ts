@@ -1,40 +1,44 @@
+'use server';
 
-'use client';
-
-import {
-  doc,
-  runTransaction,
-  collection,
-  serverTimestamp,
-  Firestore,
-  query,
-  where,
-  limit,
-} from 'firebase/firestore';
-import type { User as AuthUser } from 'firebase/auth';
-import type { ReferralCode } from '@/lib/types';
+import { 
+    doc, 
+    runTransaction, 
+    collection, 
+    serverTimestamp,
+    Firestore,
+    query,
+    where,
+    getDocs,
+    limit,
+    documentId,
+    increment,
+    addDoc,
+    getDoc,
+    writeBatch,
+} from "firebase/firestore";
+import type { User as AuthUser } from "firebase/auth";
+import type { ReferralCode, UserData, BankAccount } from "@/lib/types";
 
 async function generateUniqueXavefId(firestore: Firestore): Promise<string> {
-  let xavefId;
-  let isUnique = false;
-  // This is a simplified approach. In a production environment with many users,
-  // you'd want a more robust collision-detection mechanism.
-  while (!isUnique) {
-    const length = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
-    xavefId = Math.floor(
-      Math.pow(10, length - 1) + Math.random() * 9 * Math.pow(10, length - 1)
-    ).toString();
-    isUnique = true; // For this app, we'll assume collisions are unlikely enough.
-  }
-  return xavefId!;
+    let xavefId;
+    let isUnique = false;
+    // This is a simplified approach. In a production environment with many users,
+    // you'd want a more robust collision-detection mechanism.
+    while (!isUnique) {
+        const length = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
+        xavefId = Math.floor(Math.pow(10, length - 1) + Math.random() * 9 * Math.pow(10, length - 1)).toString();
+        isUnique = true; // For this app, we'll assume collisions are unlikely enough.
+    }
+    return xavefId!;
 }
 
+
 interface CreateProfileData {
-  firstName: string;
-  lastName: string;
-  displayName: string;
-  email: string;
-  referralCode: string;
+    firstName: string;
+    lastName: string;
+    displayName: string;
+    email: string;
+    referralCode: string;
 }
 
 export async function createUserProfile(
@@ -46,20 +50,19 @@ export async function createUserProfile(
   const referralCodesRef = collection(firestore, 'referralCodes');
 
   try {
-    const transactionResult = await runTransaction(firestore, async (transaction) => {
+    await runTransaction(firestore, async (transaction) => {
       // 1. Find the referral code document by querying for the 'code' field.
-      // THIS MUST BE INSIDE THE TRANSACTION.
+      // This MUST be inside the transaction to ensure atomicity.
       const referralQuery = query(
         referralCodesRef,
         where('code', '==', data.referralCode),
         limit(1)
       );
 
-      // Use transaction.get() to read the document within the transaction
-      const referralQuerySnapshot = await transaction.get(referralQuery);
+      // We perform a read via getDocs first. The actual update will use the transaction.
+      const referralQuerySnapshot = await getDocs(referralQuery);
 
       if (referralQuerySnapshot.empty) {
-        // Throwing an error here will cause the transaction to fail and roll back.
         throw new Error('The provided referral code is invalid.');
       }
 
@@ -68,6 +71,11 @@ export async function createUserProfile(
 
       if (referralData.used) {
         throw new Error('The provided referral code has already been used.');
+      }
+      
+      const userSnap = await transaction.get(userDocRef);
+      if (userSnap.exists()) {
+        throw new Error("A user profile for this account already exists.");
       }
 
       const referredBy = referralData.creatorUid;

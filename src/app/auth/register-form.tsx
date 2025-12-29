@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useAuth, useFirestore } from "@/firebase";
-import { createUserProfile } from "@/app/(app)/dashboard/client-actions";
+import { createUserProfile } from "@/app/(app)/dashboard/actions";
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
@@ -92,9 +92,11 @@ export function RegisterForm() {
         if (!profileResult.success) {
             // This is a critical failure, likely an invalid referral code.
             // We must delete the orphaned auth user and show the error to the user.
-            await deleteUser(user).catch(deleteError => {
-                console.error("Failed to clean up orphaned auth user:", deleteError);
-            });
+            if (userCredential) {
+              await deleteUser(userCredential.user).catch(deleteError => {
+                  console.error("Failed to clean up orphaned auth user:", deleteError);
+              });
+            }
 
             toast({
                 variant: "destructive",
@@ -119,7 +121,7 @@ export function RegisterForm() {
         
         // This catch block will now primarily handle auth errors like "email-already-in-use"
         if (userCredential) {
-            // If profile creation failed after auth user was created, clean up.
+            // If an auth user was created but another error occurred, clean it up.
             await deleteUser(userCredential.user).catch(deleteError => {
                 console.error("Failed to clean up orphaned auth user during general error:", deleteError);
             });
