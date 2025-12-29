@@ -31,6 +31,7 @@ function PendingTransactionsContent({ rawTransactions, firestore }: { rawTransac
     };
 
     const processTransactions = async () => {
+      if (!rawTransactions) return;
       setProcessing(true);
       try {
         const userCache = new Map<string, UserData>();
