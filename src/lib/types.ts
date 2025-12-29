@@ -117,6 +117,7 @@ export interface Group {
     payoutOrder?: string[];
     currentCollectionWeek?: number;
     lastDistributionDate?: any;
+    membersData?: UserData[];
 }
 
 export type JoinRequestStatus = 'pending' | 'approved' | 'declined';
@@ -136,3 +137,4 @@ export interface GroupJoinRequest {
     
 
     
+
