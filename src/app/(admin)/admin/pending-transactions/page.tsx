@@ -14,39 +14,22 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
-import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy, collection } from 'firebase/firestore';
+import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy } from 'firebase/firestore';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 
 
-export default function AdminPendingTransactionsPage() {
-  const firestore = useFirestore();
-
-  const pendingTxsQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(
-        collectionGroup(firestore, 'transactions'), 
-        where('status', '==', 'Pending'),
-        orderBy('date', 'desc')
-    );
-  }, [firestore]);
-
-  const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
+function PendingTransactionsContent({ rawTransactions, firestore }: { rawTransactions: Transaction[] | null, firestore: any }) {
   const [processedTransactions, setProcessedTransactions] = useState<TransactionWithUserDetails[] | null>(null);
   const [processing, setProcessing] = useState(true);
 
   useEffect(() => {
-    if (rawLoading) {
-      setProcessing(true);
-      return;
-    }
+    let isMounted = true;
     if (!rawTransactions || !firestore) {
       setProcessedTransactions([]);
       setProcessing(false);
       return;
     };
-    
-    let isMounted = true;
-    
+
     const processTransactions = async () => {
       setProcessing(true);
       try {
@@ -57,7 +40,7 @@ export default function AdminPendingTransactionsPage() {
             const userId = pathParts[pathParts.indexOf('users') + 1];
             let user: UserData | undefined = userCache.get(userId);
             
-            if (!user && firestore) {
+            if (!user) {
               const userRef = doc(firestore, 'users', userId);
               const userSnap = await getDoc(userRef);
               if (userSnap.exists()) {
@@ -83,7 +66,7 @@ export default function AdminPendingTransactionsPage() {
         }
       } catch (err) {
         console.error("Error attaching user details:", err);
-        if (isMounted) {
+         if (isMounted) {
             toast({
                 variant: "destructive",
                 title: "Error Processing Data",
@@ -99,26 +82,37 @@ export default function AdminPendingTransactionsPage() {
     };
 
     processTransactions();
-    
+
     return () => {
-        isMounted = false;
+      isMounted = false;
     }
-  }, [rawTransactions, firestore, rawLoading]);
+  }, [rawTransactions, firestore]);
 
-  const isLoading = rawLoading || processing;
-
-  const renderContent = () => {
-    if (indexCreationUrl) {
-        return <MissingIndexAlert url={indexCreationUrl} />;
-    }
-    if (isLoading) {
-        return <Skeleton className="h-40 w-full" />;
-    }
-    if (processedTransactions) {
-        return <PendingTransactionsTable transactions={processedTransactions} />;
-    }
+  if (processing) {
     return <Skeleton className="h-40 w-full" />;
   }
+
+  if (processedTransactions) {
+    return <PendingTransactionsTable transactions={processedTransactions} />;
+  }
+
+  return null;
+}
+
+
+export default function AdminPendingTransactionsPage() {
+  const firestore = useFirestore();
+
+  const pendingTxsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(
+        collectionGroup(firestore, 'transactions'), 
+        where('status', '==', 'Pending'),
+        orderBy('date', 'desc')
+    );
+  }, [firestore]);
+
+  const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
   
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -131,7 +125,13 @@ export default function AdminPendingTransactionsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-            {renderContent()}
+            {indexCreationUrl ? (
+                <MissingIndexAlert url={indexCreationUrl} />
+            ) : rawLoading ? (
+                <Skeleton className="h-40 w-full" />
+            ) : (
+                <PendingTransactionsContent rawTransactions={rawTransactions} firestore={firestore} />
+            )}
         </CardContent>
       </Card>
     </div>
