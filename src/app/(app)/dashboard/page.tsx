@@ -26,18 +26,52 @@ function DashboardContent() {
   const { userData, loading: userDataLoading } = useUserData();
   const firestore = useFirestore();
 
-  const pendingTransactionsQuery = useMemo(() => (user && firestore) ? query(
+  // Show a skeleton while the user's main data is loading.
+  if (userLoading || userDataLoading) {
+    return <PageSkeleton />;
+  }
+
+  // If loading is finished but we still have no user data, something is wrong.
+  // This is a critical check for new user registration flow.
+  if (!userData) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Welcome to XAVEF</CardTitle>
+            <CardDescription>
+              It looks like your profile is still being set up. This can happen right after registration. The page will reload shortly.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>If this message persists for more than a minute, please try logging out and logging back in.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // All hooks that depend on user.uid can now be called conditionally,
+  // but since we've confirmed userData exists, user is also guaranteed to exist.
+  return <DashboardApp user={user!} userData={userData} />;
+}
+
+
+function DashboardApp({ user, userData }: { user: import('firebase/auth').User, userData: import('@/lib/types').UserData }) {
+  const firestore = useFirestore();
+
+  const pendingTransactionsQuery = useMemo(() => query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "==", "Pending"),
-    ) : null, [user, firestore]);
+    ), [firestore, user.uid]);
   
-  const goalsQuery = useMemo(() => (user && firestore) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [user, firestore]);
+  const goalsQuery = useMemo(() => query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')), [firestore, user.uid]);
 
-  const joinRequestsQuery = useMemo(() => (user && firestore) ? query(
+  const joinRequestsQuery = useMemo(() => query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    ) : null, [user, firestore]);
+    ), [firestore, user.uid]);
 
 
   const { data: pendingTransactions, loading: pendingTransactionsLoading } = useCollection<Transaction>(pendingTransactionsQuery);
@@ -55,8 +89,8 @@ function DashboardContent() {
   );
   
   const balances = {
-    solidara: userData?.solidaraBalance ?? 0.0,
-    annual: userData?.annualBalance ?? 0.0,
+    solidara: userData.solidaraBalance ?? 0.0,
+    annual: userData.annualBalance ?? 0.0,
   };
 
   const totalSavings = balances.solidara + balances.annual;
@@ -84,27 +118,23 @@ function DashboardContent() {
     }
 
     // Handle transfer to a saving goal
-    if (user && firestore) {
-        const result = await addFundsToGoal(firestore, user.uid, to, amount);
-        if (result.success) {
-            const goalName = goals?.find(g => g.id === to)?.name || 'your goal';
-            toast({
-                title: "Transfer Successful!",
-                description: `You transferred ₦${amount.toFixed(2)} to "${goalName}".`
-            });
-            return true;
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Transfer Failed",
-                description: result.error,
-            });
-            return false;
-        }
+    const result = await addFundsToGoal(firestore, user.uid, to, amount);
+    if (result.success) {
+        const goalName = goals?.find(g => g.id === to)?.name || 'your goal';
+        toast({
+            title: "Transfer Successful!",
+            description: `You transferred ₦${amount.toFixed(2)} to "${goalName}".`
+        });
+        return true;
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Transfer Failed",
+            description: result.error,
+        });
+        return false;
     }
-
-    return false; // Fallback
-  }, [user, firestore, balances, goals]);
+  }, [firestore, user.uid, balances, goals]);
 
 
   const copyToClipboard = (text: string, type: 'ID') => {
@@ -116,7 +146,70 @@ function DashboardContent() {
     });
   };
   
-  const PageSkeleton = () => (
+  return (
+    <div className="space-y-6">
+       <Card>
+            <CardHeader>
+                <CardTitle>Welcome, {userData.firstName || userData.displayName || 'User'}</CardTitle>
+                <CardDescription>
+                    Here is a summary of your accounts and recent activity.
+                </CardDescription>
+            </CardHeader>
+        </Card>
+
+        {joinRequests && joinRequests.length > 0 && (
+            <Alert variant="default" className="border-primary/50">
+                <Users className="h-4 w-4" />
+                <AlertTitle className="font-bold">New Group Join Requests</AlertTitle>
+                <AlertDescription>
+                    You have {joinRequests.length} new request{joinRequests.length > 1 ? 's' : ''} to join your groups.
+                    <Button asChild variant="link" className="p-0 pl-2 h-auto">
+                        <Link href="/groups">Manage Requests</Link>
+                    </Button>
+                </AlertDescription>
+            </Alert>
+        )}
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Your Xavef ID:</span>
+          <span className="font-semibold">{userData.xavefId}</span>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData.xavefId ?? '', 'ID')}>
+            <Copy size={14} />
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <TransferDialog balances={balances} goals={goals || []} onSelfTransfer={handleSelfTransfer} />
+          <Button asChild>
+            <Link href="/transactions">Transaction History</Link>
+          </Button>
+        </div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <SolidaraSavingsCard balance={balances.solidara} pendingAmount={pendingSolidaraDeposit?.amount} />
+        <AnnualSavingsCard balance={balances.annual} pendingAmount={pendingAnnualDeposit?.amount} />
+        <TotalSavingsCard balance={totalSavings} />
+      </div>
+      <div>
+        <RecentTransactions />
+      </div>
+    </div>
+  );
+}
+
+
+export default function DashboardPage() {
+  return (
+    <div className="p-4 sm:p-6 lg:p-8">
+      <Suspense fallback={<PageSkeleton />}>
+        <DashboardContent />
+      </Suspense>
+    </div>
+  );
+}
+
+function PageSkeleton() {
+    return (
      <div className="space-y-6">
             <Card>
                 <CardHeader>
@@ -144,91 +237,8 @@ function DashboardContent() {
             </div>
         </div>
   )
-
-  if (userLoading || userDataLoading || pendingTransactionsLoading || goalsLoading || joinRequestsLoading) {
-    return <PageSkeleton />
-  }
-
-  if (!user || !userData) {
-    return (
-       <div className="space-y-6">
-           <Card>
-             <CardHeader>
-                <CardTitle>Welcome to XAVEF</CardTitle>
-                <CardDescription>
-                    It looks like you're new here. If you just registered, your profile is being created. This page will reload shortly.
-                </CardDescription>
-             </CardHeader>
-             <CardContent>
-                <p>If this message persists, please try logging out and logging back in.</p>
-             </CardContent>
-           </Card>
-           <PageSkeleton />
-        </div>
-    )
-  }
-
-
-  return (
-    <div className="space-y-6">
-       <Card>
-            <CardHeader>
-                <CardTitle>Welcome, {userData?.firstName || userData?.displayName || 'User'}</CardTitle>
-                <CardDescription>
-                    Here is a summary of your accounts and recent activity.
-                </CardDescription>
-            </CardHeader>
-        </Card>
-
-        {joinRequests && joinRequests.length > 0 && (
-            <Alert variant="default" className="border-primary/50">
-                <Users className="h-4 w-4" />
-                <AlertTitle className="font-bold">New Group Join Requests</AlertTitle>
-                <AlertDescription>
-                    You have {joinRequests.length} new request{joinRequests.length > 1 ? 's' : ''} to join your groups.
-                    <Button asChild variant="link" className="p-0 pl-2 h-auto">
-                        <Link href="/groups">Manage Requests</Link>
-                    </Button>
-                </AlertDescription>
-            </Alert>
-        )}
-
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Your Xavef ID:</span>
-          <span className="font-semibold">{userData?.xavefId}</span>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(userData?.xavefId ?? '', 'ID')}>
-            <Copy size={14} />
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <TransferDialog balances={balances} goals={goals || []} onSelfTransfer={handleSelfTransfer} />
-          <Button asChild>
-            <Link href="/transactions">Transaction History</Link>
-          </Button>
-        </div>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <SolidaraSavingsCard balance={balances.solidara} pendingAmount={pendingSolidaraDeposit?.amount} />
-        <AnnualSavingsCard balance={balances.annual} pendingAmount={pendingAnnualDeposit?.amount} />
-        <TotalSavingsCard balance={totalSavings} />
-      </div>
-      <div>
-        <RecentTransactions />
-      </div>
-    </div>
-  );
 }
 
-export default function DashboardPage() {
-  return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <Suspense fallback={<div>Loading...</div>}>
-        <DashboardContent />
-      </Suspense>
-    </div>
-  );
-}
 
 function CardSkeleton() {
     return (

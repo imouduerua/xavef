@@ -77,31 +77,8 @@ export async function createUserProfile(
       bankAccounts: [],
     };
     
-    // Create the user profile in a single operation.
+    // Create the user profile. This is the only critical step for registration.
     await setDoc(userDocRef, newUserProfile);
-
-    // Create default saving goals in a separate batch, which is more robust.
-    const goalsCollectionRef = collection(firestore, `users/${user.uid}/goals`);
-    const defaultGoals = [
-      { name: 'House Rent', targetAmount: 0, emoji: '🏠' },
-      { name: 'School Fees', targetAmount: 0, emoji: '🎓' },
-    ];
-    
-    const goalsBatch = writeBatch(firestore);
-    for (const goal of defaultGoals) {
-      const newGoalRef = doc(goalsCollectionRef);
-      goalsBatch.set(newGoalRef, {
-        userId: user.uid,
-        name: goal.name,
-        targetAmount: goal.targetAmount,
-        currentAmount: 0,
-        createdAt: serverTimestamp(),
-        emoji: goal.emoji,
-      });
-    }
-    // This can happen in the background and doesn't need to block registration success.
-    await goalsBatch.commit();
-
 
     return { success: true };
   } catch (error: any) {
