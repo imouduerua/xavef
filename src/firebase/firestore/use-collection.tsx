@@ -94,7 +94,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
 
     return () => unsubscribe();
     // Depend on a stable representation of the query path.
-  }, [queryPath]);
+  }, [queryPath, query]);
 
   return { data, loading, error, indexCreationUrl };
 }

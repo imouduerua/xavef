@@ -17,6 +17,7 @@ import {
     addDoc,
     getDoc,
     writeBatch,
+    setDoc,
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
 import type { ReferralCode, UserData, BankAccount } from "@/lib/types";
@@ -76,9 +77,10 @@ export async function createUserProfile(
       bankAccounts: [],
     };
     
+    // Create the user profile in a single operation.
     await setDoc(userDocRef, newUserProfile);
 
-    // Create default saving goals in a separate batch
+    // Create default saving goals in a separate batch, which is more robust.
     const goalsCollectionRef = collection(firestore, `users/${user.uid}/goals`);
     const defaultGoals = [
       { name: 'House Rent', targetAmount: 0, emoji: '🏠' },
@@ -97,6 +99,7 @@ export async function createUserProfile(
         emoji: goal.emoji,
       });
     }
+    // This can happen in the background and doesn't need to block registration success.
     await goalsBatch.commit();
 
 
