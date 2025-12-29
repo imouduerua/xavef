@@ -40,7 +40,7 @@ interface CreateProfileData {
     lastName: string;
     displayName: string;
     email: string;
-    referralCode: string;
+    referralCode: string | null;
 }
 
 export async function createUserProfile(
@@ -53,34 +53,43 @@ export async function createUserProfile(
 
   try {
     await runTransaction(firestore, async (transaction) => {
-      // 1. Find the referral code document by querying for the 'code' field.
-      // This MUST be inside the transaction to ensure atomicity.
-      const referralQuery = query(
-        referralCodesRef,
-        where('code', '==', data.referralCode),
-        limit(1)
-      );
+      let referredBy: string | null = null;
+      
+      // Temporarily bypass referral code logic if it's not provided
+      if (data.referralCode) {
+        const referralQuery = query(
+          referralCodesRef,
+          where('code', '==', data.referralCode),
+          limit(1)
+        );
 
-      // We perform a read via getDocs first. The actual update will use the transaction.
-      const referralQuerySnapshot = await getDocs(referralQuery);
+        const referralQuerySnapshot = await getDocs(referralQuery);
 
-      if (referralQuerySnapshot.empty) {
-        throw new Error('The provided referral code is invalid.');
-      }
+        if (referralQuerySnapshot.empty) {
+          throw new Error('The provided referral code is invalid.');
+        }
 
-      const referralDoc = referralQuerySnapshot.docs[0];
-      const referralData = referralDoc.data() as ReferralCode;
+        const referralDoc = referralQuerySnapshot.docs[0];
+        const referralData = referralDoc.data() as ReferralCode;
 
-      if (referralData.used) {
-        throw new Error('The provided referral code has already been used.');
+        if (referralData.used) {
+          throw new Error('The provided referral code has already been used.');
+        }
+        
+        referredBy = referralData.creatorUid;
+
+        // Mark the referral code as used
+        transaction.update(referralDoc.ref, {
+          used: true,
+          usedBy: user.uid,
+          usedAt: serverTimestamp(),
+        });
       }
       
       const userSnap = await transaction.get(userDocRef);
       if (userSnap.exists()) {
         throw new Error("A user profile for this account already exists.");
       }
-
-      const referredBy = referralData.creatorUid;
 
       const xavefId = await generateUniqueXavefId(firestore);
 
@@ -97,16 +106,16 @@ export async function createUserProfile(
         country: null,
         xavefId,
         createdAt: serverTimestamp(),
-        referredBy,
+        referredBy, // Can be null if no code was used
         solidaraBalance: 0,
         annualBalance: 0,
         bankAccounts: [],
       };
 
-      // 2. Create the new user's profile document.
+      // Create the new user's profile document.
       transaction.set(userDocRef, newUserProfile);
 
-      // 3. Create default saving goals.
+      // Create default saving goals.
       const goalsCollectionRef = collection(firestore, `users/${user.uid}/goals`);
       const defaultGoals = [
         { name: 'House Rent', targetAmount: 0, emoji: '🏠' },
@@ -124,25 +133,14 @@ export async function createUserProfile(
           emoji: goal.emoji,
         });
       }
-
-      // 4. Mark the referral code as used.
-      transaction.update(referralDoc.ref, {
-        used: true,
-        usedBy: user.uid,
-        usedAt: serverTimestamp(),
-      });
-
-      // Transactions must not return a value.
     });
 
-    // If the transaction completes without throwing an error, it was successful.
     return { success: true };
   } catch (error: any) {
     console.error(
       '[createUserProfile] Error during profile creation transaction:',
       error
     );
-    // The error message from the transaction (e.g., "invalid code") will be passed here.
     return {
       success: false,
       error: error.message || `An unexpected error occurred during profile creation.`,

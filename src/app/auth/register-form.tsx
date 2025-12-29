@@ -32,7 +32,6 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
-  referralCode: z.string().min(1, { message: "Referral code is required." }),
 });
 
 export function RegisterForm() {
@@ -48,7 +47,6 @@ export function RegisterForm() {
       lastName: "",
       email: "",
       password: "",
-      referralCode: "",
     },
   });
 
@@ -86,11 +84,11 @@ export function RegisterForm() {
             lastName: values.lastName,
             displayName: displayName,
             email: user.email!,
-            referralCode: values.referralCode,
+            referralCode: null, // Temporarily removed
         });
 
         if (!profileResult.success) {
-            // This is a critical failure, likely an invalid referral code.
+            // This is a critical failure.
             // We must delete the orphaned auth user and show the error to the user.
             if (userCredential) {
               await deleteUser(userCredential.user).catch(deleteError => {
@@ -201,19 +199,6 @@ export function RegisterForm() {
               <FormLabel>Password</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="********" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="referralCode"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Referral Code</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter referral code" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
