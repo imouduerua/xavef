@@ -20,7 +20,7 @@ import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 
 export default function AdminPendingTransactionsPage() {
   const firestore = useFirestore();
-  const [processedTransactions, setProcessedTransactions] = useState<TransactionWithUserDetails[] | null>(null);
+  const [userCache, setUserCache] = useState<Map<string, UserData>>(new Map());
   const [processing, setProcessing] = useState(true);
 
   const pendingTxsQuery = useMemo(() => {
@@ -34,77 +34,69 @@ export default function AdminPendingTransactionsPage() {
 
   const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
   
-  useEffect(() => {
-    let isMounted = true;
-    if (!rawTransactions || !firestore) {
-      setProcessedTransactions([]);
-      setProcessing(false);
-      return;
-    };
-
-    const processTransactions = async () => {
-      setProcessing(true);
-      try {
-        const userCache = new Map<string, UserData>();
-        const transactionsWithDetails = await Promise.all(
-          rawTransactions.map(async (tx) => {
-            const pathParts = tx.path.split('/');
-            const userId = pathParts[pathParts.indexOf('users') + 1];
-            let user: UserData | undefined = userCache.get(userId);
-            
-            if (!user) {
-              const userRef = doc(firestore, 'users', userId);
-              const userSnap = await getDoc(userRef);
-              if (userSnap.exists()) {
-                 const fetchedUser = { id: userSnap.id, ...userSnap.data() } as UserData;
-                 userCache.set(userId, fetchedUser);
-                 user = fetchedUser;
-              }
-            }
-            
-            const userEmail = user ? user.email : 'Unknown User';
-            const xavefId = user ? user.xavefId : 'N/A';
-
-            return {
-                ...tx,
-                userId,
-                userEmail,
-                xavefId,
-            } as TransactionWithUserDetails;
-          })
-        );
-        if (isMounted) {
-            setProcessedTransactions(transactionsWithDetails);
-        }
-      } catch (err) {
-        console.error("Error attaching user details:", err);
-         if (isMounted) {
-            toast({
-                variant: "destructive",
-                title: "Error Processing Data",
-                description: "Could not process transaction details.",
-            });
-            setProcessedTransactions([]);
-        }
-      } finally {
-        if (isMounted) {
-            setProcessing(false);
-        }
-      }
-    };
-
-    processTransactions();
-
-    return () => {
-      isMounted = false;
+  const processedTransactions = useMemo(() => {
+    if (!rawTransactions) return null;
+    if (rawTransactions.length === 0) {
+        setProcessing(false);
+        return [];
     }
-  }, [rawTransactions, firestore]);
+
+    const unmappedTransactions = rawTransactions.filter(tx => {
+        const pathParts = tx.path.split('/');
+        const userId = pathParts[pathParts.indexOf('users') + 1];
+        return !userCache.has(userId);
+    });
+
+    if (unmappedTransactions.length > 0 && firestore) {
+        setProcessing(true);
+        const fetchUnmappedUsers = async () => {
+            const newUserCache = new Map(userCache);
+            await Promise.all(
+                unmappedTransactions.map(async (tx) => {
+                    const pathParts = tx.path.split('/');
+                    const userId = pathParts[pathParts.indexOf('users') + 1];
+                     if (!newUserCache.has(userId)) {
+                        const userRef = doc(firestore, 'users', userId);
+                        const userSnap = await getDoc(userRef);
+                        if (userSnap.exists()) {
+                            const fetchedUser = { id: userSnap.id, ...userSnap.data() } as UserData;
+                            newUserCache.set(userId, fetchedUser);
+                        }
+                    }
+                })
+            );
+            setUserCache(newUserCache);
+            setProcessing(false);
+        };
+        fetchUnmappedUsers();
+    } else if (unmappedTransactions.length === 0) {
+        setProcessing(false);
+    }
+    
+     if (processing) {
+      return null;
+    }
+
+    return rawTransactions.map(tx => {
+        const pathParts = tx.path.split('/');
+        const userId = pathParts[pathParts.indexOf('users') + 1];
+        const user = userCache.get(userId);
+        return {
+            ...tx,
+            userId,
+            userEmail: user?.email || 'Unknown User',
+            xavefId: user?.xavefId || 'N/A',
+        } as TransactionWithUserDetails;
+    });
+
+  }, [rawTransactions, firestore, userCache, processing]);
+
 
   const renderContent = () => {
       if (indexCreationUrl) {
         return <MissingIndexAlert url={indexCreationUrl} />;
       }
-      if (rawLoading || processing) {
+      if (rawLoading || processing || processedTransactions === null) {
         return <Skeleton className="h-40 w-full" />;
       }
       if (processedTransactions) {
@@ -130,4 +122,3 @@ export default function AdminPendingTransactionsPage() {
     </div>
   );
 }
-
