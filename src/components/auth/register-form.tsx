@@ -20,7 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useAuth, useFirestore } from "@/firebase";
-import { createUserProfile } from "@/app/(app)/dashboard/client-actions";
+import { createUserProfile } from "@/app/(app)/dashboard/actions";
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
