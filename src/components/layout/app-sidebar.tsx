@@ -49,7 +49,6 @@ const adminNavItems = [
     { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
     { href: '/admin/users', icon: Users, label: 'User Management' },
     { href: '/admin/groups', icon: Users, label: 'Group Management' },
-    { href: '/admin/pending-transactions', icon: Clock, label: 'Pending Transactions' },
     { href: '/admin/transactions', icon: History, label: 'All Transactions', superAdminOnly: true },
 ];
 

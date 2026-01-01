@@ -282,27 +282,6 @@
             "actionUrl": { "type": "string", "description": "A URL the user can navigate to from the notification." }
         },
         "required": ["userId", "title", "description", "createdAt", "read"]
-    },
-    "fcmToken": {
-      "title": "FCM Token",
-      "description": "A Firebase Cloud Messaging token for a user's device.",
-      "type": "object",
-      "properties": {
-        "userId": {
-          "type": "string",
-          "description": "The UID of the user this token belongs to."
-        },
-        "token": {
-          "type": "string",
-          "description": "The FCM registration token."
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the token was last updated."
-        }
-      },
-      "required": ["userId", "token", "updatedAt"]
     }
   },
   "auth": {
@@ -354,12 +333,6 @@
     "/joinRequests/{requestId}": {
         "schema": { "$ref": "#/entities/joinRequest" },
         "description": "Stores requests from users to join savings groups."
-    },
-    "/fcmTokens/{userId}": {
-      "schema": {
-        "$ref": "#/entities/fcmToken"
-      },
-      "description": "Stores FCM tokens for admin users to receive push notifications."
     }
   }
 }

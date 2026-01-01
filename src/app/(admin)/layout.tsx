@@ -6,15 +6,12 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { UserDataProvider } from "@/context/user-data-provider";
 import { AdminAuthGuard } from "@/components/admin/admin-auth-guard";
 import { AppSidebar } from "@/components/layout/app-sidebar";
-import { useFCM } from "@/hooks/use-fcm";
 
 function AdminLayoutContent({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Initialize FCM for admin users
-  useFCM();
 
   return (
     <AdminAuthGuard>

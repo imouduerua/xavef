@@ -146,23 +146,6 @@ export default function AdminDashboardPage() {
         />
         <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Pending Transactions</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">Review Now</div>
-                 <p className="text-xs text-muted-foreground">
-                    Approve or decline pending deposits and withdrawals.
-                </p>
-            </CardContent>
-            <CardFooter>
-                 <Button asChild className="w-full">
-                    <Link href="/admin/pending-transactions">Go to Pending Transactions</Link>
-                </Button>
-            </CardFooter>
-        </Card>
-         <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">User Management</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>

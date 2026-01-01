@@ -23,24 +23,20 @@ service cloud.firestore {
     // User Collection & Subcollections
     // =====================================================================
     match /users/{userId} {
-      // READ: Admins can read any user doc (needed for transaction reads).
-      // Users can only read their own.
+      // READ: Admins can read any user doc. Users can only read their own.
       allow read: if isAuthOwner(userId) || isAdmin();
       
       // Admins can list all users for the user management page.
       allow list: if isAdmin();
       
       // UPDATE: A user can update their own profile, but cannot change balance fields.
-      allow update: if isAuthOwner(userId)
+      // An admin can update any user's profile, including balances.
+      allow update: if (isAuthOwner(userId)
                       && !('solidaraBalance' in request.resource.data)
-                      && !('annualBalance' in request.resource.data);
+                      && !('annualBalance' in request.resource.data))
+                   || isAdmin();
 
-      // CRITICAL FIX: An admin can update any user's profile, including balances.
-      // This is required for the transaction approval to work.
-      allow write: if isAdmin();
-
-      // Users cannot create their own profile documents directly (handled by a function).
-      // Admins should not create user profiles this way either.
+      // CREATE: Users cannot create their own profile documents directly (handled by a function).
       allow create: if false;
 
 
@@ -49,12 +45,10 @@ service cloud.firestore {
       // Transactions
       match /transactions/{transactionId} {
         // A user can read their own transactions.
-        allow read: if isAuthOwner(userId);
+        // A user can create their own transaction (e.g. initiating a deposit/withdrawal).
+        allow read, create: if isAuthOwner(userId);
         
-        // A user can create their own transaction (e.g. initiating a deposit).
-        allow create: if isAuthOwner(userId);
-        
-        // Admins can read and write any transaction. This is necessary for approvals.
+        // Admins can read and write any transaction. This is necessary for approvals/updates.
         allow read, write: if isAdmin();
       }
       
@@ -62,10 +56,8 @@ service cloud.firestore {
       match /notifications/{notificationId} {
           // Users can read and update their own notifications (e.g., mark as read).
           allow read, list, update: if isAuthOwner(userId);
-
           // Admins can create notifications for users.
           allow create: if isAdmin();
-          
           allow delete: if false;
       }
       
@@ -111,12 +103,6 @@ service cloud.firestore {
         allow read: if isAuthOwner(request.resource.data.requesterUid) || isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
         // Only the group creator can approve or decline the request.
         allow update: if isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
-    }
-
-    // FCM Tokens for Push Notifications
-    match /fcmTokens/{userId} {
-      // Only an authenticated admin can read/write their own token.
-      allow read, write: if isAuthOwner(userId) && isAdmin();
     }
     
     // This allows admins to perform the collectionGroup query needed for the admin pages.
