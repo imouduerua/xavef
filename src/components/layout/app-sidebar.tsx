@@ -72,10 +72,16 @@ export function AppSidebar() {
   }, [isInsideAdmin, isSuperAdmin]);
 
   const isActive = (href: string, exact = false) => {
-    if (href.includes('/admin/group-details')) {
-        return pathname.startsWith('/admin/group-details');
+    if (exact) {
+        return pathname === href;
     }
-    return exact ? pathname === href : pathname.startsWith(href);
+    if (href === '/admin/groups') {
+        return pathname.startsWith('/admin/groups') || pathname.startsWith('/admin/group-details');
+    }
+    if (href === '/admin/users') {
+        return pathname.startsWith('/admin/users');
+    }
+    return pathname.startsWith(href);
   };
   
   const handleLinkClick = () => {
