@@ -32,18 +32,18 @@ export function MyGroupsSection() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const myGroupsQuery = useMemo(() => (firestore && user) ? query(
+  const myGroupsQuery = useMemo(() => (firestore && user?.uid) ? query(
         collection(firestore, `groups`), 
         where('members', 'array-contains', user.uid),
         orderBy('createdAt', 'desc')
-    ) : null, [firestore, user]);
+    ) : null, [firestore, user?.uid]);
 
-  const joinRequestsQuery = useMemo(() => (user && firestore) ? query(
+  const joinRequestsQuery = useMemo(() => (user?.uid && firestore) ? query(
           collection(firestore, 'joinRequests'),
           where('groupCreatorUid', '==', user.uid),
           where('status', '==', 'pending'),
           orderBy('createdAt', 'desc')
-      ) : null, [user, firestore]);
+      ) : null, [user?.uid, firestore]);
 
   const { data: groups, loading: groupsLoading, indexCreationUrl: groupsIndexUrl } = useCollection<Group>(myGroupsQuery);
   const { data: joinRequests, loading: requestsLoading, indexCreationUrl: requestsIndexUrl } = useCollection<GroupJoinRequest>(joinRequestsQuery);

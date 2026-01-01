@@ -194,7 +194,8 @@ export default function GroupDetailsPage() {
 
   // This effect fetches all member data at once when group.members changes
   useEffect(() => {
-    if (!group?.members || group.members.length === 0 || !firestore) {
+    const memberIds = group?.members;
+    if (!memberIds || memberIds.length === 0 || !firestore) {
       setLoadingMembers(false);
       return;
     }
@@ -204,10 +205,10 @@ export default function GroupDetailsPage() {
       try {
         const usersRef = collection(firestore, 'users');
         // Firestore 'in' query is limited to 30 items
-        if (group.members.length > 30) {
+        if (memberIds.length > 30) {
             console.warn("Group has more than 30 members, fetching data may be incomplete.");
         }
-        const q = query(usersRef, where(documentId(), 'in', group.members.slice(0, 30)));
+        const q = query(usersRef, where(documentId(), 'in', memberIds.slice(0, 30)));
         const querySnapshot = await getDocs(q);
         if (isMounted) {
           const users = querySnapshot.docs.map(
@@ -231,7 +232,7 @@ export default function GroupDetailsPage() {
     return new Map(membersData.map((m: UserData) => [m.uid, m]));
   }, [membersData]);
   
-  const [weekStart, weekEnd] = React.useMemo(() => {
+  const [weekStart, weekEnd] = useMemo(() => {
     if (!group?.startedAt) return [null, null];
     const startDate = group.startedAt.toDate();
     const currentWeek = group.currentCollectionWeek || 1;
@@ -277,7 +278,7 @@ export default function GroupDetailsPage() {
   }, [allGroupTransactions, weekStart, weekEnd]);
 
 
-  const currentWeekDeposits = React.useMemo(() => {
+  const currentWeekDeposits = useMemo(() => {
     if (!weeklyContributions) return 0;
     return weeklyContributions.reduce((acc, tx) => acc + tx.amount, 0);
   }, [weeklyContributions]);

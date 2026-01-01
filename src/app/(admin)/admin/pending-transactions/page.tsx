@@ -34,7 +34,6 @@ export default function AdminPendingTransactionsPage() {
 
   const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
   
-  // Create a stable key from the raw data to use as a dependency.
   const rawTransactionsKey = useMemo(() => rawTransactions?.map(t => t.id).join(','), [rawTransactions]);
 
   useEffect(() => {
@@ -119,7 +118,6 @@ export default function AdminPendingTransactionsPage() {
     return () => {
         isMounted = false;
     };
-    // Depend on the stable key, not the array object itself.
   }, [rawTransactionsKey, firestore, rawLoading]);
 
 

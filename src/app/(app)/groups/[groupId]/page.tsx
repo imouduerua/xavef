@@ -63,7 +63,7 @@ export default function GroupDetailsPage() {
     const groupRef = useMemo(() => (firestore && groupId) ? doc(firestore, 'groups', groupId) : null, [firestore, groupId]);
     const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
     
-    const [weekStart, weekEnd] = React.useMemo(() => {
+    const [weekStart, weekEnd] = useMemo(() => {
         if (!group?.startedAt) return [null, null];
         const startDate = group.startedAt.toDate();
         const currentWeek = group.currentCollectionWeek || 1;
@@ -102,14 +102,15 @@ export default function GroupDetailsPage() {
     const { data: weeklyContributions, loading: contributionsLoading, indexCreationUrl } = useCollection<Transaction>(weeklyContributionsQuery);
     const { data: allGroupTransactions, loading: allTxsLoading, indexCreationUrl: allTxsIndexUrl } = useCollection<Transaction>(groupTransactionsQuery);
     
-    const currentWeekDeposits = React.useMemo(() => {
+    const currentWeekDeposits = useMemo(() => {
         if (!weeklyContributions) return 0;
         return weeklyContributions.reduce((acc, tx) => acc + tx.amount, 0);
     }, [weeklyContributions]);
 
 
     useEffect(() => {
-        if (!group?.members || group.members.length === 0 || !firestore) {
+        const memberIds = group?.members;
+        if (!memberIds || memberIds.length === 0 || !firestore) {
             setLoadingMembers(false);
             return;
         }
@@ -119,7 +120,7 @@ export default function GroupDetailsPage() {
             setLoadingMembers(true);
             try {
                 const usersRef = collection(firestore, 'users');
-                const q = query(usersRef, where(documentId(), 'in', group.members));
+                const q = query(usersRef, where(documentId(), 'in', memberIds));
                 const querySnapshot = await getDocs(q);
                 if (isMounted) {
                     const users = querySnapshot.docs.map(d => ({ ...d.data(), uid: d.id } as UserData));

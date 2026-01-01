@@ -41,7 +41,7 @@ export function AvailableGroupsList() {
 
   const { data: groups, loading, indexCreationUrl } = useCollection<Group>(groupsQuery);
   
-  const availableGroups = React.useMemo(() => {
+  const availableGroups = useMemo(() => {
     if (!groups || !user) return [];
     return groups.filter(group => !group.members.includes(user.uid));
   }, [groups, user]);

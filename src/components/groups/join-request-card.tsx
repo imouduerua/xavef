@@ -33,7 +33,7 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
   const firestore = useFirestore();
   const [isResponding, setIsResponding] = React.useState(false);
   
-  const transactionsQuery = React.useMemo(() => {
+  const transactionsQuery = useMemo(() => {
     if (!firestore) return null;
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
@@ -47,7 +47,7 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
   
   const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 
-  const totalDeposits = React.useMemo(() => {
+  const totalDeposits = useMemo(() => {
       if (!transactions) return 0;
       return transactions.reduce((acc, tx) => acc + tx.amount, 0);
   }, [transactions]);
