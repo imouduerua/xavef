@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser, useDoc } from '@/firebase';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import {
   doc,
@@ -30,6 +30,7 @@ import {
   Calendar,
   ListOrdered,
   UserCheck,
+  History,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
@@ -187,30 +188,39 @@ export default function GroupDetailsPage() {
   const [membersData, setMembersData] = useState<UserData[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
 
+  // This effect fetches all member data at once when group.members changes
   useEffect(() => {
     if (!group?.members || group.members.length === 0 || !firestore) {
-        setLoadingMembers(false);
-        return;
+      setLoadingMembers(false);
+      return;
     }
     let isMounted = true;
     const fetchMembersData = async () => {
-        setLoadingMembers(true);
-        try {
-            const usersRef = collection(firestore, 'users');
-            const q = query(usersRef, where(documentId(), 'in', group.members));
-            const querySnapshot = await getDocs(q);
-            if (isMounted) {
-                const users = querySnapshot.docs.map(d => ({ ...d.data(), uid: d.id } as UserData));
-                setMembersData(users);
-            }
-        } catch (error) {
-            console.error("Error fetching members' data: ", error);
-        } finally {
-            if (isMounted) setLoadingMembers(false);
+      setLoadingMembers(true);
+      try {
+        const usersRef = collection(firestore, 'users');
+        // Firestore 'in' query is limited to 30 items
+        if (group.members.length > 30) {
+            console.warn("Group has more than 30 members, fetching data may be incomplete.");
         }
+        const q = query(usersRef, where(documentId(), 'in', group.members.slice(0, 30)));
+        const querySnapshot = await getDocs(q);
+        if (isMounted) {
+          const users = querySnapshot.docs.map(
+            (d) => ({ ...d.data(), uid: d.id } as UserData)
+          );
+          setMembersData(users);
+        }
+      } catch (error) {
+        console.error("Error fetching members' data: ", error);
+      } finally {
+        if (isMounted) setLoadingMembers(false);
+      }
     };
     fetchMembersData();
-    return () => { isMounted = false };
+    return () => {
+      isMounted = false;
+    };
   }, [group?.members, firestore]);
 
   const membersMap = useMemo(() => {

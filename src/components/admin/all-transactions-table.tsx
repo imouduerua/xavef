@@ -18,7 +18,7 @@ import {
 } from '../ui/table';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, where, documentId } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '../ui/skeleton';
@@ -48,6 +48,8 @@ function AllTransactionsTableContent({
   >(null);
   const [processing, setProcessing] = useState(true);
 
+  const rawTransactionsKey = useMemo(() => rawTransactions?.map(t => t.id).join(','), [rawTransactions]);
+
   useEffect(() => {
     let isMounted = true;
     if (!rawTransactions || !firestore) {
@@ -61,25 +63,26 @@ function AllTransactionsTableContent({
     const processTransactions = async () => {
       setProcessing(true);
       try {
+        const userIds = [...new Set(rawTransactions.map(tx => {
+            const pathParts = tx.path.split('/');
+            return pathParts[pathParts.indexOf('users') + 1];
+        }))];
+
         const userCache = new Map<string, UserData>();
-        const transactionsWithDetails = await Promise.all(
-          rawTransactions.map(async (tx) => {
+        if (userIds.length > 0 && userIds.length <= 30) {
+            const usersRef = collection(firestore, 'users');
+            const usersQuery = query(usersRef, where(documentId(), 'in', userIds));
+            const userSnapshots = await getDocs(usersQuery);
+            userSnapshots.forEach(userDoc => {
+                userCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
+            });
+        }
+
+
+        const transactionsWithDetails = rawTransactions.map(tx => {
             const pathParts = tx.path.split('/');
             const userId = pathParts[pathParts.indexOf('users') + 1];
-            let user: UserData | undefined = userCache.get(userId);
-
-            if (!user) {
-              const userRef = doc(firestore, 'users', userId);
-              const userSnap = await getDoc(userRef);
-              if (userSnap.exists()) {
-                const fetchedUser = {
-                  id: userSnap.id,
-                  ...userSnap.data(),
-                } as UserData;
-                userCache.set(userId, fetchedUser);
-                user = fetchedUser;
-              }
-            }
+            const user = userCache.get(userId);
 
             return {
               ...tx,
@@ -87,8 +90,8 @@ function AllTransactionsTableContent({
               userEmail: user?.email || 'Unknown User',
               xavefId: user?.xavefId || 'N/A',
             } as TransactionWithUserDetails;
-          })
-        );
+        });
+
         if (isMounted) {
           setProcessedTransactions(transactionsWithDetails);
         }
@@ -112,7 +115,7 @@ function AllTransactionsTableContent({
     processTransactions();
     
     return () => { isMounted = false; };
-  }, [rawTransactions, firestore]);
+  }, [rawTransactionsKey, firestore]); // Use stable key
 
   const formatDate = (date: any) => {
     if (!date) return 'N/A';

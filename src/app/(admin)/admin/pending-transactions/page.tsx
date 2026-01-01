@@ -11,16 +11,15 @@ import {
 import { PendingTransactionsTable } from '@/components/admin/pending-transactions-table';
 import type { Transaction, UserData, TransactionWithUserDetails } from '@/lib/types';
 import React, { useEffect, useState, useMemo } from 'react';
-import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
-import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy } from 'firebase/firestore';
+import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy, documentId } from 'firebase/firestore';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 
 
 export default function AdminPendingTransactionsPage() {
   const firestore = useFirestore();
-  const [userCache, setUserCache] = useState<Map<string, UserData>>(new Map());
+  const [processedTransactions, setProcessedTransactions] = useState<TransactionWithUserDetails[] | null>(null);
   const [processing, setProcessing] = useState(true);
 
   const pendingTxsQuery = useMemo(() => {
@@ -34,75 +33,84 @@ export default function AdminPendingTransactionsPage() {
 
   const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
   
-  const processedTransactions = useMemo(() => {
-    if (!rawTransactions) return null;
-    if (rawTransactions.length === 0) {
-        setProcessing(false);
-        return [];
+  useEffect(() => {
+    if (rawLoading) {
+      setProcessing(true);
+      return;
     }
-
-    const unmappedTransactions = rawTransactions.filter(tx => {
-        const pathParts = tx.path.split('/');
-        const userId = pathParts[pathParts.indexOf('users') + 1];
-        return !userCache.has(userId);
-    });
-
-    if (unmappedTransactions.length > 0 && firestore) {
-        setProcessing(true);
-        const fetchUnmappedUsers = async () => {
-            const newUserCache = new Map(userCache);
-            await Promise.all(
-                unmappedTransactions.map(async (tx) => {
-                    const pathParts = tx.path.split('/');
-                    const userId = pathParts[pathParts.indexOf('users') + 1];
-                     if (!newUserCache.has(userId)) {
-                        const userRef = doc(firestore, 'users', userId);
-                        const userSnap = await getDoc(userRef);
-                        if (userSnap.exists()) {
-                            const fetchedUser = { id: userSnap.id, ...userSnap.data() } as UserData;
-                            newUserCache.set(userId, fetchedUser);
-                        }
-                    }
-                })
-            );
-            setUserCache(newUserCache);
-            setProcessing(false);
-        };
-        fetchUnmappedUsers();
-    } else if (unmappedTransactions.length === 0) {
-        setProcessing(false);
+    if (!rawTransactions || !firestore) {
+      setProcessedTransactions([]);
+      setProcessing(false);
+      return;
     }
     
-     if (processing) {
-      return null;
-    }
+    let isMounted = true;
+    const processData = async () => {
+      if (rawTransactions.length === 0) {
+        if (isMounted) {
+            setProcessedTransactions([]);
+            setProcessing(false);
+        }
+        return;
+      }
 
-    return rawTransactions.map(tx => {
+      setProcessing(true);
+      
+      const userIds = [...new Set(rawTransactions.map(tx => {
         const pathParts = tx.path.split('/');
-        const userId = pathParts[pathParts.indexOf('users') + 1];
-        const user = userCache.get(userId);
-        return {
+        return pathParts[pathParts.indexOf('users') + 1];
+      }))];
+
+      const usersCache = new Map<string, UserData>();
+      // Batch fetch users. Firestore 'in' query is limited to 30 items.
+      // If you expect more, you would need to chunk this.
+      if (userIds.length > 0 && userIds.length <=30) {
+          const usersRef = collection(firestore, 'users');
+          const usersQuery = query(usersRef, where(documentId(), 'in', userIds));
+          const userSnapshots = await getDocs(usersQuery);
+          userSnapshots.forEach(userDoc => {
+              usersCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
+          });
+      }
+      
+      const detailedTransactions = rawTransactions.map(tx => {
+          const pathParts = tx.path.split('/');
+          const userId = pathParts[pathParts.indexOf('users') + 1];
+          const user = usersCache.get(userId);
+          return {
             ...tx,
             userId,
             userEmail: user?.email || 'Unknown User',
             xavefId: user?.xavefId || 'N/A',
-        } as TransactionWithUserDetails;
-    });
+          } as TransactionWithUserDetails;
+      });
+      
+      if (isMounted) {
+          setProcessedTransactions(detailedTransactions);
+          setProcessing(false);
+      }
+    };
+    
+    processData();
 
-  }, [rawTransactions, firestore, userCache, processing]);
+    return () => {
+        isMounted = false;
+    };
+  }, [rawTransactions, firestore, rawLoading]);
 
 
   const renderContent = () => {
       if (indexCreationUrl) {
         return <MissingIndexAlert url={indexCreationUrl} />;
       }
-      if (rawLoading || processing || processedTransactions === null) {
-        return <Skeleton className="h-40 w-full" />;
+      if (processing || rawLoading) {
+        return <Skeleton className="h-64 w-full" />;
       }
       if (processedTransactions) {
         return <PendingTransactionsTable transactions={processedTransactions} />;
       }
-      return <p>No pending transactions found.</p>
+      // This case handles when loading is done but there are no transactions
+      return <PendingTransactionsTable transactions={[]} />;
   }
   
   return (
