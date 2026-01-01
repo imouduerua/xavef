@@ -7,6 +7,7 @@ import {
   QuerySnapshot,
   DocumentData,
   FirestoreError,
+  Timestamp,
 } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
 import { errorEmitter } from '../error-emitter';
@@ -17,7 +18,24 @@ const getQueryKey = (query: Query<any>): string => {
   if (!query) return 'null';
   const q = (query as any)._query;
   const path = q.path.segments.join('/');
-  const constraints = (q.constraints || []).map((c: any) => `${c.type}-${c.field?.canonicalName}-${c.value}`).join(',');
+  
+  const constraints = (q.constraints || []).map((c: any) => {
+    let value = c.value;
+    // If the value is a Firestore Timestamp, convert it to a stable string.
+    if (value instanceof Timestamp) {
+      value = value.toDate().toISOString();
+    } else if (typeof value === 'object' && value !== null) {
+      // For other objects, a simple JSON stringify is a fallback.
+      // This is not perfect for all cases but better than [object Object].
+      try {
+        value = JSON.stringify(value);
+      } catch (e) {
+        value = '[Unserializable Object]';
+      }
+    }
+    return `${c.type}-${c.field?.canonicalName}-${value}`;
+  }).join(',');
+
   return `${path}|${constraints}`;
 }
 
