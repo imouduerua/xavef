@@ -92,11 +92,11 @@ export default function GroupDetailsPage() {
         )
     }, [firestore, group, weekStart, weekEnd, groupId]);
     
-    const groupTransactionsQuery = useMemo(() => (firestore && groupId) ? query(
+    const groupTransactionsQuery = (firestore && groupId) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             orderBy('date', 'desc')
-        ) : null, [firestore, groupId]);
+        ) : null;
 
 
     const { data: weeklyContributions, loading: contributionsLoading, indexCreationUrl } = useCollection<Transaction>(weeklyContributionsQuery);

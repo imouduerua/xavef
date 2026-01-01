@@ -32,11 +32,11 @@ function GroupSkeleton() {
 export function AvailableGroupsList() {
   const firestore = useFirestore();
 
-  const groupsQuery = useMemo(() => firestore ? query(
+  const groupsQuery = firestore ? query(
         collection(firestore, `groups`), 
         where('status', 'in', ['forming', 'active']),
         orderBy('createdAt', 'desc')
-    ) : null, [firestore]);
+    ) : null;
 
   const { data: groups, loading, indexCreationUrl } = useCollection<Group>(groupsQuery);
 

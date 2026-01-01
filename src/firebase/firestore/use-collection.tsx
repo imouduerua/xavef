@@ -12,6 +12,15 @@ import { useEffect, useState, useMemo } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
+// Helper to create a stable key from a query
+const getQueryKey = (query: Query<any>): string => {
+  if (!query) return 'null';
+  const q = (query as any)._query;
+  const path = q.path.segments.join('/');
+  const constraints = (q.constraints || []).map((c: any) => `${c.type}-${c.field?.canonicalName}-${c.value}`).join(',');
+  return `${path}|${constraints}`;
+}
+
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
@@ -19,6 +28,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
   
+  const queryKey = useMemo(() => query ? getQueryKey(query) : 'null', [query]);
+
   useEffect(() => {
     if (!query) {
       setData(null);
@@ -78,7 +89,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [query]); 
+  }, [queryKey]); 
 
   return { data, loading, error, indexCreationUrl };
 }
