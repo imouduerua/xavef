@@ -32,7 +32,7 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
-  referralCode: z.string().optional(),
+  referralCode: z.string().min(1, { message: "A referral code is required." }),
 });
 
 export function RegisterForm() {
@@ -203,7 +203,7 @@ export function RegisterForm() {
             name="referralCode"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Referral Code (Optional)</FormLabel>
+                    <FormLabel>Referral Code</FormLabel>
                     <FormControl>
                         <Input placeholder="Enter referral code" {...field} />
                     </FormControl>
