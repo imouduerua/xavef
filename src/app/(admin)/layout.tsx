@@ -3,7 +3,6 @@
 
 import { AppHeader } from "@/components/layout/header";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { UserDataProvider } from "@/context/user-data-provider";
 import { AdminAuthGuard } from "@/components/admin/admin-auth-guard";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 
@@ -34,11 +33,9 @@ export default function AdminLayout({
 }) {
   return (
     <SidebarProvider>
-      <UserDataProvider>
-        <AdminLayoutContent>
-           {children}
-        </AdminLayoutContent>
-      </UserDataProvider>
+      <AdminLayoutContent>
+          {children}
+      </AdminLayoutContent>
     </SidebarProvider>
   );
 }

@@ -3,8 +3,7 @@
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/header";
-import { SidebarProvider, useSidebar, SidebarInset } from "@/components/ui/sidebar";
-import { UserDataProvider } from "@/context/user-data-provider";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
 function AppLayoutContent({
@@ -12,7 +11,6 @@ function AppLayoutContent({
 }: {
   children: React.ReactNode;
 }) {
-  const { state, isMobile } = useSidebar();
   
   return (
     <>
@@ -35,9 +33,7 @@ export default function AppLayout({
 }) {
   return (
     <SidebarProvider>
-      <UserDataProvider>
-        <AppLayoutContent>{children}</AppLayoutContent>
-      </UserDataProvider>
+      <AppLayoutContent>{children}</AppLayoutContent>
     </SidebarProvider>
   );
 }
