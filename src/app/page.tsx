@@ -22,6 +22,16 @@ export default function LoginPage() {
 
                 <LoginForm />
 
+                <p className="text-center text-sm text-muted-foreground">
+                    Don&apos;t have an account?{" "}
+                    <Link
+                        href="/register"
+                        className="font-semibold text-primary underline-offset-4 hover:underline"
+                    >
+                        Sign up
+                    </Link>
+                </p>
+
             </div>
         </div>
     </div>

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useAuth, useFirestore } from "@/firebase";
 import { createUserProfile } from "@/app/(app)/dashboard/actions";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
@@ -84,12 +84,9 @@ export function RegisterForm() {
             lastName: values.lastName,
             displayName: displayName,
             email: user.email!,
-            referralCode: null, // Temporarily removed
         });
 
         if (!profileResult.success) {
-            // This is a critical failure.
-            // We must delete the orphaned auth user and show the error to the user.
             if (userCredential) {
               await deleteUser(userCredential.user).catch(deleteError => {
                   console.error("Failed to clean up orphaned auth user:", deleteError);
@@ -103,7 +100,7 @@ export function RegisterForm() {
                 duration: 10000,
             });
             setIsLoading(false);
-            return; // Stop execution here.
+            return; 
         }
         
         toast({
@@ -111,15 +108,12 @@ export function RegisterForm() {
             description: "Welcome! Redirecting to your dashboard...",
         });
         
-        // Step 4: Redirect to the dashboard ONLY after profile creation is successful
         router.push("/dashboard");
 
     } catch (error: any) {
         console.error("Registration Error:", error);
         
-        // This catch block will now primarily handle auth errors like "email-already-in-use"
         if (userCredential) {
-            // If an auth user was created but another error occurred, clean it up.
             await deleteUser(userCredential.user).catch(deleteError => {
                 console.error("Failed to clean up orphaned auth user during general error:", deleteError);
             });
@@ -138,12 +132,7 @@ export function RegisterForm() {
             description: errorMessage,
             duration: 10000,
         });
-
-    } finally {
-        // Only set loading to false if we haven't navigated away
-        if (router.asPath === '/register') { 
-            setIsLoading(false);
-        }
+        setIsLoading(false);
     }
   }
 
@@ -205,7 +194,7 @@ export function RegisterForm() {
           )}
         />
         <Button type="submit" className="w-full" disabled={isLoading}>
-           {isLoading ? "Creating Account..." : "Create Account"}
+           {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account...</> : "Create Account"}
         </Button>
       </form>
     </Form>
