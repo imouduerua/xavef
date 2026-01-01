@@ -32,6 +32,7 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
+  referralCode: z.string().optional(),
 });
 
 export function RegisterForm() {
@@ -47,6 +48,7 @@ export function RegisterForm() {
       lastName: "",
       email: "",
       password: "",
+      referralCode: "",
     },
   });
 
@@ -84,9 +86,11 @@ export function RegisterForm() {
             lastName: values.lastName,
             displayName: displayName,
             email: user.email!,
+            referralCode: values.referralCode,
         });
 
         if (!profileResult.success) {
+            // If profile creation fails (e.g., bad referral code), delete the auth user
             if (userCredential) {
               await deleteUser(userCredential.user).catch(deleteError => {
                   console.error("Failed to clean up orphaned auth user:", deleteError);
@@ -113,6 +117,7 @@ export function RegisterForm() {
     } catch (error: any) {
         console.error("Registration Error:", error);
         
+        // If auth creation fails, this will also try to clean up, though it's less likely to exist.
         if (userCredential) {
             await deleteUser(userCredential.user).catch(deleteError => {
                 console.error("Failed to clean up orphaned auth user during general error:", deleteError);
@@ -192,6 +197,19 @@ export function RegisterForm() {
               <FormMessage />
             </FormItem>
           )}
+        />
+        <FormField
+            control={form.control}
+            name="referralCode"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Referral Code (Optional)</FormLabel>
+                    <FormControl>
+                        <Input placeholder="Enter referral code" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
         />
         <Button type="submit" className="w-full" disabled={isLoading}>
            {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account...</> : "Create Account"}
