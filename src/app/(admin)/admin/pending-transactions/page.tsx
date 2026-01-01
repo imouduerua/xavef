@@ -13,7 +13,7 @@ import type { Transaction, UserData, TransactionWithUserDetails } from '@/lib/ty
 import React, { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
-import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy, documentId } from 'firebase/firestore';
+import { collection, collectionGroup, getDocs, query, where, doc, getDoc, orderBy, documentId } from 'firebase/firestore';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 
 
