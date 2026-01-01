@@ -125,7 +125,16 @@
           ]
         },
         "amount": {
-          "type": "number"
+          "type": "number",
+          "description": "For withdrawals, this is the total amount deducted from the user's balance (a negative number)."
+        },
+        "fee": {
+            "type": "number",
+            "description": "The fee charged for a transaction, like a withdrawal."
+        },
+        "payoutAmount": {
+            "type": "number",
+            "description": "The net amount sent to the user after fees (e.g., for a withdrawal)."
         },
         "targetAccount": {
           "type": "string",
@@ -138,12 +147,15 @@
         },
         "proofOfPaymentUrl": {
           "type": "string",
-          "description": "URL of the uploaded proof of payment image."
+          "description": "URL of the uploaded proof of payment image (as a data URI)."
         },
         "groupId": {
           "type": "string",
           "description": "The ID of the group for group-related transactions."
-        }
+        },
+        "destinationBankName": { "type": "string" },
+        "destinationAccountName": { "type": "string" },
+        "destinationAccountNumber": { "type": "string" }
       },
       "required": [
         "date",

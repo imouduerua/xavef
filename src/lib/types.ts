@@ -65,6 +65,9 @@ export interface Transaction {
   proofOfPaymentUrl?: string;
   userId?: string; 
   groupId?: string; // For group contributions
+  destinationBankName?: string;
+  destinationAccountName?: string;
+  destinationAccountNumber?: string;
 }
 
 export interface TransactionWithUserDetails extends Transaction {
@@ -137,5 +140,6 @@ export interface GroupJoinRequest {
     
 
     
+
 
 

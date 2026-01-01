@@ -67,7 +67,7 @@ export default function AdminPendingTransactionsPage() {
           const usersRef = collection(firestore, 'users');
           // Firestore 'in' query is limited to 30 items.
           // If you expect more than 30 users, you'd need to chunk this.
-          const usersQuery = query(usersRef, where(documentId(), 'in', userIds));
+          const usersQuery = query(usersRef, where(documentId(), 'in', userIds.slice(0, 30)));
           const userSnapshots = await getDocs(usersQuery);
           userSnapshots.forEach(userDoc => {
               usersCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);

@@ -26,7 +26,7 @@ service cloud.firestore {
       // READ: Admins can read any user doc. Users can only read their own.
       allow read: if isAuthOwner(userId) || isAdmin();
       
-      // Admins can list all users for the user management page.
+      // LIST: Admins can list all users for the user management page.
       allow list: if isAdmin();
       
       // UPDATE: A user can update their own profile, but cannot change balance fields.
@@ -56,7 +56,7 @@ service cloud.firestore {
       match /notifications/{notificationId} {
           // Users can read and update their own notifications (e.g., mark as read).
           allow read, list, update: if isAuthOwner(userId);
-          // Admins can create notifications for users.
+          // Admins or server functions can create notifications for users.
           allow create: if isAdmin();
           allow delete: if false;
       }
@@ -99,8 +99,8 @@ service cloud.firestore {
     // Join Requests
     match /joinRequests/{requestId} {
         allow create: if isAuthOwner(request.resource.data.requesterUid);
-        // The requester or the group creator can read the request.
-        allow read: if isAuthOwner(request.resource.data.requesterUid) || isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
+        // The requester, group creator, or an admin can read the request.
+        allow read: if isAuthOwner(request.resource.data.requesterUid) || isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid) || isAdmin();
         // Only the group creator can approve or decline the request.
         allow update: if isAuthOwner(get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorUid);
     }
@@ -108,6 +108,14 @@ service cloud.firestore {
     // This allows admins to perform the collectionGroup query needed for the admin pages.
     match /{path=**}/transactions/{transactionId} {
         allow list: if isAdmin();
+    }
+
+    // FCM Tokens
+    match /fcmTokens/{userId} {
+        // Admins should be able to write their own token.
+        allow write: if isAuthOwner(userId) && isAdmin();
+        // Server functions might need to read tokens, but clients generally shouldn't list them.
+        allow read: if isAdmin();
     }
   }
 }
