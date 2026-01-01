@@ -11,8 +11,8 @@ import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
 import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { useUserData } from '@/hooks/use-user-data';
-import { useUser, useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
+import { useAuthContext } from '@/context/auth-provider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AccountType, SavingGoal, Transaction, GroupJoinRequest, UserData } from '@/lib/types';
@@ -23,17 +23,16 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { transferToAnnual } from './actions';
 
 function DashboardContent() {
-  const { user, loading: userLoading } = useUser();
-  const { userData, loading: userDataLoading } = useUserData();
+  const { user, userData, loading } = useAuthContext();
 
   // Show a skeleton while the user's main data is loading.
-  if (userLoading || userDataLoading) {
+  if (loading) {
     return <PageSkeleton />;
   }
 
   // If loading is finished but we still have no user data, something is wrong.
   // This is a critical check for new user registration flow.
-  if (!userData) {
+  if (!userData || !user) {
     return (
       <div className="space-y-6">
         <Card>
@@ -53,7 +52,7 @@ function DashboardContent() {
 
   // All hooks that depend on user.uid can now be called conditionally,
   // but since we've confirmed userData exists, user is also guaranteed to exist.
-  return <DashboardApp user={user!} userData={userData} />;
+  return <DashboardApp user={user} userData={userData} />;
 }
 
 
@@ -100,6 +99,8 @@ function DashboardApp({ user, userData }: { user: import('firebase/auth').User, 
     from: AccountType,
     to: string // Can be 'annual' or a goal ID
   ) => {
+     if (!firestore || !user?.uid) return false;
+
      if (balances[from] < amount) {
         toast({
             variant: "destructive",
@@ -144,7 +145,7 @@ function DashboardApp({ user, userData }: { user: import('firebase/auth').User, 
         });
         return false;
     }
-  }, [firestore, user.uid, balances, goals]);
+  }, [firestore, user?.uid, balances, goals]);
 
 
   const copyToClipboard = (text: string, type: 'ID') => {

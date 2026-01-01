@@ -13,7 +13,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore } from '@/firebase';
+import { useAuthContext } from '@/context/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
 import { HandCoins, Loader2 } from 'lucide-react';
@@ -27,7 +28,7 @@ interface ContributeDialogProps {
 
 export function ContributeDialog({ group, children }: ContributeDialogProps) {
   const [isContributing, setIsContributing] = React.useState(false);
-  const { user } = useUser();
+  const { user } = useAuthContext();
   const firestore = useFirestore();
   const { toast } = useToast();
 

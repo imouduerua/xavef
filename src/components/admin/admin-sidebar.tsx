@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/sidebar';
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { useUser } from '@/firebase';
+import { useAuthContext } from '@/context/auth-provider';
 import { useAdminStatus } from '@/hooks/use-admin-status';
 
 const navItems = [
@@ -34,7 +34,7 @@ const navItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const { user } = useUser();
+  const { user } = useAuthContext();
   const { isSuperAdmin } = useAdminStatus();
 
   const isActive = (href: string, exact = false) => {

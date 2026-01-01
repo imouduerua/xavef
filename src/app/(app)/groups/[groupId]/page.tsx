@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
+import { useCollection, useDoc, useFirestore } from '@/firebase';
+import { useAuthContext } from '@/context/auth-provider';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import { doc, getDoc, collection, getDocs, query, where, documentId, collectionGroup, Timestamp, orderBy } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
@@ -56,7 +57,7 @@ export default function GroupDetailsPage() {
     const params = useParams();
     const groupId = params.groupId as string;
     const firestore = useFirestore();
-    const { user } = useUser();
+    const { user } = useAuthContext();
     const [membersData, setMembersData] = useState<UserData[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(true);
 

@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
-import { Share_Tech } from "next/font/google";
+import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase";
+import { AuthProvider } from "@/context/auth-provider";
+import { cn } from "@/lib/utils";
 
-const shareTech = Share_Tech({
+const fontSans = FontSans({
   subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-share-tech",
+  variable: "--font-sans",
 });
+
 
 export const metadata: Metadata = {
   title: "XAVEF Financials",
@@ -22,11 +24,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${shareTech.variable} font-body antialiased`}>
-          <FirebaseClientProvider>
+      <body
+        className={cn(
+          "min-h-screen bg-background font-sans antialiased",
+          fontSans.variable
+        )}
+      >
+        <FirebaseClientProvider>
+          <AuthProvider>
             {children}
-          </FirebaseClientProvider>
-          <Toaster />
+            <Toaster />
+          </AuthProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

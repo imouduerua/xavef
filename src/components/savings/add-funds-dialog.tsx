@@ -29,7 +29,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useUser, useFirestore } from '@/firebase';
+import { useFirestore } from '@/firebase';
+import { useAuthContext } from '@/context/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import type { SavingGoal } from '@/lib/types';
 
@@ -42,7 +43,7 @@ interface AddFundsDialogProps {
 
 export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: AddFundsDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
-  const { user } = useUser();
+  const { user } = useAuthContext();
   const firestore = useFirestore();
   const { toast } = useToast();
 

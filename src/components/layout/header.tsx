@@ -17,7 +17,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '../ui/sidebar';
-import { useAuth, useUser, useFirestore, useCollection } from '@/firebase';
+import { useAuth, useFirestore, useCollection } from '@/firebase';
+import { useAuthContext } from '@/context/auth-provider';
 import { toast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
@@ -37,8 +38,8 @@ const formatDate = (date: any) => {
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
-  const auth = useAuth();
-  const { user } = useUser();
+  const authService = useAuth();
+  const { user } = useAuthContext();
   const firestore = useFirestore();
 
   const [isClient, setIsClient] = useState(false);
@@ -105,8 +106,9 @@ export function AppHeader() {
   }, []);
 
   const handleLogout = async () => {
+    if (!authService) return;
     try {
-      await signOut(auth);
+      await signOut(authService);
       toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',

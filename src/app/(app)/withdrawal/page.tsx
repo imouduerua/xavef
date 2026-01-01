@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useUserData } from "@/hooks/use-user-data";
+import { useAuthContext } from "@/context/auth-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Clock } from "lucide-react";
 import Link from "next/link";
@@ -70,8 +70,7 @@ function PageSkeleton() {
 
 
 export default function WithdrawalPage() {
-    const { userData, loading: userDataLoading } = useUserData();
-    const { user } = useUser();
+    const { user, userData, loading } = useAuthContext();
     const firestore = useFirestore();
 
     const pendingWithdrawalQuery = useMemo(() => (user?.uid && firestore) ? query(
@@ -85,7 +84,7 @@ export default function WithdrawalPage() {
 
     const pendingSolidaraWithdrawal = pendingWithdrawals?.[0];
 
-    if (userDataLoading || pendingWithdrawalsLoading) {
+    if (loading || pendingWithdrawalsLoading) {
         return <PageSkeleton />;
     }
 

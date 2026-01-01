@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useUser, useDoc, useFirestore } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
+import { useAuthContext } from '@/context/auth-provider';
 import { doc } from 'firebase/firestore';
 import React, { useMemo } from 'react';
 
@@ -10,7 +11,7 @@ type AdminData = {
 };
 
 export function useAdminStatus() {
-  const { user, loading: userLoading } = useUser();
+  const { user, loading: authLoading } = useAuthContext();
   const firestore = useFirestore();
 
   const isSuperAdmin = useMemo(() => user?.email === 'admin@xavef.com', [user?.email]);
@@ -27,7 +28,7 @@ export function useAdminStatus() {
   const isAdmin = isSuperAdmin || adminData?.isAdmin === true;
 
   // Loading is complete when user loading is done, AND if we need to check the doc, doc loading is also done.
-  const loading = userLoading || (!!user && !isSuperAdmin ? docLoading : false);
+  const loading = authLoading || (!!user && !isSuperAdmin ? docLoading : false);
 
 
   return { isAdmin, isSuperAdmin, loading };

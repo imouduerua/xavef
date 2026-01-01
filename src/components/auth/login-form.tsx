@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,6 +47,15 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    if (!auth) {
+        toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: "Authentication service not available. Please try again later.",
+        });
+        setIsLoading(false);
+        return;
+    }
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({

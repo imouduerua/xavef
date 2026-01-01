@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useUser, useFirestore } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { useUserData } from "@/hooks/use-user-data";
+import { useAuthContext } from "@/context/auth-provider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -53,9 +53,8 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function SettingsPage() {
-  const { user } = useUser();
+  const { user, userData, loading } = useAuthContext();
   const firestore = useFirestore();
-  const { userData, loading: userDataLoading } = useUserData();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<ProfileFormValues>({
@@ -114,7 +113,7 @@ export default function SettingsPage() {
     }
   }
 
-  if (userDataLoading) {
+  if (loading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         <Card>

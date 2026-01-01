@@ -32,7 +32,8 @@ import {
 } from '@/components/ui/sidebar';
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
+import { useAuthContext } from '@/context/auth-provider';
 import { toast } from '@/hooks/use-toast';
 import { useAdminStatus } from '@/hooks/use-admin-status';
 import { useMemo } from 'react';
@@ -57,7 +58,7 @@ const bottomNavItems = [{ href: '/settings', icon: Settings, label: 'Settings' }
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { user } = useUser();
+  const { user } = useAuthContext();
   const { isAdmin, isSuperAdmin } = useAdminStatus();
   const { isMobile, setOpenMobile } = useSidebar();
 

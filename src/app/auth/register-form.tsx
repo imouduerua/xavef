@@ -56,7 +56,7 @@ export function RegisterForm() {
     setIsLoading(true);
     let userCredential: UserCredential | null = null;
     
-    if(!firestore) {
+    if(!auth || !firestore) {
       toast({
         variant: "destructive",
         title: "Registration Failed",

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,6 +48,14 @@ export function ForgotPasswordDialog({ children }: { children: React.ReactNode }
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Authentication service not available. Please try again.",
+        });
+        return;
+    }
     try {
       await sendPasswordResetEmail(auth, values.email);
       toast({

@@ -3,7 +3,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore } from '@/firebase';
+import { useFirestore } from '@/firebase';
+import { useAuthContext } from '@/context/auth-provider';
 import { toast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
 import { Loader2, PlayCircle, UserPlus, Users, ArrowRight, HandCoins } from 'lucide-react';
@@ -30,7 +31,7 @@ interface GroupCardProps {
 }
 
 export function GroupCard({ group, isOwned = false }: GroupCardProps) {
-  const { user } = useUser();
+  const { user } = useAuthContext();
   const firestore = useFirestore();
   const [isStarting, setIsStarting] = React.useState(false);
   const [isJoining, setIsJoining] = React.useState(false);

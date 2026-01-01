@@ -120,7 +120,7 @@ export async function startGroup(
 
 export async function requestToJoinGroup(
   firestore: Firestore,
-  user: User,
+  requester: User,
   group: Group
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -130,7 +130,7 @@ export async function requestToJoinGroup(
     const q = query(
       joinRequestsRef,
       where('groupId', '==', group.id),
-      where('requesterUid', '==', user.uid),
+      where('requesterUid', '==', requester.uid),
       limit(1)
     );
     const existingRequestSnap = await getDocs(q);
@@ -160,9 +160,9 @@ export async function requestToJoinGroup(
       groupId: group.id,
       groupName: group.name,
       groupCreatorUid: group.creatorUid,
-      requesterUid: user.uid,
-      requesterEmail: user.email,
-      requesterName: user.displayName,
+      requesterUid: requester.uid,
+      requesterEmail: requester.email,
+      requesterName: requester.displayName,
       status: 'pending',
       createdAt: serverTimestamp(),
     });

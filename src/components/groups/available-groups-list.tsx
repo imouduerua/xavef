@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
+import { useAuthContext } from '@/context/auth-provider';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import React, { useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
@@ -31,7 +32,7 @@ function GroupSkeleton() {
 
 export function AvailableGroupsList() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user } = useAuthContext();
 
   const groupsQuery = useMemo(() => firestore ? query(
         collection(firestore, `groups`), 

@@ -27,10 +27,10 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import type { SavingGoal } from '@/lib/types';
-import { useUser, useFirestore } from '@/firebase';
+import { useFirestore } from '@/firebase';
+import { useAuthContext } from '@/context/auth-provider';
 import { deleteSavingGoal, withdrawCompletedGoal } from '@/app/(app)/savings/client-actions';
 import { AddFundsDialog } from './add-funds-dialog';
-import { useUserData } from '@/hooks/use-user-data';
 import { EditGoalDialog } from './edit-goal-dialog';
 
 
@@ -39,9 +39,8 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ goal }: GoalCardProps) {
-  const { user } = useUser();
+  const { user, userData, loading: userDataLoading } = useAuthContext();
   const firestore = useFirestore();
-  const { userData, loading: userDataLoading } = useUserData();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isWithdrawing, setIsWithdrawing] = React.useState(false);
 
