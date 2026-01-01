@@ -15,7 +15,7 @@ import { useUserData } from '@/hooks/use-user-data';
 import { useUser, useCollection, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { AccountType, SavingGoal, Transaction, GroupJoinRequest } from '@/lib/types';
+import type { AccountType, SavingGoal, Transaction, GroupJoinRequest, UserData } from '@/lib/types';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { addFundsToGoal } from '../savings/client-actions';
@@ -57,21 +57,21 @@ function DashboardContent() {
 }
 
 
-function DashboardApp({ user, userData }: { user: import('firebase/auth').User, userData: import('@/lib/types').UserData }) {
+function DashboardApp({ user, userData }: { user: import('firebase/auth').User, userData: UserData }) {
   const firestore = useFirestore();
 
-  const pendingTransactionsQuery = (firestore && user) ? query(
+  const pendingTransactionsQuery = useMemo(() => (firestore && user) ? query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "==", "Pending"),
-    ) : null;
+    ) : null, [firestore, user]);
   
-  const goalsQuery = (firestore && user) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null;
+  const goalsQuery = useMemo(() => (firestore && user) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [firestore, user]);
 
-  const joinRequestsQuery = (firestore && user) ? query(
+  const joinRequestsQuery = useMemo(() => (firestore && user) ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    ) : null;
+    ) : null, [firestore, user]);
 
 
   const { data: pendingTransactions, loading: pendingTransactionsLoading } = useCollection<Transaction>(pendingTransactionsQuery);

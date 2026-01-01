@@ -74,12 +74,12 @@ export default function WithdrawalPage() {
     const { user } = useUser();
     const firestore = useFirestore();
 
-    const pendingWithdrawalQuery = (user && firestore) ? query(
+    const pendingWithdrawalQuery = useMemo(() => (user && firestore) ? query(
             collection(firestore, 'users', user.uid, 'transactions'),
             where('status', '==', 'Pending'),
             where('type', '==', 'Withdrawal'),
             where('targetAccount', '==', 'solidara')
-        ) : null;
+        ) : null, [user, firestore]);
 
     const { data: pendingWithdrawals, loading: pendingWithdrawalsLoading } = useCollection<Transaction>(pendingWithdrawalQuery);
 
