@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useDoc, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import {
   doc,
@@ -29,27 +30,13 @@ import {
   Calendar,
   ListOrdered,
   UserCheck,
-  HandCoins,
-  History,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 import { GroupTransactionsTable } from '@/components/groups/group-transactions-table';
 
@@ -100,34 +87,45 @@ function GroupMembers({
       setLoading(false);
       return;
     }
-
+    let isMounted = true;
     const fetchMembersData = async () => {
       setLoading(true);
       try {
         const usersRef = collection(firestore, 'users');
+        // Note: Firestore 'in' queries are limited to 30 items. 
+        // For larger groups, you would need to chunk this request.
         const q = query(usersRef, where(documentId(), 'in', memberIds));
         const querySnapshot = await getDocs(q);
-        const users = querySnapshot.docs.map(
-          (d) => ({ ...d.data(), uid: d.id } as UserData)
-        );
         
-        // Create a map for quick lookups
-        const userMap = new Map(users.map(u => [u.uid, u]));
-        
-        // Sort the members array according to the payoutOrder
-        const sortedUsers = payoutOrder.map(uid => userMap.get(uid)).filter(Boolean) as UserData[];
-        
-        setMembers(sortedUsers);
+        if (isMounted) {
+            const users = querySnapshot.docs.map(
+              (d) => ({ ...d.data(), uid: d.id } as UserData)
+            );
+            
+            // Create a map for quick lookups
+            const userMap = new Map(users.map(u => [u.uid, u]));
+            
+            // Sort the members array according to the payoutOrder
+            const sortedUsers = payoutOrder.map(uid => userMap.get(uid)).filter(Boolean) as UserData[];
+            
+            setMembers(sortedUsers);
+        }
 
       } catch (error) {
         console.error("Error fetching members' data: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: "Could not load group members." });
+        if (isMounted) {
+            toast({ variant: 'destructive', title: 'Error', description: "Could not load group members." });
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+            setLoading(false);
+        }
       }
     };
 
     fetchMembersData();
+
+    return () => { isMounted = false; };
   }, [firestore, memberIds, payoutOrder]);
   
   if (loading) {
@@ -185,12 +183,39 @@ export default function GroupDetailsPage() {
     [firestore, groupId]
   );
   const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
+  
+  const [membersData, setMembersData] = useState<UserData[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
 
-  // Memoize member data to pass to sub-component
+  useEffect(() => {
+    if (!group?.members || group.members.length === 0 || !firestore) {
+        setLoadingMembers(false);
+        return;
+    }
+    let isMounted = true;
+    const fetchMembersData = async () => {
+        setLoadingMembers(true);
+        try {
+            const usersRef = collection(firestore, 'users');
+            const q = query(usersRef, where(documentId(), 'in', group.members));
+            const querySnapshot = await getDocs(q);
+            if (isMounted) {
+                const users = querySnapshot.docs.map(d => ({ ...d.data(), uid: d.id } as UserData));
+                setMembersData(users);
+            }
+        } catch (error) {
+            console.error("Error fetching members' data: ", error);
+        } finally {
+            if (isMounted) setLoadingMembers(false);
+        }
+    };
+    fetchMembersData();
+    return () => { isMounted = false };
+  }, [group?.members, firestore]);
+
   const membersMap = useMemo(() => {
-    if (!group?.membersData) return new Map();
-    return new Map(group.membersData.map((m: UserData) => [m.uid, m]));
-  }, [group?.membersData]);
+    return new Map(membersData.map((m: UserData) => [m.uid, m]));
+  }, [membersData]);
   
   const [weekStart, weekEnd] = React.useMemo(() => {
     if (!group?.startedAt) return [null, null];
@@ -244,7 +269,7 @@ export default function GroupDetailsPage() {
   }, [weeklyContributions]);
 
 
-  if (groupLoading || allTxsLoading || !group) {
+  if (groupLoading || allTxsLoading || loadingMembers || !group) {
     return <PageSkeleton />;
   }
 

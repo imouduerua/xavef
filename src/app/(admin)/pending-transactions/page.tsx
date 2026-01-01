@@ -13,7 +13,7 @@ import type { Transaction, UserData, TransactionWithUserDetails } from '@/lib/ty
 import React, { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
-import { collectionGroup, getDoc, query, where, doc, orderBy } from 'firebase/firestore';
+import { collectionGroup, getDocs, query, where, doc, getDoc, orderBy, documentId } from 'firebase/firestore';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 
 
@@ -34,7 +34,6 @@ export default function AdminPendingTransactionsPage() {
   const { data: rawTransactions, loading: rawLoading, indexCreationUrl } = useCollection<Transaction>(pendingTxsQuery);
   
   useEffect(() => {
-    // This effect will run when rawTransactions are fetched or changed.
     if (rawLoading) {
       setProcessing(true);
       return;
@@ -48,42 +47,44 @@ export default function AdminPendingTransactionsPage() {
     let isMounted = true;
     const processData = async () => {
       if (rawTransactions.length === 0) {
-        setProcessedTransactions([]);
-        setProcessing(false);
+        if (isMounted) {
+            setProcessedTransactions([]);
+            setProcessing(false);
+        }
         return;
       }
 
       setProcessing(true);
-      const userCache = new Map<string, UserData>();
       
-      const detailedTransactions = await Promise.all(
-        rawTransactions.map(async (tx) => {
+      const userIds = [...new Set(rawTransactions.map(tx => {
+        const pathParts = tx.path.split('/');
+        return pathParts[pathParts.indexOf('users') + 1];
+      }))];
+
+      const usersCache = new Map<string, UserData>();
+      // Batch fetch users
+      if (userIds.length > 0) {
+          const usersRef = collection(firestore, 'users');
+          // Firestore 'in' query is limited to 30 items.
+          // If you expect more than 30 users, you'd need to chunk this.
+          const usersQuery = query(usersRef, where(documentId(), 'in', userIds));
+          const userSnapshots = await getDocs(usersQuery);
+          userSnapshots.forEach(userDoc => {
+              usersCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
+          });
+      }
+      
+      const detailedTransactions = rawTransactions.map(tx => {
           const pathParts = tx.path.split('/');
           const userId = pathParts[pathParts.indexOf('users') + 1];
-          let user = userCache.get(userId);
-          
-          if (!user) {
-            try {
-              const userRef = doc(firestore, 'users', userId);
-              const userSnap = await getDoc(userRef);
-              if (userSnap.exists()) {
-                const fetchedUser = userSnap.data() as UserData;
-                userCache.set(userId, fetchedUser);
-                user = fetchedUser;
-              }
-            } catch (error) {
-              console.error(`Failed to fetch user ${userId}`, error);
-            }
-          }
-          
+          const user = usersCache.get(userId);
           return {
             ...tx,
             userId,
             userEmail: user?.email || 'Unknown User',
             xavefId: user?.xavefId || 'N/A',
           } as TransactionWithUserDetails;
-        })
-      );
+      });
       
       if (isMounted) {
           setProcessedTransactions(detailedTransactions);
