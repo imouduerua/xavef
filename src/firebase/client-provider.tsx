@@ -1,46 +1,34 @@
+
 'use client';
 
-import { initializeFirebase } from '@/firebase';
 import { FirebaseProvider } from '@/firebase/provider';
-import type { FirebaseApp } from 'firebase/app';
-import type { Auth } from 'firebase/auth';
-import type { Firestore } from 'firebase/firestore';
-import { ReactNode, useEffect, useState } from 'react';
+import { firebaseConfig } from './config';
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
+import { ReactNode } from 'react';
 
-// Define a type for the Firebase services
-type FirebaseServices = {
-  app: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
-};
+// Initialize Firebase services ONCE, outside of the component.
+// This ensures they are stable and not recreated on every render.
+let firebaseApp: FirebaseApp;
+if (!getApps().length) {
+  firebaseApp = initializeApp(firebaseConfig);
+} else {
+  firebaseApp = getApp();
+}
 
+const auth: Auth = getAuth(firebaseApp);
+const firestore: Firestore = getFirestore(firebaseApp);
+
+/**
+ * Provides the initialized Firebase services (app, auth, firestore) to its children
+ * via React context. This component ensures that the Firebase services are initialized
+ * only once and are stable across re-renders, preventing infinite loops.
+ */
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
-  // Use state to hold the Firebase services object.
-  // Initialize with null.
-  const [firebaseServices, setFirebaseServices] = useState<FirebaseServices | null>(null);
-
-  useEffect(() => {
-    // This effect runs only once on the client after the component mounts.
-    // It initializes Firebase and sets the services in state.
-    // This prevents re-initialization on every render.
-    if (!firebaseServices) {
-      setFirebaseServices(initializeFirebase());
-    }
-  }, []); // The empty dependency array is crucial.
-
-  // If Firebase services are not yet initialized, you can render null, a loading spinner, or a skeleton screen.
-  // This prevents children from trying to access a null context.
-  if (!firebaseServices) {
-    return null; 
-  }
-
-  // Once initialized, provide the stable services to the context.
+  // The services are now stable, so we can provide them directly.
   return (
-    <FirebaseProvider
-      app={firebaseServices.app}
-      auth={firebaseServices.auth}
-      firestore={firebaseServices.firestore}
-    >
+    <FirebaseProvider app={firebaseApp} auth={auth} firestore={firestore}>
       {children}
     </FirebaseProvider>
   );

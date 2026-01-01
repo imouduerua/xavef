@@ -10,6 +10,8 @@ import { Firestore, getFirestore } from 'firebase/firestore';
 
 import { firebaseConfig } from './config';
 
+// This function is now primarily for server-side or non-React environments.
+// The FirebaseClientProvider handles initialization on the client.
 export function initializeFirebase(): {
   app: FirebaseApp;
   auth: Auth;
