@@ -48,6 +48,7 @@ function AllTransactionsTableContent({
   >(null);
   const [processing, setProcessing] = useState(true);
 
+  // A stable key derived from the IDs of the raw transactions
   const rawTransactionsKey = useMemo(() => rawTransactions?.map(t => t.id).join(','), [rawTransactions]);
 
   useEffect(() => {
@@ -69,9 +70,13 @@ function AllTransactionsTableContent({
         }))];
 
         const userCache = new Map<string, UserData>();
-        if (userIds.length > 0 && userIds.length <= 30) {
+        if (userIds.length > 0) {
             const usersRef = collection(firestore, 'users');
-            const usersQuery = query(usersRef, where(documentId(), 'in', userIds));
+            // Firestore 'in' query is limited to 30 items. For more, chunking is needed.
+            if (userIds.length > 30) {
+                console.warn("Processing more than 30 users, this might be slow or incomplete.");
+            }
+            const usersQuery = query(usersRef, where(documentId(), 'in', userIds.slice(0, 30)));
             const userSnapshots = await getDocs(usersQuery);
             userSnapshots.forEach(userDoc => {
                 userCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
@@ -115,7 +120,7 @@ function AllTransactionsTableContent({
     processTransactions();
     
     return () => { isMounted = false; };
-  }, [rawTransactionsKey, firestore]); // Use stable key
+  }, [rawTransactionsKey, firestore]); // Use the stable key
 
   const formatDate = (date: any) => {
     if (!date) return 'N/A';

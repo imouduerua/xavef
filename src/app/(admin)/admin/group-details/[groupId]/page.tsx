@@ -95,7 +95,10 @@ function GroupMembers({
         const usersRef = collection(firestore, 'users');
         // Note: Firestore 'in' queries are limited to 30 items. 
         // For larger groups, you would need to chunk this request.
-        const q = query(usersRef, where(documentId(), 'in', memberIds));
+        if (memberIds.length > 30) {
+          console.warn("Group has more than 30 members, fetching data may be incomplete.");
+        }
+        const q = query(usersRef, where(documentId(), 'in', memberIds.slice(0, 30)));
         const querySnapshot = await getDocs(q);
         
         if (isMounted) {
@@ -137,6 +140,7 @@ function GroupMembers({
     <div className="space-y-4">
       {members.map((member, index) => {
         const isCurrentPayout = index === currentPayoutIndex;
+        const displayName = member?.firstName || member?.lastName ? `${member.firstName} ${member.lastName}`.trim() : (member?.displayName || 'User');
         return (
           <Card
             key={member.uid}
@@ -148,13 +152,13 @@ function GroupMembers({
                   {index + 1}.
                 </span>
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={undefined} alt={member?.displayName} />
+                  <AvatarImage src={undefined} alt={displayName} />
                   <AvatarFallback>
-                    {member?.displayName?.charAt(0) || 'U'}
+                    {displayName?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-semibold">{member?.displayName}</p>
+                  <p className="font-semibold">{displayName}</p>
                   <p className="text-xs text-muted-foreground">{member?.email}</p>
                 </div>
               </div>
@@ -279,8 +283,21 @@ export default function GroupDetailsPage() {
   }, [weeklyContributions]);
 
 
-  if (groupLoading || allTxsLoading || loadingMembers || !group) {
+  if (groupLoading || allTxsLoading || loadingMembers) {
     return <PageSkeleton />;
+  }
+
+  if (!group) {
+    return (
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Group Not Found</CardTitle>
+                    <CardDescription>This group may have been deleted or you do not have permission to view it.</CardDescription>
+                </CardHeader>
+            </Card>
+        </div>
+    )
   }
 
   const expectedWeeklyPurse = group.contributionAmount * group.members.length;
@@ -292,8 +309,8 @@ export default function GroupDetailsPage() {
     ? (currentWeek - 1) % group.members.length
     : null;
     
-  const memoizedMemberIds = useMemo(() => group.members, [group]);
-  const memoizedPayoutOrder = useMemo(() => group.payoutOrder || [], [group]);
+  const memoizedMemberIds = group.members || [];
+  const memoizedPayoutOrder = group.payoutOrder || [];
 
 
   return (
