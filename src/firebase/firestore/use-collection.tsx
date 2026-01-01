@@ -12,30 +12,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
-// A stable string representation of the query is needed for useEffect dependencies.
-// This function safely extracts the necessary parts of the query.
-const getQueryKey = (query: Query<any> | null): string | null => {
-  if (!query) return null;
-  const q = query as any;
-  // This is a simplified but more stable approach than accessing private _query properties.
-  const path = (q._query?.path?.segments || []).join('/');
-  
-  const constraints = (q._query?.constraints || []).map((c: any) => {
-    // Attempt to serialize values, handling common types.
-    let valueStr = '';
-    if (c.value) {
-        try {
-            valueStr = JSON.stringify(c.value);
-        } catch {
-            valueStr = String(c.value);
-        }
-    }
-    return `${c.type}-${c._field?.canonical || ''}-${c._op || ''}-${valueStr}`;
-  }).join(',');
-
-  return `${path}?${constraints}`;
-}
-
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
@@ -44,7 +20,15 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
   
   // Create a stable key from the query to use in the dependency array.
-  const queryKey = useMemo(() => getQueryKey(query), [query]);
+  // This is the crucial fix: JSON.stringify is a reliable way to get a
+  // stable representation of the query object's important properties.
+  const queryKey = useMemo(() => {
+    try {
+      return query ? JSON.stringify((query as any)._query) : null;
+    } catch {
+      return null;
+    }
+  }, [query]);
 
   useEffect(() => {
     if (!queryKey || !query) {
