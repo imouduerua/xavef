@@ -18,9 +18,9 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
 
   const userDocRef = useMemo(() => {
-    if (!user || !firestore) return null;
+    if (!user?.uid || !firestore) return null;
     return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
+  }, [user?.uid, firestore]);
 
   const { data: userData, loading: docLoading } = useDoc<UserData>(userDocRef);
 

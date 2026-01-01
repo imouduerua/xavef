@@ -3,7 +3,7 @@
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 type AdminData = {
   isAdmin: boolean;
@@ -13,12 +13,13 @@ export function useAdminStatus() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
-  // Super admin check based on a stable property
-  const isSuperAdmin = user?.email === 'admin@xavef.com';
+  const isSuperAdmin = useMemo(() => user?.email === 'admin@xavef.com', [user?.email]);
 
-  const adminDocRef = (user?.uid && !isSuperAdmin && firestore) 
-    ? doc(firestore, 'admins', user.uid)
-    : null;
+  const adminDocRef = useMemo(() => {
+    return (user?.uid && !isSuperAdmin && firestore) 
+      ? doc(firestore, 'admins', user.uid)
+      : null;
+  }, [user?.uid, isSuperAdmin, firestore]);
 
   const { data: adminData, loading: docLoading } = useDoc<AdminData>(adminDocRef);
 
