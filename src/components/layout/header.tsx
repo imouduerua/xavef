@@ -44,17 +44,17 @@ export function AppHeader() {
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');
 
-  const joinRequestsQuery = (user && firestore) ? query(
+  const joinRequestsQuery = useMemo(() => (user && firestore) ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    ) : null;
+    ) : null, [user, firestore]);
   
-  const notificationsQuery = (user && firestore) ? query(
+  const notificationsQuery = useMemo(() => (user && firestore) ? query(
           collection(firestore, `users/${user.uid}/notifications`),
           orderBy('createdAt', 'desc'),
           limit(10) // Limit to the 10 most recent notifications
-      ) : null;
+      ) : null, [user, firestore]);
 
   const { data: joinRequests, loading: joinRequestsLoading } = useCollection<GroupJoinRequest>(joinRequestsQuery);
   const { data: notifications, loading: notificationsLoading } = useCollection<Notification>(notificationsQuery);

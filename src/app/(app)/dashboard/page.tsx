@@ -25,7 +25,6 @@ import { transferToAnnual } from './actions';
 function DashboardContent() {
   const { user, loading: userLoading } = useUser();
   const { userData, loading: userDataLoading } = useUserData();
-  const firestore = useFirestore();
 
   // Show a skeleton while the user's main data is loading.
   if (userLoading || userDataLoading) {
@@ -61,18 +60,18 @@ function DashboardContent() {
 function DashboardApp({ user, userData }: { user: import('firebase/auth').User, userData: import('@/lib/types').UserData }) {
   const firestore = useFirestore();
 
-  const pendingTransactionsQuery = firestore ? query(
+  const pendingTransactionsQuery = useMemo(() => firestore ? query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "==", "Pending"),
-    ) : null;
+    ) : null, [firestore, user.uid]);
   
-  const goalsQuery = firestore ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null;
+  const goalsQuery = useMemo(() => firestore ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [firestore, user.uid]);
 
-  const joinRequestsQuery = firestore ? query(
+  const joinRequestsQuery = useMemo(() => firestore ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    ) : null;
+    ) : null, [firestore, user.uid]);
 
 
   const { data: pendingTransactions, loading: pendingTransactionsLoading } = useCollection<Transaction>(pendingTransactionsQuery);

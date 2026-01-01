@@ -12,14 +12,14 @@ import {
 import { useCollection, useFirestore } from '@/firebase';
 import type { UserData } from '@/lib/types';
 import { collection, orderBy, query } from 'firebase/firestore';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 type UserDataWithId = UserData & { id: string };
 
 export default function AdminUsersPage() {
   const firestore = useFirestore();
 
-  const usersQuery = firestore ? query(collection(firestore, 'users'), orderBy('email')) : null;
+  const usersQuery = useMemo(() => firestore ? query(collection(firestore, 'users'), orderBy('email')) : null, [firestore]);
 
   const { data: users, loading } = useCollection<UserDataWithId>(usersQuery);
 

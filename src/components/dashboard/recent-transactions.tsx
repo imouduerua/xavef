@@ -18,6 +18,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, limit, query, where, orderBy } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
+import { useMemo } from "react";
 
 const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destructive"> = {
     "Completed": "default",
@@ -30,12 +31,12 @@ export function RecentTransactions() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const transactionsQuery = (user && firestore) ? query(
+  const transactionsQuery = useMemo(() => (user && firestore) ? query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "in", ["Completed", "Failed"]),
       orderBy("date", "desc"),
       limit(5)
-    ) : null;
+    ) : null, [user, firestore]);
 
   const { data: transactions, loading } = useCollection<Transaction>(transactionsQuery);
 

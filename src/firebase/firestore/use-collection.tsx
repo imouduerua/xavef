@@ -19,19 +19,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
   
-  // Create a stable key from the query to use in the dependency array.
-  // This is the crucial fix: JSON.stringify is a reliable way to get a
-  // stable representation of the query object's important properties.
-  const queryKey = useMemo(() => {
-    try {
-      return query ? JSON.stringify((query as any)._query) : null;
-    } catch {
-      return null;
-    }
-  }, [query]);
-
   useEffect(() => {
-    if (!queryKey || !query) {
+    if (!query) {
       setData(null);
       setLoading(false);
       setError(null);
@@ -89,8 +78,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  // Use the stable queryKey as the dependency.
-  }, [queryKey, query]); 
+  }, [query]); 
 
   return { data, loading, error, indexCreationUrl };
 }
