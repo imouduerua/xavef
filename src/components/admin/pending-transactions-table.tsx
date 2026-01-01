@@ -29,6 +29,7 @@ import Image from 'next/image';
 
 interface PendingTransactionsTableProps {
   transactions: TransactionWithUserDetails[];
+  onUpdate: (transactionId: string) => void;
 }
 
 const transactionTypeVariant: Record<
@@ -42,22 +43,25 @@ const transactionTypeVariant: Record<
 
 export function PendingTransactionsTable({
   transactions,
+  onUpdate
 }: PendingTransactionsTableProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const firestore = useFirestore();
 
   const handleUpdate = async (
+    transactionId: string,
     transactionPath: string,
     newStatus: 'Completed' | 'Failed'
   ) => {
     if (!firestore) return;
-    setUpdatingId(transactionPath);
+    setUpdatingId(transactionId);
     const result = await updateTransactionStatus(firestore, transactionPath, newStatus);
     if (result.success) {
       toast({
         title: 'Transaction Updated',
         description: `The transaction has been marked as ${newStatus}.`,
       });
+      onUpdate(transactionId);
     } else {
       toast({
         variant: 'destructive',
@@ -140,7 +144,7 @@ export function PendingTransactionsTable({
                                 <DialogTitle>Proof of Payment</DialogTitle>
                             </DialogHeader>
                             <div className="relative h-96 w-full">
-                                <Image src={tx.proofOfPaymentUrl} alt="Proof of payment" layout="fill" objectFit="contain" />
+                                <Image src={tx.proofOfPaymentUrl} alt="Proof of payment" fill objectFit="contain" />
                             </div>
                         </DialogContent>
                     </Dialog>
@@ -152,7 +156,7 @@ export function PendingTransactionsTable({
                 {formatCurrency(tx.amount)}
               </TableCell>
               <TableCell className="text-right">
-                {updatingId === tx.path ? (
+                {updatingId === tx.id ? (
                   <Loader2 className="h-5 w-5 animate-spin ml-auto" />
                 ) : (
                   <DropdownMenu>
@@ -164,14 +168,14 @@ export function PendingTransactionsTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={() => handleUpdate(tx.path, 'Completed')}
+                        onClick={() => handleUpdate(tx.id, tx.path, 'Completed')}
                       >
                         <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
                         <span>Approve</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-red-500"
-                        onClick={() => handleUpdate(tx.path, 'Failed')}
+                        onClick={() => handleUpdate(tx.id, tx.path, 'Failed')}
                       >
                         <XCircle className="mr-2 h-4 w-4" />
                         <span>Decline</span>
