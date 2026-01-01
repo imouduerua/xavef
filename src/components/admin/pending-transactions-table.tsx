@@ -17,7 +17,6 @@ import { toast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { updateTransactionStatus } from './actions';
 import Link from 'next/link';
-import { Skeleton } from '../ui/skeleton';
 
 interface PendingTransactionsTableProps {
     transactions: TransactionWithUserDetails[];
