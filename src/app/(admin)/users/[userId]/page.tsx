@@ -46,7 +46,7 @@ export default function UserDetailPage() {
     return `₦${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   
-  const handlePermissionChange = async (isNowAdmin: boolean) => {
+  const handlePermissionChange = React.useCallback(async (isNowAdmin: boolean) => {
     if (!adminDocRef || !userData || !adminUser?.email) return;
 
     setIsUpdatingPermission(true);
@@ -79,7 +79,7 @@ export default function UserDetailPage() {
     } finally {
         setIsUpdatingPermission(false);
     }
-  }
+  }, [adminDocRef, userData, adminUser?.email, firestore, userId]);
 
   const PageSkeleton = () => (
      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
