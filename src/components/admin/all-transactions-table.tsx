@@ -2,12 +2,10 @@
 'use client';
 
 import type {
-  Transaction,
   TransactionStatus,
   TransactionWithUserDetails,
-  UserData,
 } from '@/lib/types';
-import React, { useEffect, useState, useMemo } from 'react';
+import React from 'react';
 import {
   Table,
   TableBody,
@@ -18,13 +16,10 @@ import {
 } from '../ui/table';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
-import { doc, getDoc, getDocs, collection, query, where, documentId } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
-import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '../ui/skeleton';
 
 interface AllTransactionsTableProps {
-  transactions: Transaction[];
+  transactions: TransactionWithUserDetails[];
 }
 
 const statusVariant: Record<
@@ -36,92 +31,10 @@ const statusVariant: Record<
   Failed: 'destructive',
 };
 
-// New inner component to handle its own async data processing
-function AllTransactionsTableContent({
-  rawTransactions,
-}: {
-  rawTransactions: Transaction[] | null;
-}) {
-  const firestore = useFirestore();
-  const [processedTransactions, setProcessedTransactions] = useState<
-    TransactionWithUserDetails[] | null
-  >(null);
-  const [processing, setProcessing] = useState(true);
-
-  // A stable key derived from the IDs of the raw transactions
-  const rawTransactionsKey = useMemo(() => rawTransactions?.map(t => t.id).join(','), [rawTransactions]);
-
-  useEffect(() => {
-    let isMounted = true;
-    if (!rawTransactions || !firestore) {
-      if (isMounted) {
-        setProcessedTransactions([]);
-        setProcessing(false);
-      }
-      return;
-    }
-
-    const processTransactions = async () => {
-      setProcessing(true);
-      try {
-        const userIds = [...new Set(rawTransactions.map(tx => {
-            const pathParts = tx.path.split('/');
-            return pathParts[pathParts.indexOf('users') + 1];
-        }))];
-
-        const userCache = new Map<string, UserData>();
-        if (userIds.length > 0) {
-            const usersRef = collection(firestore, 'users');
-            // Firestore 'in' query is limited to 30 items. For more, chunking is needed.
-            if (userIds.length > 30) {
-                console.warn("Processing more than 30 users, this might be slow or incomplete.");
-            }
-            const usersQuery = query(usersRef, where(documentId(), 'in', userIds.slice(0, 30)));
-            const userSnapshots = await getDocs(usersQuery);
-            userSnapshots.forEach(userDoc => {
-                userCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
-            });
-        }
-
-
-        const transactionsWithDetails = rawTransactions.map(tx => {
-            const pathParts = tx.path.split('/');
-            const userId = pathParts[pathParts.indexOf('users') + 1];
-            const user = userCache.get(userId);
-
-            return {
-              ...tx,
-              userId,
-              userEmail: user?.email || 'Unknown User',
-              xavefId: user?.xavefId || 'N/A',
-            } as TransactionWithUserDetails;
-        });
-
-        if (isMounted) {
-          setProcessedTransactions(transactionsWithDetails);
-        }
-      } catch (err) {
-        console.error('Error attaching user details:', err);
-        if (isMounted) {
-          toast({
-            variant: 'destructive',
-            title: 'Error Processing Data',
-            description: 'Could not process transaction details.',
-          });
-          setProcessedTransactions([]);
-        }
-      } finally {
-        if (isMounted) {
-          setProcessing(false);
-        }
-      }
-    };
-
-    processTransactions();
-    
-    return () => { isMounted = false; };
-  }, [rawTransactionsKey, firestore]); // Use the stable key
-
+export function AllTransactionsTable({
+  transactions,
+}: AllTransactionsTableProps) {
+  
   const formatDate = (date: any) => {
     if (!date) return 'N/A';
     if (date.toDate) {
@@ -138,18 +51,7 @@ function AllTransactionsTableContent({
     return `${sign}₦${Math.abs(amount).toFixed(2)}`;
   };
 
-  if (processing) {
-    return (
-      <div className="space-y-2">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-      </div>
-    );
-  }
-
-  if (!processedTransactions || processedTransactions.length === 0) {
+  if (!transactions || transactions.length === 0) {
     return <p>No transactions found.</p>;
   }
 
@@ -167,7 +69,7 @@ function AllTransactionsTableContent({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {processedTransactions.map((tx) => {
+          {transactions.map((tx) => {
             const amount = Number(tx.amount);
             return (
               <TableRow key={tx.id}>
@@ -199,11 +101,4 @@ function AllTransactionsTableContent({
       </Table>
     </div>
   );
-}
-
-
-export function AllTransactionsTable({
-  transactions: rawTransactions,
-}: AllTransactionsTableProps) {
-  return <AllTransactionsTableContent rawTransactions={rawTransactions} />;
 }
