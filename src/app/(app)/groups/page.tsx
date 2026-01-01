@@ -35,7 +35,7 @@ export default function GroupsPage() {
                             <h3 className="text-xl font-semibold mb-4">Available Groups</h3>
                              <Suspense fallback={<div>Loading available groups...</div>}>
                                 <AvailableGroupsList />
-                            </Suspense>
+                             </Suspense>
                         </div>
                     </div>
                 </CardContent>

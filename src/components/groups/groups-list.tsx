@@ -18,7 +18,7 @@ import {
 } from '../ui/table';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, where, documentId } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '../ui/skeleton';
@@ -62,24 +62,25 @@ function AllTransactionsTableContent({
       setProcessing(true);
       try {
         const userCache = new Map<string, UserData>();
-        const transactionsWithDetails = await Promise.all(
-          rawTransactions.map(async (tx) => {
+        const userIds = [...new Set(rawTransactions.map(tx => {
+            const pathParts = tx.path.split('/');
+            return pathParts[pathParts.indexOf('users') + 1];
+        }))];
+
+        if (userIds.length > 0) {
+            const usersRef = collection(firestore, 'users');
+            // Firestore 'in' query is limited to 30 items.
+            const usersQuery = query(usersRef, where(documentId(), 'in', userIds.slice(0, 30)));
+            const userSnapshots = await getDocs(usersQuery);
+            userSnapshots.forEach(userDoc => {
+                userCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
+            });
+        }
+        
+        const transactionsWithDetails = rawTransactions.map(tx => {
             const pathParts = tx.path.split('/');
             const userId = pathParts[pathParts.indexOf('users') + 1];
-            let user: UserData | undefined = userCache.get(userId);
-
-            if (!user) {
-              const userRef = doc(firestore, 'users', userId);
-              const userSnap = await getDoc(userRef);
-              if (userSnap.exists()) {
-                const fetchedUser = {
-                  id: userSnap.id,
-                  ...userSnap.data(),
-                } as UserData;
-                userCache.set(userId, fetchedUser);
-                user = fetchedUser;
-              }
-            }
+            const user = userCache.get(userId);
 
             return {
               ...tx,
@@ -87,8 +88,8 @@ function AllTransactionsTableContent({
               userEmail: user?.email || 'Unknown User',
               xavefId: user?.xavefId || 'N/A',
             } as TransactionWithUserDetails;
-          })
-        );
+        });
+
         if (isMounted) {
           setProcessedTransactions(transactionsWithDetails);
         }

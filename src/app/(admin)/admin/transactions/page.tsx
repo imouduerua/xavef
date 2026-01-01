@@ -20,10 +20,10 @@ import { AllTransactionsTable } from '@/components/admin/all-transactions-table'
 function AllTransactionsPageContent() {
   const firestore = useFirestore();
 
-  const allTxsQuery = firestore ? query(
+  const allTxsQuery = useMemo(() => firestore ? query(
       collectionGroup(firestore, 'transactions'),
       orderBy('date', 'desc')
-    ) : null;
+    ) : null, [firestore]);
 
   const {
     data: rawTransactions,
