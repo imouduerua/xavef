@@ -9,7 +9,7 @@ import {
   FirestoreError,
   queryEqual,
 } from 'firebase/firestore';
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
@@ -17,15 +17,16 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  const prevQueryRef = useRef<Query<T> | null>(null);
-  
-  // Use queryEqual for a more robust comparison to see if the query has actually changed.
-  const queryHasChanged = !queryEqual(prevQueryRef.current || query, query);
-  if (queryHasChanged) {
-      prevQueryRef.current = query;
-  }
+  const queryRef = useRef(query);
 
   useEffect(() => {
+    // Only re-subscribe if the query has actually changed.
+    // This is the correct way to handle potentially unstable object dependencies.
+    if (queryRef.current && query && queryEqual(queryRef.current, query)) {
+        return;
+    }
+    queryRef.current = query;
+
     if (!query) {
       setData(null);
       setLoading(false);
@@ -72,8 +73,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-    // The effect now only re-runs if the query *semantically* changes.
-  }, [prevQueryRef.current]); 
+  }, [query]); 
 
   return { data, loading, error, indexCreationUrl };
 }
