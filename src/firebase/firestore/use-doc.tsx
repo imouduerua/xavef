@@ -19,7 +19,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const docPath = useMemo(() => ref?.path, [ref]);
 
   useEffect(() => {
-    if (!docPath || !ref) {
+    if (!ref) {
       setData(null);
       setLoading(false);
       setError(null);

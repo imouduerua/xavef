@@ -7,14 +7,23 @@ import {
   QuerySnapshot,
   DocumentData,
   FirestoreError,
+  queryEqual,
 } from 'firebase/firestore';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
+
+  const prevQueryRef = useRef<Query<T> | null>(null);
+  
+  // Use queryEqual for a more robust comparison to see if the query has actually changed.
+  const queryHasChanged = !queryEqual(prevQueryRef.current || query, query);
+  if (queryHasChanged) {
+      prevQueryRef.current = query;
+  }
 
   useEffect(() => {
     if (!query) {
@@ -63,7 +72,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [query]); 
+    // The effect now only re-runs if the query *semantically* changes.
+  }, [prevQueryRef.current]); 
 
   return { data, loading, error, indexCreationUrl };
 }
