@@ -37,11 +37,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      // Only update state if the user's UID has actually changed.
-      // This prevents re-renders on events like token refreshes.
-      if (firebaseUser?.uid !== user?.uid) {
-        setUser(firebaseUser);
-      }
+      // Use the functional form of setUser to avoid stale state in the closure.
+      // This is the correct way to update state based on the previous state inside an effect.
+      setUser(currentUser => {
+        if (firebaseUser?.uid !== currentUser?.uid) {
+          return firebaseUser;
+        }
+        return currentUser;
+      });
       setAuthLoading(false);
     });
 
