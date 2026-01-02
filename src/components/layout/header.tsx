@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { ArrowLeft, Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent, Users } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -105,7 +105,7 @@ export function AppHeader() {
     document.documentElement.classList.toggle('dark', storedTheme === 'dark');
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     if (!authService) return;
     try {
       await signOut(authService);
@@ -113,7 +113,7 @@ export function AppHeader() {
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
       });
-      window.location.assign('/');
+      router.push('/');
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -121,7 +121,7 @@ export function AppHeader() {
         description: 'There was an error logging you out. Please try again.',
       });
     }
-  };
+  }, [authService, router]);
   
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
