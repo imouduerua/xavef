@@ -29,7 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { createSavingGoal } from '@/app/(app)/savings/client-actions';
 
 const defaultEmojis = ['🎯', '✈️', '🏠', '🚗', '🎓', '🎁', '💻', '💍', '💼', '🏖️', '🚀', '🎉'];
@@ -42,7 +42,7 @@ const formSchema = z.object({
 
 export function CreateGoalDialog() {
   const [isOpen, setIsOpen] = React.useState(false);
-  const { user } = useAuthContext();
+  const { user } from useAuthContext();
   const firestore = useFirestore();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/sidebar';
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { useAdminStatus } from '@/hooks/use-admin-status';
 
 const navItems = [

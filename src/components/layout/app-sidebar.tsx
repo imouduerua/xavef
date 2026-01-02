@@ -33,7 +33,7 @@ import {
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useAuth } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { toast } from '@/hooks/use-toast';
 import { useAdminStatus } from '@/hooks/use-admin-status';
 import { useMemo } from 'react';

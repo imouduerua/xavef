@@ -29,7 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { createGroup } from '@/app/(app)/groups/client-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 

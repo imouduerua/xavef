@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useDoc, useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ArrowLeft, Landmark, PiggyBank } from 'lucide-react';
 import Link from 'next/link';

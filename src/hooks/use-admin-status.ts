@@ -2,7 +2,7 @@
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { doc } from 'firebase/firestore';
 import React, { useMemo } from 'react';
 

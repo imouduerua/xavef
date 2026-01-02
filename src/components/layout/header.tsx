@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '../ui/sidebar';
 import { useAuth, useFirestore, useCollection } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { toast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';

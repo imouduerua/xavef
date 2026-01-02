@@ -28,7 +28,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import type { SavingGoal } from '@/lib/types';
 import { useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { deleteSavingGoal, withdrawCompletedGoal } from '@/app/(app)/savings/client-actions';
 import { AddFundsDialog } from './add-funds-dialog';
 import { EditGoalDialog } from './edit-goal-dialog';

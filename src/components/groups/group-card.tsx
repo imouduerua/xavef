@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { toast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
 import { Loader2, PlayCircle, UserPlus, Users, ArrowRight, HandCoins } from 'lucide-react';

@@ -3,7 +3,7 @@ import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase";
-import { AuthProvider } from "@/context/auth-provider";
+import { AuthProvider } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 
 const fontSans = FontSans({

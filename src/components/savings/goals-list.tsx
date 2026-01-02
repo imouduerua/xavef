@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection, useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import type { SavingGoal } from '@/lib/types';
 import { collection, query, orderBy } from 'firebase/firestore';
 import React, { useMemo } from 'react';

@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection, useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import React, { useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';

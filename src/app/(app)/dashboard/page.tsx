@@ -12,7 +12,7 @@ import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useCollection, useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AccountType, SavingGoal, Transaction, GroupJoinRequest, UserData } from '@/lib/types';

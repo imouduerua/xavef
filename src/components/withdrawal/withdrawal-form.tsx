@@ -29,7 +29,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import type { BankAccount } from '@/lib/types';
 import { useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { Card, CardContent } from '../ui/card';
 
 interface WithdrawalFormProps {

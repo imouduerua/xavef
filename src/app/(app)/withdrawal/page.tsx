@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useAuthContext } from "@/context/auth-provider";
+import { useAuthContext } from "@/context/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Clock } from "lucide-react";
 import Link from "next/link";

@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useUser, useFirestore } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { useAuthContext } from "@/context/auth-provider";
+import { useAuthContext } from "@/context/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";

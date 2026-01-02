@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import type { SavingGoal } from '@/lib/types';
 
