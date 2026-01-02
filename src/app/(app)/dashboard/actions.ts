@@ -20,15 +20,20 @@ import {
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
 import type { ReferralCode, UserData, BankAccount } from "@/lib/types";
+import { v4 as uuidv4 } from 'uuid';
 
 async function generateUniqueXavefId(firestore: Firestore): Promise<string> {
     let xavefId;
     let isUnique = false;
-    // This is a simplified approach. In a production environment with many users,
-    // you'd want a more robust collision-detection mechanism.
+    
+    // In a large-scale application, a more robust system might be needed,
+    // but for most cases, checking for collisions is sufficient.
     while (!isUnique) {
-        const length = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
-        xavefId = Math.floor(Math.pow(10, length - 1) + Math.random() * 9 * Math.pow(10, length - 1)).toString();
+        // Generate a 6-digit numeric ID. 
+        // Using a timestamp component reduces initial collision probability.
+        const timestampPart = (Date.now() % 10000).toString().padStart(4, '0');
+        const randomPart = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+        xavefId = `${timestampPart}${randomPart}`;
         
         const q = query(collection(firestore, 'users'), where('xavefId', '==', xavefId), limit(1));
         const snapshot = await getDocs(q);
