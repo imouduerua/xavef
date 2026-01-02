@@ -1,8 +1,8 @@
 
 'use client';
 
-import type { TransactionWithUserDetails } from '@/lib/types';
-import React, { useState } from 'react';
+import type { TransactionWithUserDetails, UserData } from '@/lib/types';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -26,6 +26,8 @@ import { toast } from '@/hooks/use-toast';
 import { updateTransactionStatus } from './actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import Image from 'next/image';
+import { collection, doc, getDoc, getDocs, query, where, documentId } from 'firebase/firestore';
+
 
 interface PendingTransactionsTableProps {
   transactions: TransactionWithUserDetails[];
@@ -40,13 +42,62 @@ const transactionTypeVariant: Record<
   Withdrawal: 'destructive',
 };
 
-
 export function PendingTransactionsTable({
   transactions,
   onUpdate
 }: PendingTransactionsTableProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const firestore = useFirestore();
+  const [usersCache, setUsersCache] = useState<Map<string, UserData>>(new Map());
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
+  const transactionIds = useMemo(() => transactions.map(t => t.id).join(','), [transactions]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!firestore || transactions.length === 0) {
+        setLoadingUsers(false);
+        return;
+      }
+      setLoadingUsers(true);
+      const userIds = [...new Set(transactions.map(tx => {
+        const pathParts = tx.path.split('/');
+        return pathParts[pathParts.indexOf('users') + 1];
+      }))];
+
+      const newUsersToFetch = userIds.filter(id => !usersCache.has(id));
+      if (newUsersToFetch.length === 0) {
+        setLoadingUsers(false);
+        return;
+      }
+      
+      const newCache = new Map(usersCache);
+      
+      try {
+        const chunks: string[][] = [];
+        for (let i = 0; i < newUsersToFetch.length; i += 30) {
+          chunks.push(newUsersToFetch.slice(i, i + 30));
+        }
+
+        for (const chunk of chunks) {
+            const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', chunk));
+            const userSnapshots = await getDocs(usersQuery);
+            userSnapshots.forEach(userDoc => {
+                newCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
+            });
+        }
+
+        setUsersCache(newCache);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        toast({ variant: "destructive", title: "Error", description: "Could not load user details." });
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, [transactionIds, firestore]);
 
   const handleUpdate = async (
     transactionId: string,
@@ -109,83 +160,89 @@ export function PendingTransactionsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.map((tx) => (
-            <TableRow key={tx.id}>
-              <TableCell className="font-medium">
-                <Link
-                  href={`/admin/users/${tx.userId}`}
-                  className="hover:underline"
-                >
-                  {tx.userEmail}
-                </Link>
-                <div className="text-xs text-muted-foreground">
-                  ID: {tx.xavefId}
-                </div>
-              </TableCell>
-              <TableCell>{formatDate(tx.date)}</TableCell>
-              <TableCell>{tx.description}</TableCell>
-              <TableCell>
-                <Badge
-                  variant={transactionTypeVariant[tx.type] || 'secondary'}
-                >
-                  {tx.type}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {tx.proofOfPaymentUrl ? (
-                   <Dialog>
-                        <DialogTrigger asChild>
-                           <Button variant="outline" size="icon" className="h-8 w-8">
-                                <ImageIcon className="h-4 w-4" />
-                           </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Proof of Payment</DialogTitle>
-                            </DialogHeader>
-                            <div className="relative h-96 w-full">
-                                <Image src={tx.proofOfPaymentUrl} alt="Proof of payment" fill objectFit="contain" />
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-                ) : (
-                    <span className="text-xs text-muted-foreground">None</span>
-                )}
-              </TableCell>
-              <TableCell className="text-right font-semibold">
-                {formatCurrency(tx.amount)}
-              </TableCell>
-              <TableCell className="text-right">
-                {updatingId === tx.id ? (
-                  <Loader2 className="h-5 w-5 animate-spin ml-auto" />
-                ) : (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => handleUpdate(tx.id, tx.path, 'Completed')}
-                      >
-                        <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                        <span>Approve</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-500"
-                        onClick={() => handleUpdate(tx.id, tx.path, 'Failed')}
-                      >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        <span>Decline</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
+          {transactions.map((tx) => {
+             const pathParts = tx.path.split('/');
+             const userId = pathParts[pathParts.indexOf('users') + 1];
+             const user = usersCache.get(userId);
+
+            return (
+              <TableRow key={tx.id}>
+                <TableCell className="font-medium">
+                  <Link
+                    href={`/admin/users/${userId}`}
+                    className="hover:underline"
+                  >
+                    {user?.email || 'Loading...'}
+                  </Link>
+                  <div className="text-xs text-muted-foreground">
+                    ID: {user?.xavefId || '...'}
+                  </div>
+                </TableCell>
+                <TableCell>{formatDate(tx.date)}</TableCell>
+                <TableCell>{tx.description}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={transactionTypeVariant[tx.type] || 'secondary'}
+                  >
+                    {tx.type}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {tx.proofOfPaymentUrl ? (
+                     <Dialog>
+                          <DialogTrigger asChild>
+                             <Button variant="outline" size="icon" className="h-8 w-8">
+                                  <ImageIcon className="h-4 w-4" />
+                             </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                              <DialogHeader>
+                                  <DialogTitle>Proof of Payment</DialogTitle>
+                              </DialogHeader>
+                              <div className="relative h-96 w-full">
+                                  <Image src={tx.proofOfPaymentUrl} alt="Proof of payment" layout="fill" objectFit="contain" />
+                              </div>
+                          </DialogContent>
+                      </Dialog>
+                  ) : (
+                      <span className="text-xs text-muted-foreground">None</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  {formatCurrency(tx.amount)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {updatingId === tx.id ? (
+                    <Loader2 className="h-5 w-5 animate-spin ml-auto" />
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleUpdate(tx.id, tx.path, 'Completed')}
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                          <span>Approve</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-500"
+                          onClick={() => handleUpdate(tx.id, tx.path, 'Failed')}
+                        >
+                          <XCircle className="mr-2 h-4 w-4" />
+                          <span>Decline</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </TableCell>
+              </TableRow>
+            )
+          })}
         </TableBody>
       </Table>
     </div>
