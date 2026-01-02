@@ -5,7 +5,7 @@ import { addDoc, collection, getDocs, query, serverTimestamp, where } from 'fire
 import React from 'react';
 
 import { useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Copy, Share2 } from 'lucide-react';
 import { Button } from '../ui/button';

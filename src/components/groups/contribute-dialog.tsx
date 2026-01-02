@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useFirestore } from '@/firebase';
-import { useAuthContext } from '@/context/auth-provider';
+import { useAuthContext } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
 import { HandCoins, Loader2 } from 'lucide-react';
