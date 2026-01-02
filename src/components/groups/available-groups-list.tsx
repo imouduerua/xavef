@@ -45,7 +45,7 @@ export function AvailableGroupsList() {
   const availableGroups = useMemo(() => {
     if (!groups || !user) return [];
     return groups.filter(group => !group.members.includes(user.uid));
-  }, [groups, user]);
+  }, [groups, user?.uid]);
 
   if (loading) {
     return (

@@ -32,18 +32,19 @@ const formatCurrency = (amount: number) =>
 export function JoinRequestCard({ request }: JoinRequestCardProps) {
   const firestore = useFirestore();
   const [isResponding, setIsResponding] = React.useState(false);
+  const requesterUid = request.requesterUid;
   
   const transactionsQuery = useMemo(() => {
-    if (!firestore) return null;
+    if (!firestore || !requesterUid) return null;
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     return query(
-        collection(firestore, `users/${request.requesterUid}/transactions`),
+        collection(firestore, `users/${requesterUid}/transactions`),
         where('type', '==', 'Deposit'),
         where('status', '==', 'Completed'),
         where('date', '>=', Timestamp.fromDate(ninetyDaysAgo))
     );
-  }, [firestore, request.requesterUid]);
+  }, [firestore, requesterUid]);
   
   const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 

@@ -25,10 +25,10 @@ export function useAdminStatus() {
   const { data: adminData, loading: docLoading } = useDoc<AdminData>(adminDocRef);
 
   // An admin is either the super admin or is marked as an admin in the database.
-  const isAdmin = isSuperAdmin || adminData?.isAdmin === true;
+  const isAdmin = useMemo(() => isSuperAdmin || adminData?.isAdmin === true, [isSuperAdmin, adminData]);
 
   // Loading is complete when user loading is done, AND if we need to check the doc, doc loading is also done.
-  const loading = authLoading || (!!user && !isSuperAdmin ? docLoading : false);
+  const loading = useMemo(() => authLoading || (!!user && !isSuperAdmin ? docLoading : false), [authLoading, user, isSuperAdmin, docLoading]);
 
 
   return { isAdmin, isSuperAdmin, loading };

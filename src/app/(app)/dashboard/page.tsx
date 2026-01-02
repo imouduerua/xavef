@@ -58,19 +58,20 @@ function DashboardContent() {
 
 function DashboardApp({ user, userData }: { user: import('firebase/auth').User, userData: UserData }) {
   const firestore = useFirestore();
+  const uid = user.uid;
 
-  const pendingTransactionsQuery = useMemo(() => (firestore && user?.uid) ? query(
-      collection(firestore, "users", user.uid, "transactions"),
+  const pendingTransactionsQuery = useMemo(() => (firestore && uid) ? query(
+      collection(firestore, "users", uid, "transactions"),
       where("status", "==", "Pending"),
-    ) : null, [firestore, user?.uid]);
+    ) : null, [firestore, uid]);
   
-  const goalsQuery = useMemo(() => (firestore && user?.uid) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [firestore, user?.uid]);
+  const goalsQuery = useMemo(() => (firestore && uid) ? query(collection(firestore, `users/${uid}/goals`), orderBy('createdAt', 'desc')) : null, [firestore, uid]);
 
-  const joinRequestsQuery = useMemo(() => (firestore && user?.uid) ? query(
+  const joinRequestsQuery = useMemo(() => (firestore && uid) ? query(
       collection(firestore, 'joinRequests'),
-      where('groupCreatorUid', '==', user.uid),
+      where('groupCreatorUid', '==', uid),
       where('status', '==', 'pending')
-    ) : null, [firestore, user?.uid]);
+    ) : null, [firestore, uid]);
 
 
   const { data: pendingTransactions, loading: pendingTransactionsLoading } = useCollection<Transaction>(pendingTransactionsQuery);
@@ -99,7 +100,7 @@ function DashboardApp({ user, userData }: { user: import('firebase/auth').User, 
     from: AccountType,
     to: string // Can be 'annual' or a goal ID
   ) => {
-     if (!firestore || !user?.uid) return false;
+     if (!firestore || !uid) return false;
 
      if (balances[from] < amount) {
         toast({
@@ -111,7 +112,7 @@ function DashboardApp({ user, userData }: { user: import('firebase/auth').User, 
     }
     
     if (to === 'annual') {
-        const result = await transferToAnnual(firestore, user.uid, amount);
+        const result = await transferToAnnual(firestore, uid, amount);
         if (result.success) {
             toast({
                 title: "Transfer Successful!",
@@ -129,7 +130,7 @@ function DashboardApp({ user, userData }: { user: import('firebase/auth').User, 
     }
 
     // Handle transfer to a saving goal
-    const result = await addFundsToGoal(firestore, user.uid, to, amount);
+    const result = await addFundsToGoal(firestore, uid, to, amount);
     if (result.success) {
         const goalName = goals?.find(g => g.id === to)?.name || 'your goal';
         toast({
@@ -145,7 +146,7 @@ function DashboardApp({ user, userData }: { user: import('firebase/auth').User, 
         });
         return false;
     }
-  }, [firestore, user?.uid, balances, goals]);
+  }, [firestore, uid, balances, goals]);
 
 
   const copyToClipboard = (text: string, type: 'ID') => {

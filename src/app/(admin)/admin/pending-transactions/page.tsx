@@ -33,6 +33,9 @@ export default function AdminPendingTransactionsPage() {
 
   const { data: rawTransactions, error, indexCreationUrl, loading: rawLoading } = useCollection<TransactionWithUserDetails>(pendingTxsQuery);
   
+  // Create a stable key from the rawTransactions to use in the useEffect dependency array
+  const rawTransactionsKey = useMemo(() => rawTransactions?.map(t => t.id).join(',') || '', [rawTransactions]);
+
   // Effect to process transactions once when rawTransactions are loaded
   useEffect(() => {
     if (rawLoading || !firestore) return;
@@ -95,7 +98,7 @@ export default function AdminPendingTransactionsPage() {
     
     processData();
 
-  }, [rawTransactions, firestore, rawLoading]);
+  }, [rawTransactionsKey, firestore, rawLoading]);
 
 
   const handleTransactionUpdate = (transactionId: string) => {

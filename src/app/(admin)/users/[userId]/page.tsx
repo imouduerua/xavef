@@ -15,7 +15,7 @@ import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ArrowLeft, Landmark, PiggyBank } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import type { UserData } from '@/lib/types';
@@ -32,8 +32,8 @@ export default function UserDetailPage() {
   const { isSuperAdmin } = useAdminStatus();
   const [isUpdatingPermission, setIsUpdatingPermission] = React.useState(false);
 
-  const userDocRef = React.useMemo(() => userId && firestore ? doc(firestore, 'users', userId) : null, [userId, firestore]);
-  const adminDocRef = React.useMemo(() => userId && firestore ? doc(firestore, 'admins', userId) : null, [userId, firestore]);
+  const userDocRef = useMemo(() => (userId && firestore ? doc(firestore, 'users', userId) : null), [userId, firestore]);
+  const adminDocRef = useMemo(() => (userId && firestore ? doc(firestore, 'admins', userId) : null), [userId, firestore]);
 
   const { data: userData, loading: userLoading } = useDoc<UserData>(userDocRef);
   const { data: adminStatusData, loading: adminStatusLoading } = useDoc(adminDocRef);
@@ -47,8 +47,8 @@ export default function UserDetailPage() {
     return `₦${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   
-  const handlePermissionChange = React.useCallback(async (isNowAdmin: boolean) => {
-    if (!adminDocRef || !userData || !adminUser?.email || !firestore || !userId) return;
+  const handlePermissionChange = useCallback(async (isNowAdmin: boolean) => {
+    if (!adminDocRef || !userData?.email || !adminUser?.email || !firestore || !userId) return;
 
     setIsUpdatingPermission(true);
     try {
@@ -80,7 +80,7 @@ export default function UserDetailPage() {
     } finally {
         setIsUpdatingPermission(false);
     }
-  }, [adminDocRef, userData, adminUser?.email, firestore, userId]);
+  }, [adminDocRef, userData?.email, adminUser?.email, firestore, userId]);
 
   const PageSkeleton = () => (
      <div className="p-4 sm:p-6 lg:p-8 space-y-6">

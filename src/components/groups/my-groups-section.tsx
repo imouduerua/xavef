@@ -32,19 +32,20 @@ function SectionSkeleton() {
 export function MyGroupsSection() {
   const firestore = useFirestore();
   const { user } = useAuthContext();
+  const uid = user?.uid;
 
-  const myGroupsQuery = useMemo(() => (firestore && user?.uid) ? query(
+  const myGroupsQuery = useMemo(() => (firestore && uid) ? query(
         collection(firestore, `groups`), 
-        where('members', 'array-contains', user.uid),
+        where('members', 'array-contains', uid),
         orderBy('createdAt', 'desc')
-    ) : null, [firestore, user?.uid]);
+    ) : null, [firestore, uid]);
 
-  const joinRequestsQuery = useMemo(() => (user?.uid && firestore) ? query(
+  const joinRequestsQuery = useMemo(() => (uid && firestore) ? query(
           collection(firestore, 'joinRequests'),
-          where('groupCreatorUid', '==', user.uid),
+          where('groupCreatorUid', '==', uid),
           where('status', '==', 'pending'),
           orderBy('createdAt', 'desc')
-      ) : null, [user?.uid, firestore]);
+      ) : null, [uid, firestore]);
 
   const { data: groups, loading: groupsLoading, indexCreationUrl: groupsIndexUrl } = useCollection<Group>(myGroupsQuery);
   const { data: joinRequests, loading: requestsLoading, indexCreationUrl: requestsIndexUrl } = useCollection<GroupJoinRequest>(joinRequestsQuery);

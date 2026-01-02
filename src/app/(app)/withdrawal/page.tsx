@@ -72,13 +72,14 @@ function PageSkeleton() {
 export default function WithdrawalPage() {
     const { user, userData, loading } = useAuthContext();
     const firestore = useFirestore();
+    const uid = user?.uid;
 
-    const pendingWithdrawalQuery = useMemo(() => (user?.uid && firestore) ? query(
-            collection(firestore, 'users', user.uid, 'transactions'),
+    const pendingWithdrawalQuery = useMemo(() => (uid && firestore) ? query(
+            collection(firestore, 'users', uid, 'transactions'),
             where('status', '==', 'Pending'),
             where('type', '==', 'Withdrawal'),
             where('targetAccount', '==', 'solidara')
-        ) : null, [user?.uid, firestore]);
+        ) : null, [uid, firestore]);
 
     const { data: pendingWithdrawals, loading: pendingWithdrawalsLoading } = useCollection<Transaction>(pendingWithdrawalQuery);
 

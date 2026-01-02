@@ -91,7 +91,7 @@ export default function GroupDetailsPage() {
             where('date', '>=', weekStart),
             where('date', '<', weekEnd)
         )
-    }, [firestore, group, weekStart, weekEnd, groupId]);
+    }, [firestore, groupId, group?.members, weekStart, weekEnd]);
     
     const groupTransactionsQuery = useMemo(() => (firestore && groupId) ? query(
             collectionGroup(firestore, 'transactions'),

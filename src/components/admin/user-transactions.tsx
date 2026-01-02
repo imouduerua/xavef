@@ -74,10 +74,11 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
 
   const handleUpdate = async (
     transactionPath: string,
+    transactionId: string,
     newStatus: 'Completed' | 'Failed'
   ) => {
     if (!firestore) return;
-    setUpdatingId(transactionPath);
+    setUpdatingId(transactionId);
     const result = await updateTransactionStatus(
       firestore,
       transactionPath,
@@ -88,6 +89,7 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
         title: 'Transaction Updated',
         description: `The transaction has been marked as ${newStatus}.`,
       });
+      // The view will update automatically due to onSnapshot listener
     } else {
       toast({
         variant: 'destructive',
@@ -146,7 +148,7 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
               </TableCell>
               <TableCell className="text-right">
                 {tx.status === 'Pending' ? (
-                  updatingId === tx.path ? (
+                  updatingId === tx.id ? (
                     <Loader2 className="h-5 w-5 animate-spin ml-auto" />
                   ) : (
                     <DropdownMenu>
@@ -158,14 +160,14 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => handleUpdate(tx.path, 'Completed')}
+                          onClick={() => handleUpdate(tx.path, tx.id, 'Completed')}
                         >
                           <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
                           <span>Approve</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-red-500"
-                          onClick={() => handleUpdate(tx.path, 'Failed')}
+                          onClick={() => handleUpdate(tx.path, tx.id, 'Failed')}
                         >
                           <XCircle className="mr-2 h-4 w-4" />
                           <span>Decline</span>

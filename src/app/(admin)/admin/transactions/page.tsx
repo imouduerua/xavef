@@ -51,7 +51,7 @@ function AllTransactionsPageContent() {
     indexCreationUrl,
   } = useCollection<Transaction>(allTxsQuery);
   
-  const rawTransactionsKey = useMemo(() => rawTransactions?.map(t => t.id).join(','), [rawTransactions]);
+  const rawTransactionsKey = useMemo(() => rawTransactions?.map(t => t.id).join(',') || '', [rawTransactions]);
 
   useEffect(() => {
     let isMounted = true;
@@ -84,22 +84,24 @@ function AllTransactionsPageContent() {
         if (userIds.length > 0) {
           const usersRef = collection(firestore, 'users');
           // Firestore 'in' query is limited to 30 items. For more, chunking is needed.
-          if (userIds.length > 30) {
-            console.warn(
-              'Processing more than 30 users, this might be slow or incomplete.'
-            );
+          const chunks: string[][] = [];
+           for (let i = 0; i < userIds.length; i += 30) {
+              chunks.push(userIds.slice(i, i + 30));
+           }
+
+          for (const chunk of chunks) {
+              const usersQuery = query(
+                usersRef,
+                where(documentId(), 'in', chunk)
+              );
+              const userSnapshots = await getDocs(usersQuery);
+              userSnapshots.forEach((userDoc) => {
+                userCache.set(
+                  userDoc.id,
+                  { id: userDoc.id, ...userDoc.data() } as UserData
+                );
+              });
           }
-          const usersQuery = query(
-            usersRef,
-            where(documentId(), 'in', userIds.slice(0, 30))
-          );
-          const userSnapshots = await getDocs(usersQuery);
-          userSnapshots.forEach((userDoc) => {
-            userCache.set(
-              userDoc.id,
-              { id: userDoc.id, ...userDoc.data() } as UserData
-            );
-          });
         }
 
         const transactionsWithDetails = rawTransactions.map((tx) => {
