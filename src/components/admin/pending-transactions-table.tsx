@@ -54,6 +54,7 @@ export function PendingTransactionsTable({
   const transactionIds = useMemo(() => transactions.map(t => t.id).join(','), [transactions]);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchUsers = async () => {
       if (!firestore || transactions.length === 0) {
         setLoadingUsers(false);
@@ -67,7 +68,7 @@ export function PendingTransactionsTable({
 
       const newUsersToFetch = userIds.filter(id => !usersCache.has(id));
       if (newUsersToFetch.length === 0) {
-        setLoadingUsers(false);
+        if(isMounted) setLoadingUsers(false);
         return;
       }
       
@@ -82,22 +83,30 @@ export function PendingTransactionsTable({
         for (const chunk of chunks) {
             const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', chunk));
             const userSnapshots = await getDocs(usersQuery);
-            userSnapshots.forEach(userDoc => {
-                newCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
-            });
+            if (isMounted) {
+              userSnapshots.forEach(userDoc => {
+                  newCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
+              });
+            }
         }
-
-        setUsersCache(newCache);
+        if (isMounted) {
+            setUsersCache(newCache);
+        }
       } catch (error) {
         console.error("Error fetching user data:", error);
-        toast({ variant: "destructive", title: "Error", description: "Could not load user details." });
+        if (isMounted) {
+            toast({ variant: "destructive", title: "Error", description: "Could not load user details." });
+        }
       } finally {
-        setLoadingUsers(false);
+        if (isMounted) {
+            setLoadingUsers(false);
+        }
       }
     };
 
     fetchUsers();
-  }, [transactionIds, firestore]);
+    return () => { isMounted = false; };
+  }, [transactionIds, firestore, usersCache]);
 
   const handleUpdate = async (
     transactionId: string,
@@ -172,7 +181,7 @@ export function PendingTransactionsTable({
                     href={`/admin/users/${userId}`}
                     className="hover:underline"
                   >
-                    {user?.email || 'Loading...'}
+                    {user?.email || (loadingUsers ? '...' : 'Unknown')}
                   </Link>
                   <div className="text-xs text-muted-foreground">
                     ID: {user?.xavefId || '...'}

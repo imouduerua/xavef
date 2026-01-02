@@ -39,25 +39,26 @@ export default function AdminPendingTransactionsPage() {
     indexCreationUrl,
   } = useCollection<TransactionWithUserDetails>(pendingTxsQuery);
   
-  const [processedTransactions, setProcessedTransactions] = useState<TransactionWithUserDetails[] | null>(transactions);
-
-  React.useEffect(() => {
-    setProcessedTransactions(transactions);
-  }, [transactions]);
-
+  const [processedTransactionIds, setProcessedTransactionIds] = useState<string[]>([]);
 
   const handleTransactionUpdate = (transactionId: string) => {
-    setProcessedTransactions(prev => prev ? prev.filter(tx => tx.id !== transactionId) : null);
+    setProcessedTransactionIds(prev => [...prev, transactionId]);
   }
+  
+  const filteredTransactions = useMemo(() => {
+    if (!transactions) return [];
+    return transactions.filter(tx => !processedTransactionIds.includes(tx.id));
+  }, [transactions, processedTransactionIds]);
+
 
   const renderContent = () => {
     if (indexCreationUrl) {
       return <MissingIndexAlert url={indexCreationUrl} />;
     }
-    if (loading && !processedTransactions) {
+    if (loading && !transactions) {
       return <Skeleton className="h-64 w-full" />;
     }
-    return <PendingTransactionsTable transactions={processedTransactions || []} onUpdate={handleTransactionUpdate} />;
+    return <PendingTransactionsTable transactions={filteredTransactions} onUpdate={handleTransactionUpdate} />;
   }
   
   return (
