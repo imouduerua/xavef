@@ -28,18 +28,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
+    // This effect should only run once on mount to set up the listener.
+    // The onAuthStateChanged listener will handle all subsequent auth state changes.
     if (!auth) {
-      // Auth service isn't ready yet, wait for it.
-      setAuthLoading(true);
+      // Auth service isn't ready on first render, but the effect will have it on the next.
+      // We don't need to re-run the effect for this.
       return;
     }
 
-    // Set up the listener once and let it handle all auth state changes.
-    // The dependency array is [auth], so this effect only runs when `auth` is initialized.
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      // This listener will fire whenever the auth state changes (login, logout, token refresh).
-      // We only update our state if the user's UID is actually different
-      // to prevent re-renders on events like token refreshes.
+      // Only update state if the user's UID has actually changed.
+      // This prevents re-renders on events like token refreshes.
       if (firebaseUser?.uid !== user?.uid) {
         setUser(firebaseUser);
       }
@@ -48,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [auth]); // <- CORRECTED DEPENDENCY ARRAY
+  }, []); // <-- CORRECT: Empty dependency array ensures this runs only once.
 
   const uid = user?.uid ?? null;
 
