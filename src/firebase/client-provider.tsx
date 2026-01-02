@@ -6,19 +6,7 @@ import { firebaseConfig } from './config';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
-import { ReactNode } from 'react';
-
-// Initialize Firebase services ONCE, outside of the component.
-// This ensures they are stable and not recreated on every render.
-let firebaseApp: FirebaseApp;
-if (!getApps().length) {
-  firebaseApp = initializeApp(firebaseConfig);
-} else {
-  firebaseApp = getApp();
-}
-
-const auth: Auth = getAuth(firebaseApp);
-const firestore: Firestore = getFirestore(firebaseApp);
+import { ReactNode, useMemo } from 'react';
 
 /**
  * Provides the initialized Firebase services (app, auth, firestore) to its children
@@ -26,9 +14,21 @@ const firestore: Firestore = getFirestore(firebaseApp);
  * only once and are stable across re-renders, preventing infinite loops.
  */
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
-  // The services are now stable, so we can provide them directly.
+  // The services are initialized inside useMemo with an empty dependency array,
+  // guaranteeing they are created only once per client session and have stable references.
+  const firebaseServices = useMemo(() => {
+    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    const auth = getAuth(app);
+    const firestore = getFirestore(app);
+    return { app, auth, firestore };
+  }, []);
+
   return (
-    <FirebaseProvider app={firebaseApp} auth={auth} firestore={firestore}>
+    <FirebaseProvider
+      app={firebaseServices.app}
+      auth={firebaseServices.auth}
+      firestore={firebaseServices.firestore}
+    >
       {children}
     </FirebaseProvider>
   );
