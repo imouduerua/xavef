@@ -34,12 +34,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+       // Only update state if the user's UID has actually changed.
+       // This prevents re-renders on token refresh and breaks the infinite loop.
+      if (firebaseUser?.uid !== user?.uid) {
+        setUser(firebaseUser);
+      }
       setAuthLoading(false);
     });
 
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, user?.uid]);
 
   const uid = user?.uid ?? null;
 
