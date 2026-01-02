@@ -13,7 +13,6 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 const FirebaseContext = createContext<{
   app: FirebaseApp;
@@ -62,7 +61,6 @@ export const FirebaseProvider = (props: {
   return (
     <FirebaseContext.Provider value={value}>
       {children}
-      <FirebaseErrorListener />
     </FirebaseContext.Provider>
   );
 };

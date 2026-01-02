@@ -9,8 +9,6 @@ import {
   FirestoreError,
 } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
-import { errorEmitter } from '../error-emitter';
-import { FirestorePermissionError } from '../errors';
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
@@ -56,20 +54,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           if (urlMatch) {
             setIndexCreationUrl(urlMatch[0]);
           }
-        } else if (err.code === 'permission-denied') {
-          let queryPathStr = 'unknown path';
-           try {
-             // This is an attempt to get the path, it might not always be available.
-             queryPathStr = (query as any)._query.path.segments.join('/');
-           } catch {}
-          
-          const permissionError = new FirestorePermissionError({
-              path: queryPathStr,
-              operation: 'list',
-          });
-          errorEmitter.emit('permission-error', permissionError);
         }
-
+        
         setError(err);
         setData(null);
         setLoading(false);

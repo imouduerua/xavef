@@ -9,8 +9,6 @@ import {
   FirestoreError,
 } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
-import { errorEmitter } from '../error-emitter';
-import { FirestorePermissionError } from '../errors';
 
 export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const [data, setData] = useState<T | null>(null);
@@ -44,14 +42,6 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
       },
       (err: FirestoreError) => {
         console.error(`Error fetching document at ${ref.path}:`, err);
-        
-        if (err.code === 'permission-denied') {
-            const permissionError = new FirestorePermissionError({
-                path: ref.path,
-                operation: 'get',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        }
         
         setError(err);
         setData(null);

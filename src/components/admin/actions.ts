@@ -3,8 +3,6 @@
 
 import { doc, runTransaction, Firestore, collection, serverTimestamp, increment } from 'firebase/firestore';
 import type { Transaction, TransactionStatus } from '@/lib/types';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 export async function updateTransactionStatus(
   firestore: Firestore,
@@ -49,14 +47,6 @@ export async function updateTransactionStatus(
 
   } catch (error: any) {
     console.error('Error updating transaction status:', error);
-     if (error.code === 'permission-denied') {
-        const permissionError = new FirestorePermissionError({
-            path: transactionPath,
-            operation: 'update',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        return { success: false, error: "Permission denied. You might not have the required roles." };
-     }
     return { success: false, error: error.message || 'An unknown error occurred.' };
   }
 }
