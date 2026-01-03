@@ -10,7 +10,7 @@ import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-function AdminLayoutContent({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -26,7 +26,7 @@ function AdminLayoutContent({
 
   if (loading) {
     return (
-        <div className="flex items-center justify-center min-h-screen w-full">
+        <div className="flex items-center justify-center min-h-screen w-full bg-background">
             <Card>
                 <CardHeader>
                     <CardTitle>Verifying Admin Privileges...</CardTitle>
@@ -39,11 +39,11 @@ function AdminLayoutContent({
     );
   }
 
-  // If authenticated and is an admin, render the children.
-  // Otherwise, the effect will have already triggered a redirect.
+  // If authenticated and is an admin, render the full layout with children.
+  // Otherwise, the effect will have already triggered a redirect, so we render null.
   if (isAdmin) {
     return (
-      <>
+      <SidebarProvider>
         <AppSidebar />
         <main className="flex flex-1 flex-col">
           <AppHeader />
@@ -51,25 +51,10 @@ function AdminLayoutContent({
             {children}
           </div>
         </main>
-      </>
+      </SidebarProvider>
     );
   }
 
-  // Render null while redirecting
+  // Render null while redirecting to prevent flashing content
   return null;
-}
-
-
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <SidebarProvider>
-      <AdminLayoutContent>
-          {children}
-      </AdminLayoutContent>
-    </SidebarProvider>
-  );
 }

@@ -10,29 +10,39 @@ type AdminData = {
   isAdmin: boolean;
 };
 
+/**
+ * Checks if the current user has admin or super-admin privileges.
+ *
+ * @returns An object with `isAdmin`, `isSuperAdmin`, and `loading` properties.
+ *          The returned object is memoized to prevent unnecessary re-renders.
+ */
 export function useAdminStatus() {
   const { user, loading: authLoading } = useAuthContext();
   const firestore = useFirestore();
 
-  // The super admin email is a hardcoded business rule.
-  const isSuperAdmin = useMemo(() => user?.email === 'admin@xavef.com', [user?.email]);
+  // Determine super admin status based on a hardcoded email.
+  const isSuperAdmin = user?.email === 'admin@xavef.com';
 
+  // Only query the 'admins' collection if the user is authenticated and not the super admin.
   const adminDocRef = useMemo(() => {
-    // We only need to check the admins collection if the user is not the super admin
     if (!user?.uid || isSuperAdmin || !firestore) {
-        return null;
+      return null;
     }
     return doc(firestore, 'admins', user.uid);
   }, [user?.uid, isSuperAdmin, firestore]);
 
   const { data: adminData, loading: docLoading } = useDoc<AdminData>(adminDocRef);
-  
-  // An admin is either the super admin or a user whose UID is in the admins collection.
-  const isAdmin = useMemo(() => isSuperAdmin || !!adminData, [isSuperAdmin, adminData]);
 
-  // The overall loading state depends on auth loading. If auth is done,
-  // and we need to check the doc (i.e., user is not super admin), we also wait for doc loading.
-  const loading = authLoading || (!!user && !isSuperAdmin ? docLoading : false);
+  // Memoize the entire return object. This is the critical fix.
+  // This hook will now only return a new object reference when the actual values
+  // of isAdmin, isSuperAdmin, or loading change, breaking the infinite render loop.
+  return useMemo(() => {
+    const regularAdmin = !!adminData;
+    const isAdmin = isSuperAdmin || regularAdmin;
+    
+    // The overall loading state is true if auth is loading, or if we are waiting for the admin doc check.
+    const loading = authLoading || (!isSuperAdmin && !!user && docLoading);
 
-  return { isAdmin, isSuperAdmin, loading };
+    return { isAdmin, isSuperAdmin, loading };
+  }, [isSuperAdmin, adminData, authLoading, docLoading, user]);
 }
