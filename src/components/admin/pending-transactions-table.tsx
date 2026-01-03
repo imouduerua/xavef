@@ -106,7 +106,7 @@ export function PendingTransactionsTable({
 
     fetchUsers();
     return () => { isMounted = false; };
-  }, [transactionIds, firestore, usersCache]);
+  }, [transactionIds, firestore]);
 
   const handleUpdate = async (
     transactionId: string,
@@ -209,7 +209,7 @@ export function PendingTransactionsTable({
                                   <DialogTitle>Proof of Payment</DialogTitle>
                               </DialogHeader>
                               <div className="relative h-96 w-full">
-                                  <Image src={tx.proofOfPaymentUrl} alt="Proof of payment" layout="fill" objectFit="contain" />
+                                  <Image src={tx.proofOfPaymentUrl} alt="Proof of payment" fill objectFit="contain" />
                               </div>
                           </DialogContent>
                       </Dialog>
