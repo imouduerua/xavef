@@ -25,6 +25,24 @@ import { Switch } from '@/components/ui/switch';
 import { useAdminStatus } from '@/hooks/use-admin-status';
 import { toast } from '@/hooks/use-toast';
 
+function PageSkeleton() {
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      <Skeleton className="h-6 w-32" />
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
@@ -78,23 +96,7 @@ export default function UserDetailPage() {
     }
   }, [adminDocRef, userData, adminUser?.email]);
 
-  const PageSkeleton = () => (
-     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-       <Skeleton className="h-6 w-32" />
-        <Card>
-          <CardHeader>
-             <Skeleton className="h-8 w-48" />
-             <Skeleton className="h-4 w-64" />
-          </CardHeader>
-          <CardContent className="space-y-6">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-          </CardContent>
-        </Card>
-    </div>
-  )
-
-  if (userLoading || adminStatusLoading || !userId) {
+  if (userLoading || adminStatusLoading) {
     return <PageSkeleton />;
   }
 
