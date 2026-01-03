@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { TransactionWithUserDetails, UserData } from '@/lib/types';
+import type { TransactionWithUserDetails, UserData, Transaction } from '@/lib/types';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Table,
@@ -26,11 +26,11 @@ import { toast } from '@/hooks/use-toast';
 import { updateTransactionStatus } from './actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import Image from 'next/image';
-import { collection, doc, getDoc, getDocs, query, where, documentId } from 'firebase/firestore';
-
+import { collection, getDocs, query, where, documentId } from 'firebase/firestore';
+import { Skeleton } from '../ui/skeleton';
 
 interface PendingTransactionsTableProps {
-  transactions: TransactionWithUserDetails[];
+  transactions: Transaction[];
   onUpdate: (transactionId: string) => void;
 }
 
@@ -48,65 +48,70 @@ export function PendingTransactionsTable({
 }: PendingTransactionsTableProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const firestore = useFirestore();
-  const [usersCache, setUsersCache] = useState<Map<string, UserData>>(new Map());
-  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [processedTransactions, setProcessedTransactions] = useState<TransactionWithUserDetails[]>([]);
+  const [processing, setProcessing] = useState(true);
 
   const transactionIds = useMemo(() => transactions.map(t => t.id).join(','), [transactions]);
 
   useEffect(() => {
     let isMounted = true;
-    const fetchUsers = async () => {
-      if (!firestore || transactions.length === 0) {
-        setLoadingUsers(false);
-        return;
-      }
-      setLoadingUsers(true);
+    if (!firestore || transactions.length === 0) {
+      setProcessing(false);
+      setProcessedTransactions([]);
+      return;
+    }
+
+    const processData = async () => {
+      setProcessing(true);
       const userIds = [...new Set(transactions.map(tx => {
         const pathParts = tx.path.split('/');
         return pathParts[pathParts.indexOf('users') + 1];
       }))];
 
-      const newUsersToFetch = userIds.filter(id => !usersCache.has(id));
-      if (newUsersToFetch.length === 0) {
-        if(isMounted) setLoadingUsers(false);
-        return;
-      }
-      
-      const newCache = new Map(usersCache);
-      
-      try {
-        const chunks: string[][] = [];
-        for (let i = 0; i < newUsersToFetch.length; i += 30) {
-          chunks.push(newUsersToFetch.slice(i, i + 30));
-        }
+      const userCache = new Map<string, UserData>();
+      if (userIds.length > 0) {
+        try {
+          const chunks: string[][] = [];
+          for (let i = 0; i < userIds.length; i += 30) {
+            chunks.push(userIds.slice(i, i + 30));
+          }
 
-        for (const chunk of chunks) {
+          for (const chunk of chunks) {
             const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', chunk));
             const userSnapshots = await getDocs(usersQuery);
-            if (isMounted) {
-              userSnapshots.forEach(userDoc => {
-                  newCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
-              });
-            }
+            userSnapshots.forEach(userDoc => {
+              userCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          if (isMounted) toast({ variant: "destructive", title: "Error", description: "Could not load user details." });
         }
-        if (isMounted) {
-            setUsersCache(newCache);
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        if (isMounted) {
-            toast({ variant: "destructive", title: "Error", description: "Could not load user details." });
-        }
-      } finally {
-        if (isMounted) {
-            setLoadingUsers(false);
-        }
+      }
+
+      const transactionsWithDetails = transactions.map(tx => {
+        const pathParts = tx.path.split('/');
+        const userId = pathParts[pathParts.indexOf('users') + 1];
+        const user = userCache.get(userId);
+        return {
+          ...tx,
+          userId,
+          userEmail: user?.email ?? 'Unknown',
+          xavefId: user?.xavefId ?? 'N/A'
+        } as TransactionWithUserDetails;
+      });
+
+      if (isMounted) {
+        setProcessedTransactions(transactionsWithDetails);
+        setProcessing(false);
       }
     };
 
-    fetchUsers();
+    processData();
+
     return () => { isMounted = false; };
-  }, [transactionIds, firestore]);
+  }, [transactionIds, firestore, transactions]);
+
 
   const handleUpdate = async (
     transactionId: string,
@@ -149,10 +154,19 @@ export function PendingTransactionsTable({
     return <span className={colorClass}>{`${sign}₦${Math.abs(amount).toFixed(2)}`}</span>;
   };
   
-  if (transactions.length === 0) {
+  if (processing) {
+      return (
+          <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+          </div>
+      );
+  }
+  
+  if (processedTransactions.length === 0) {
       return <p className="text-center text-muted-foreground py-8">No pending transactions found.</p>
   }
-
 
   return (
     <div className="w-full overflow-x-auto">
@@ -169,22 +183,18 @@ export function PendingTransactionsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.map((tx) => {
-             const pathParts = tx.path.split('/');
-             const userId = pathParts[pathParts.indexOf('users') + 1];
-             const user = usersCache.get(userId);
-
+          {processedTransactions.map((tx) => {
             return (
               <TableRow key={tx.id}>
                 <TableCell className="font-medium">
                   <Link
-                    href={`/admin/users/${userId}`}
+                    href={`/admin/users/${tx.userId}`}
                     className="hover:underline"
                   >
-                    {user?.email || (loadingUsers ? '...' : 'Unknown')}
+                    {tx.userEmail}
                   </Link>
                   <div className="text-xs text-muted-foreground">
-                    ID: {user?.xavefId || '...'}
+                    ID: {tx.xavefId}
                   </div>
                 </TableCell>
                 <TableCell>{formatDate(tx.date)}</TableCell>

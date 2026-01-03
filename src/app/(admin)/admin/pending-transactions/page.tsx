@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { PendingTransactionsTable } from '@/components/admin/pending-transactions-table';
-import type { TransactionWithUserDetails } from '@/lib/types';
+import type { Transaction } from '@/lib/types';
 import React, { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
@@ -37,7 +37,7 @@ export default function AdminPendingTransactionsPage() {
     data: transactions,
     loading,
     indexCreationUrl,
-  } = useCollection<TransactionWithUserDetails>(pendingTxsQuery);
+  } = useCollection<Transaction>(pendingTxsQuery);
   
   const [processedTransactionIds, setProcessedTransactionIds] = useState<string[]>([]);
 
