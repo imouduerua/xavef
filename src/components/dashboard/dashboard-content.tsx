@@ -25,8 +25,8 @@ import { transferToAnnual } from '@/app/(app)/dashboard/actions';
 export function DashboardContent() {
   const { user, userData, loading, userDataLoading } = useAuthContext();
 
-  // Show a skeleton while the user's main data is loading.
-  if (loading || (user && userDataLoading)) {
+  // Show a skeleton while either authentication or user data is loading.
+  if (loading || userDataLoading) {
     return <PageSkeleton />;
   }
 
@@ -46,8 +46,7 @@ export function DashboardContent() {
     );
   }
 
-  // If we have a user but no profile data, this is an error state
-  // as the profile should have been created on signup.
+  // If we have a user but no profile data after loading, this is an error state.
   if (!userData) {
     return (
          <div className="space-y-6">
@@ -63,14 +62,8 @@ export function DashboardContent() {
     );
   }
   
-  if (user && userData) {
-    // All hooks that depend on user.uid can now be called conditionally,
-    // but since we've confirmed userData exists, user is also guaranteed to exist.
-    return <DashboardApp user={user} userData={userData} />;
-  }
-  
-  // Fallback case
-  return null;
+  // If we have both user and userData, render the dashboard.
+  return <DashboardApp user={user} userData={userData} />;
 }
 
 
