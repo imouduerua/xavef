@@ -65,12 +65,9 @@ export function AppSidebar() {
 
   const isInsideAdmin = pathname.startsWith('/admin');
 
-  const currentNavItems = useMemo(() => {
-    if (isInsideAdmin) {
-      return adminNavItems.filter(item => !item.superAdminOnly || isSuperAdmin);
-    }
-    return navItems;
-  }, [isInsideAdmin, isSuperAdmin]);
+  const currentNavItems = isInsideAdmin
+    ? adminNavItems.filter(item => !item.superAdminOnly || isSuperAdmin)
+    : navItems;
 
   const isActive = (href: string, exact = false) => {
     if (exact) {

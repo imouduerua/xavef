@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -14,22 +13,18 @@ export function useAdminStatus() {
   const { user, loading: authLoading } = useAuthContext();
   const firestore = useFirestore();
 
-  const isSuperAdmin = useMemo(() => user?.email === 'admin@xavef.com', [user?.email]);
+  const isSuperAdmin = user?.email === 'admin@xavef.com';
 
   const adminDocRef = useMemo(() => {
-    return (user?.uid && !isSuperAdmin && firestore) 
-      ? doc(firestore, 'admins', user.uid)
-      : null;
-  }, [user?.uid, isSuperAdmin, firestore]);
+    if (!user?.uid || !firestore) return null;
+    return doc(firestore, 'admins', user.uid);
+  }, [user?.uid, firestore]);
 
   const { data: adminData, loading: docLoading } = useDoc<AdminData>(adminDocRef);
+  
+  const isAdmin = isSuperAdmin || !!adminData?.isAdmin;
 
-  // An admin is either the super admin or is marked as an admin in the database.
-  const isAdmin = useMemo(() => isSuperAdmin || adminData?.isAdmin === true, [isSuperAdmin, adminData]);
-
-  // Loading is complete when user loading is done, AND if we need to check the doc, doc loading is also done.
-  const loading = useMemo(() => authLoading || (!!user && !isSuperAdmin ? docLoading : false), [authLoading, user, isSuperAdmin, docLoading]);
-
+  const loading = authLoading || (user && !isSuperAdmin ? docLoading : false);
 
   return { isAdmin, isSuperAdmin, loading };
 }
