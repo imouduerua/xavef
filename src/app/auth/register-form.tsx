@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase";
 import { Loader2 } from "lucide-react";
+import { createUserProfile } from "../(app)/dashboard/actions";
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
@@ -37,6 +38,7 @@ const formSchema = z.object({
 export function RegisterForm() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const [isLoading, setIsLoading] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -53,7 +55,7 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     
-    if(!auth) {
+    if(!auth || !firestore) {
       toast({
         variant: "destructive",
         title: "Registration Failed",
@@ -71,19 +73,28 @@ export function RegisterForm() {
         // Step 2: Update their Auth profile display name
         const displayName = `${values.firstName} ${values.lastName}`;
         await updateProfile(user, { displayName });
-
-        // Step 3: Pass referral code via query param to dashboard for profile creation
-        const params = new URLSearchParams();
-        if (values.referralCode) {
-          params.set('ref', values.referralCode);
-        }
         
+        // Step 3: Create their user profile document in Firestore
+        const profileResult = await createUserProfile(firestore, user, {
+            firstName: values.firstName,
+            lastName: values.lastName,
+            displayName: displayName,
+            email: values.email,
+            referralCode: values.referralCode,
+        });
+
+        if (!profileResult.success) {
+            // This is a critical failure. The auth user was created, but the DB profile failed.
+            // In a real-world app, you might want to delete the auth user here or flag it for cleanup.
+            throw new Error(profileResult.error || "Failed to create user profile in database.");
+        }
+
         toast({
-            title: "Account Created",
-            description: "Redirecting to complete your profile...",
+            title: "Account Created!",
+            description: "Redirecting to your dashboard...",
         });
         
-        router.push(`/dashboard?${params.toString()}`);
+        router.push(`/dashboard`);
 
     } catch (error: any) {
         console.error("Registration Error:", error);
@@ -101,6 +112,7 @@ export function RegisterForm() {
             description: errorMessage,
             duration: 10000,
         });
+    } finally {
         setIsLoading(false);
     }
   }

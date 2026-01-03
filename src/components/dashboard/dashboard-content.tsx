@@ -21,7 +21,6 @@ import { collection, query, where, orderBy } from 'firebase/firestore';
 import { addFundsToGoal } from '@/app/(app)/savings/client-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { transferToAnnual } from '@/app/(app)/dashboard/actions';
-import { CreateProfileForm } from './create-profile-form';
 
 export function DashboardContent() {
   const { user, userData, loading, userDataLoading } = useAuthContext();
@@ -47,9 +46,21 @@ export function DashboardContent() {
     );
   }
 
-  // If we have a user but no profile data, they need to complete registration.
-  if (user && !userData) {
-    return <CreateProfileForm />;
+  // If we have a user but no profile data, this is an error state
+  // as the profile should have been created on signup.
+  if (!userData) {
+    return (
+         <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Error Loading Profile</CardTitle>
+                    <CardDescription>
+                       Your user profile could not be found. Please try logging out and back in. If the problem persists, contact support.
+                    </CardDescription>
+                </CardHeader>
+            </Card>
+        </div>
+    );
   }
   
   if (user && userData) {
