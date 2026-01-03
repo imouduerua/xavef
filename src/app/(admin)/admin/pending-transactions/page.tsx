@@ -12,7 +12,8 @@ import { PendingTransactionsTable } from '@/components/admin/pending-transaction
 import type { Transaction } from '@/lib/types';
 import React, { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { getFirebase } from '@/firebase';
 import {
   collectionGroup,
   query,
@@ -22,10 +23,8 @@ import {
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 
 export default function AdminPendingTransactionsPage() {
-  const firestore = useFirestore();
-  
+  const { firestore } = getFirebase();
   const pendingTxsQuery = useMemo(() => {
-    if (!firestore) return null;
     return query(
       collectionGroup(firestore, 'transactions'),
       where('status', '==', 'Pending'),

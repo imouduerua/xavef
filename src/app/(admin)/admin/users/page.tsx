@@ -9,7 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { getFirebase } from '@/firebase';
 import type { UserData } from '@/lib/types';
 import { collection, orderBy, query } from 'firebase/firestore';
 import React, { useMemo } from 'react';
@@ -17,9 +18,8 @@ import React, { useMemo } from 'react';
 type UserDataWithId = UserData & { id: string };
 
 export default function AdminUsersPage() {
-  const firestore = useFirestore();
-
-  const usersQuery = useMemo(() => (firestore ? query(collection(firestore, 'users'), orderBy('email')) : null), [firestore]);
+  const { firestore } = getFirebase();
+  const usersQuery = useMemo(() => query(collection(firestore, 'users'), orderBy('email')), [firestore]);
 
   const { data: users, loading } = useCollection<UserDataWithId>(usersQuery);
 

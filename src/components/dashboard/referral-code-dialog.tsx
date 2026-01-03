@@ -4,7 +4,7 @@
 import { addDoc, collection, getDocs, query, serverTimestamp, where } from 'firebase/firestore';
 import React from 'react';
 
-import { useFirestore } from '@/firebase';
+import { firestore } from '@/firebase/client';
 import { useAuthContext } from '@/context/auth-context';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Copy, Share2 } from 'lucide-react';
@@ -18,15 +18,13 @@ export function ReferralCodeDialog({ children }: { children: React.ReactNode }) 
     const [isLoading, setIsLoading] = React.useState(false);
     const [generatedCode, setGeneratedCode] = React.useState<string | null>(null);
     const { user } = useAuthContext();
-    const firestore = useFirestore();
 
     const generateCode = async () => {
-        if (!user || !firestore) return;
+        if (!user) return;
 
         setIsLoading(true);
         setGeneratedCode(null);
 
-        // Check if user already has an active code
         const codesRef = collection(firestore, 'referralCodes');
         const q = query(codesRef, where('creatorUid', '==', user.uid), where('used', '==', false));
         const existingCodesSnap = await getDocs(q);
@@ -37,7 +35,6 @@ export function ReferralCodeDialog({ children }: { children: React.ReactNode }) 
             return;
         }
 
-        // If no active code, generate a new one
         const code = Math.random().toString(36).substring(2, 8).toUpperCase();
         try {
             await addDoc(codesRef, {
@@ -53,7 +50,6 @@ export function ReferralCodeDialog({ children }: { children: React.ReactNode }) 
                 title: "Generation Failed",
                 description: "You do not have permission to generate a code."
             })
-            // Close the dialog if generation fails
             setIsOpen(false);
         } finally {
             setIsLoading(false);
@@ -74,7 +70,6 @@ export function ReferralCodeDialog({ children }: { children: React.ReactNode }) 
         if (open) {
             generateCode();
         } else {
-            // Reset state when closing
             setTimeout(() => {
                 setGeneratedCode(null);
                 setIsLoading(false);

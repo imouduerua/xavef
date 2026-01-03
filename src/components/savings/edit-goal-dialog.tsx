@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
+import { firestore } from '@/firebase/client';
 import { useAuthContext } from '@/context/auth-context';
 import { updateSavingGoal } from '@/app/(app)/savings/client-actions';
 import { SavingGoal } from '@/lib/types';
@@ -50,7 +50,6 @@ interface EditGoalDialogProps {
 export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useAuthContext();
-  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -64,7 +63,7 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !firestore) {
+    if (!user) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',

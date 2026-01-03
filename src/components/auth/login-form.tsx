@@ -19,8 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/firebase";
-import Link from "next/link";
+import { getFirebase } from "@/firebase";
 import { ForgotPasswordDialog } from "./forgot-password-dialog";
 
 const formSchema = z.object({
@@ -34,8 +33,8 @@ const formSchema = z.object({
 
 export function LoginForm() {
   const router = useRouter();
-  const auth = useAuth();
   const [isLoading, setIsLoading] = React.useState(false);
+  const { auth } = getFirebase();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,15 +46,6 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth) {
-        toast({
-            variant: "destructive",
-            title: "Login Failed",
-            description: "Authentication service not available. Please try again later.",
-        });
-        setIsLoading(false);
-        return;
-    }
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({

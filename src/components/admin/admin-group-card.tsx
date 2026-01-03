@@ -3,7 +3,6 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore } from '@/firebase';
 import type { Group } from '@/lib/types';
 import { Users, ArrowRight } from 'lucide-react';
 import React from 'react';

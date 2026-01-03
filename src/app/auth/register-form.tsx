@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useAuth, useFirestore } from "@/firebase";
+import { getFirebase } from "@/firebase";
 import { Loader2 } from "lucide-react";
 import { createUserProfile } from "../(app)/dashboard/actions";
 
@@ -37,9 +37,8 @@ const formSchema = z.object({
 
 export function RegisterForm() {
   const router = useRouter();
-  const auth = useAuth();
-  const firestore = useFirestore();
   const [isLoading, setIsLoading] = React.useState(false);
+  const { auth, firestore } = getFirebase();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,27 +53,14 @@ export function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    
-    if(!auth || !firestore) {
-      toast({
-        variant: "destructive",
-        title: "Registration Failed",
-        description: "Database service is not available. Please try again later.",
-      });
-      setIsLoading(false);
-      return;
-    }
 
     try {
-        // Step 1: Create the Firebase Auth user
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         const user = userCredential.user;
         
-        // Step 2: Update their Auth profile display name
         const displayName = `${values.firstName} ${values.lastName}`;
         await updateProfile(user, { displayName });
         
-        // Step 3: Create their user profile document in Firestore
         const profileResult = await createUserProfile(firestore, user, {
             firstName: values.firstName,
             lastName: values.lastName,
@@ -84,8 +70,6 @@ export function RegisterForm() {
         });
 
         if (!profileResult.success) {
-            // This is a critical failure. The auth user was created, but the DB profile failed.
-            // In a real-world app, you might want to delete the auth user here or flag it for cleanup.
             throw new Error(profileResult.error || "Failed to create user profile in database.");
         }
 

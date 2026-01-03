@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/firebase";
+import { getFirebase } from "@/firebase";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -37,7 +37,7 @@ const formSchema = z.object({
 
 export function ForgotPasswordDialog({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(false);
-  const auth = useAuth();
+  const { auth } = getFirebase();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,14 +48,6 @@ export function ForgotPasswordDialog({ children }: { children: React.ReactNode }
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Authentication service not available. Please try again.",
-        });
-        return;
-    }
     try {
       await sendPasswordResetEmail(auth, values.email);
       toast({

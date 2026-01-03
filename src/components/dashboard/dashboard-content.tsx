@@ -11,7 +11,9 @@ import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
 import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useDoc } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { getFirebase } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,21 +26,19 @@ import { transferToAnnual } from '@/app/(app)/dashboard/actions';
 
 export function DashboardContent() {
   const { user, loading: authLoading } = useAuthContext();
-  const firestore = useFirestore();
+  const { firestore } = getFirebase();
 
   const userDocRef = useMemo(() => {
-    if (!user || !firestore) return null;
+    if (!user) return null;
     return doc(firestore, 'users', user.uid);
   }, [user, firestore]);
 
   const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
-  // Show a skeleton while either authentication or user data is loading.
   if (authLoading || userDataLoading) {
     return <PageSkeleton />;
   }
 
-  // If loading is finished but we still have no user, something is wrong.
   if (!user) {
     return (
       <div className="space-y-6">
@@ -54,7 +54,6 @@ export function DashboardContent() {
     );
   }
 
-  // If we have a user but no profile data after loading, this is an error state.
   if (!userData) {
     return (
          <div className="space-y-6">
@@ -70,27 +69,26 @@ export function DashboardContent() {
     );
   }
   
-  // If we have both user and userData, render the dashboard.
   return <DashboardApp user={user} userData={userData} />;
 }
 
 
 function DashboardApp({ user, userData }: { user: import('firebase/auth').User, userData: UserData }) {
-  const firestore = useFirestore();
   const uid = user.uid;
+  const { firestore } = getFirebase();
 
-  const pendingTransactionsQuery = useMemo(() => (firestore && uid) ? query(
+  const pendingTransactionsQuery = useMemo(() => (uid) ? query(
       collection(firestore, "users", uid, "transactions"),
       where("status", "==", "Pending"),
-    ) : null, [firestore, uid]);
+    ) : null, [uid, firestore]);
   
-  const goalsQuery = useMemo(() => (firestore && uid) ? query(collection(firestore, `users/${uid}/goals`), orderBy('createdAt', 'desc')) : null, [firestore, uid]);
+  const goalsQuery = useMemo(() => (uid) ? query(collection(firestore, `users/${uid}/goals`), orderBy('createdAt', 'desc')) : null, [uid, firestore]);
 
-  const joinRequestsQuery = useMemo(() => (firestore && uid) ? query(
+  const joinRequestsQuery = useMemo(() => (uid) ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', uid),
       where('status', '==', 'pending')
-    ) : null, [firestore, uid]);
+    ) : null, [uid, firestore]);
 
 
   const { data: pendingTransactions, loading: pendingTransactionsLoading } = useCollection<Transaction>(pendingTransactionsQuery);
@@ -117,9 +115,9 @@ function DashboardApp({ user, userData }: { user: import('firebase/auth').User, 
   const handleSelfTransfer = useCallback(async (
     amount: number,
     from: AccountType,
-    to: string // Can be 'annual' or a goal ID
+    to: string
   ) => {
-     if (!firestore || !uid) return false;
+     if (!uid) return false;
 
      if (balances[from] < amount) {
         toast({
@@ -148,7 +146,6 @@ function DashboardApp({ user, userData }: { user: import('firebase/auth').User, 
         }
     }
 
-    // Handle transfer to a saving goal
     const result = await addFundsToGoal(firestore, uid, to, amount);
     if (result.success) {
         const goalName = goals?.find(g => g.id === to)?.name || 'your goal';
@@ -165,7 +162,7 @@ function DashboardApp({ user, userData }: { user: import('firebase/auth').User, 
         });
         return false;
     }
-  }, [firestore, uid, balances, goals]);
+  }, [uid, balances, goals, firestore]);
 
 
   const copyToClipboard = (text: string, type: 'ID') => {

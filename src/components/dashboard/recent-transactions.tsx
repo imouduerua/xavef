@@ -15,7 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import type { Transaction, TransactionStatus } from "@/lib/types";
 import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
-import { useCollection, useFirestore } from "@/firebase";
+import { useCollection } from "@/firebase/firestore/use-collection";
+import { getFirebase } from "@/firebase";
 import { collection, limit, query, where, orderBy } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
@@ -29,11 +30,10 @@ const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destru
 
 
 export function RecentTransactions() {
-  const { user } = useAuthContext();
-  const firestore = useFirestore();
-  const uid = user?.uid;
+  const { uid } = useAuthContext();
+  const { firestore } = getFirebase();
 
-  const transactionsQuery = useMemo(() => (uid && firestore) ? query(
+  const transactionsQuery = useMemo(() => (uid) ? query(
       collection(firestore, "users", uid, "transactions"),
       where("status", "in", ["Completed", "Failed"]),
       orderBy("date", "desc"),

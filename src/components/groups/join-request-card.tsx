@@ -2,7 +2,8 @@
 'use client';
 
 import { respondToJoinRequest } from '@/app/(app)/groups/client-actions';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { firestore } from '@/firebase/client';
 import { toast } from '@/hooks/use-toast';
 import type { GroupJoinRequest, Transaction } from '@/lib/types';
 import { collection, query, where, Timestamp } from 'firebase/firestore';
@@ -30,12 +31,11 @@ const formatCurrency = (amount: number) =>
     })}`;
 
 export function JoinRequestCard({ request }: JoinRequestCardProps) {
-  const firestore = useFirestore();
   const [isResponding, setIsResponding] = React.useState(false);
   const requesterUid = request.requesterUid;
   
   const transactionsQuery = useMemo(() => {
-    if (!firestore || !requesterUid) return null;
+    if (!requesterUid) return null;
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     return query(
@@ -44,7 +44,7 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
         where('status', '==', 'Completed'),
         where('date', '>=', Timestamp.fromDate(ninetyDaysAgo))
     );
-  }, [firestore, requesterUid]);
+  }, [requesterUid]);
   
   const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 
@@ -55,7 +55,6 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
 
 
   const handleResponse = async (decision: 'approved' | 'declined') => {
-      if (!firestore) return;
       setIsResponding(true);
       const result = await respondToJoinRequest(firestore, request.id, decision);
       if (result.success) {
@@ -71,7 +70,6 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
           });
           setIsResponding(false);
       }
-      // No need to set isResponding to false on success, as the component will be removed from the UI.
   }
 
   const renderFinancialActivity = () => {

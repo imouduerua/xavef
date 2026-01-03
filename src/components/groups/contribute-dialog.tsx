@@ -13,7 +13,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { useFirestore } from '@/firebase';
+import { firestore } from '@/firebase/client';
 import { useAuthContext } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
@@ -29,7 +29,6 @@ interface ContributeDialogProps {
 export function ContributeDialog({ group, children }: ContributeDialogProps) {
   const [isContributing, setIsContributing] = React.useState(false);
   const { user } = useAuthContext();
-  const firestore = useFirestore();
   const { toast } = useToast();
 
   const formatCurrency = (amount: number) =>
@@ -39,7 +38,7 @@ export function ContributeDialog({ group, children }: ContributeDialogProps) {
     })}`;
 
   const handleContribute = async () => {
-    if (!user || !firestore) {
+    if (!user) {
       toast({
         variant: 'destructive',
         title: 'Error',

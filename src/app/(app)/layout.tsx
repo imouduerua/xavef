@@ -167,21 +167,16 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const isInsideAdmin = pathname.startsWith('/admin');
 
   useEffect(() => {
-    // If auth is still loading, do nothing yet.
     if (authLoading) return;
 
-    // If auth is done and there's no user, redirect to login page.
     if (!user) {
       router.replace('/');
       return;
     }
 
-    // If we are in an admin route, we need to check admin status.
     if (isInsideAdmin) {
-      // If admin status is still loading, do nothing yet.
       if (adminLoading) return;
       
-      // If admin status is loaded and user is not an admin, redirect.
       if (!isAdmin) {
         router.replace('/admin-login');
       }
@@ -205,12 +200,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // Render children only if all checks pass for the current route
   if (user && (!isInsideAdmin || isAdmin)) {
     return <>{children}</>;
   }
 
-  // Render nothing while redirecting
   return null;
 }
 

@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFirestore } from '@/firebase';
+import { firestore } from '@/firebase/client';
 import { useAuthContext } from '@/context/auth-context';
 import { toast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
@@ -32,7 +32,6 @@ interface GroupCardProps {
 
 export function GroupCard({ group, isOwned = false }: GroupCardProps) {
   const { user } = useAuthContext();
-  const firestore = useFirestore();
   const [isStarting, setIsStarting] = React.useState(false);
   const [isJoining, setIsJoining] = React.useState(false);
   
@@ -48,7 +47,7 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
     })}`;
 
   const handleRequestToJoin = async () => {
-    if (!user || !firestore) {
+    if (!user) {
       toast({
         variant: "destructive",
         title: "Authentication Error",
@@ -74,8 +73,6 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
   }
 
   const handleStartGroup = async () => {
-      if (!firestore) return;
-
       setIsStarting(true);
       const result = await startGroup(firestore, group.id);
       if (result.success) {

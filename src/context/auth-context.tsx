@@ -2,8 +2,8 @@
 'use client';
 
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import React, from 'react';
-import { useAuth as useFirebaseAuth } from '@/firebase';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { getFirebase } from '@/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -11,42 +11,39 @@ interface AuthContextType {
   loading: boolean;
 }
 
-const AuthContext = React.createContext<AuthContextType>({
+const AuthContext = createContext<AuthContextType>({
   user: null,
   uid: null,
   loading: true,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const auth = useFirebaseAuth();
-  const [user, setUser] = React.useState<User | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
-    if (!auth) {
-      setLoading(false);
-      return;
-    }
-
+  useEffect(() => {
+    const { auth } = getFirebase();
+    // onAuthStateChanged returns an unsubscribe function
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
     });
 
+    // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [auth]);
+  }, []);
 
-  const value = React.useMemo(() => ({
+  const value = useMemo(() => ({
     user,
     uid: user?.uid ?? null,
     loading,
   }), [user, loading]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 }
 
 export function useAuthContext() {
-  const context = React.useContext(AuthContext);
+  const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuthContext must be used within an AuthProvider');
   }

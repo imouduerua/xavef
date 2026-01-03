@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
+import { getFirebase } from '@/firebase';
 import { addDoc, collection, Timestamp } from 'firebase/firestore';
 import type { AccountType } from '@/lib/types';
 import { BankDetailsCard } from './bank-details-card';
@@ -66,8 +66,7 @@ export function DepositDialog({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [proofOfPayment, setProofOfPayment] = React.useState<{ file: File | null, dataUrl: string | null }>({ file: null, dataUrl: null });
   const { user } = useAuthContext();
-  const firestore = useFirestore();
-
+  const { firestore } = getFirebase();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(depositSchema),
@@ -105,7 +104,7 @@ export function DepositDialog({
 
 
   async function handleConfirmTransfer() {
-    if (!user || !firestore) {
+    if (!user) {
       toast({
         variant: 'destructive',
         title: 'Not Authenticated',

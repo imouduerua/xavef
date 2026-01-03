@@ -1,7 +1,10 @@
 
 'use client';
 
-import { useCollection, useFirestore, useUser, useDoc } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { getFirebase } from '@/firebase';
+import { useAuthContext } from '@/context/auth-context';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import {
   doc,
@@ -79,12 +82,12 @@ function GroupMembers({
   payoutOrder: string[];
   currentPayoutIndex: number | null;
 }) {
-  const firestore = useFirestore();
   const [members, setMembers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { firestore } = getFirebase();
 
   useEffect(() => {
-    if (!firestore || memberIds.length === 0) {
+    if (memberIds.length === 0) {
       setLoading(false);
       return;
     }
@@ -93,8 +96,6 @@ function GroupMembers({
       setLoading(true);
       try {
         const usersRef = collection(firestore, 'users');
-        // Note: Firestore 'in' queries are limited to 30 items. 
-        // For larger groups, you would need to chunk this request.
         if (memberIds.length > 30) {
           console.warn("Group has more than 30 members, fetching data may be incomplete.");
         }
@@ -106,10 +107,8 @@ function GroupMembers({
               (d) => ({ ...d.data(), uid: d.id } as UserData)
             );
             
-            // Create a map for quick lookups
             const userMap = new Map(users.map(u => [u.uid, u]));
             
-            // Sort the members array according to the payoutOrder
             const sortedUsers = payoutOrder.map(uid => userMap.get(uid)).filter(Boolean) as UserData[];
             
             setMembers(sortedUsers);
@@ -130,7 +129,7 @@ function GroupMembers({
     fetchMembersData();
 
     return () => { isMounted = false; };
-  }, [firestore, memberIds, payoutOrder]);
+  }, [memberIds, payoutOrder, firestore]);
   
   if (loading) {
      return <Skeleton className="h-48 w-full" />;
@@ -180,22 +179,21 @@ function GroupMembers({
 export default function GroupDetailsPage() {
   const params = useParams();
   const groupId = params.groupId as string;
-  const firestore = useFirestore();
-  const { user } = useUser();
+  const { user } = useAuthContext();
+  const { firestore } = getFirebase();
 
   const groupRef = useMemo(
-    () => (firestore && groupId ? doc(firestore, 'groups', groupId) : null),
-    [firestore, groupId]
+    () => (groupId ? doc(firestore, 'groups', groupId) : null),
+    [groupId, firestore]
   );
   const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
   
   const [membersData, setMembersData] = useState<UserData[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
 
-  // This effect fetches all member data at once when group.members changes
   useEffect(() => {
     const memberIds = group?.members;
-    if (!memberIds || memberIds.length === 0 || !firestore) {
+    if (!memberIds || memberIds.length === 0) {
       setLoadingMembers(false);
       return;
     }
@@ -204,7 +202,6 @@ export default function GroupDetailsPage() {
       setLoadingMembers(true);
       try {
         const usersRef = collection(firestore, 'users');
-        // Firestore 'in' query is limited to 30 items
         if (memberIds.length > 30) {
             console.warn("Group has more than 30 members, fetching data may be incomplete.");
         }
@@ -252,14 +249,14 @@ export default function GroupDetailsPage() {
 
   const groupTransactionsQuery = useMemo(
     () =>
-      firestore && groupId
+      (groupId)
         ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             orderBy('date', 'desc')
           )
         : null,
-    [firestore, groupId]
+    [groupId, firestore]
   );
 
   const {

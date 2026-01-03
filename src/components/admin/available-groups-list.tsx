@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { getFirebase } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import React, { useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
@@ -30,13 +31,12 @@ function GroupSkeleton() {
 
 
 export function AvailableGroupsList() {
-  const firestore = useFirestore();
-
-  const groupsQuery = useMemo(() => firestore ? query(
+  const { firestore } = getFirebase();
+  const groupsQuery = useMemo(() => query(
         collection(firestore, `groups`), 
         where('status', 'in', ['forming', 'active']),
         orderBy('createdAt', 'desc')
-    ) : null, [firestore]);
+    ), [firestore]);
 
   const { data: groups, loading, indexCreationUrl } = useCollection<Group>(groupsQuery);
 

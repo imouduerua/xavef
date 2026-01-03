@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { getFirebase } from '@/firebase';
 import { Transaction, TransactionStatus } from '@/lib/types';
 import { collection, orderBy, query } from 'firebase/firestore';
 import React, { useMemo, useState } from 'react';
@@ -45,15 +46,15 @@ interface UserTransactionsProps {
 }
 
 export function UserTransactions({ userId }: UserTransactionsProps) {
-  const firestore = useFirestore();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const { firestore } = getFirebase();
 
-  const transactionsQuery = useMemo(() => (firestore && userId)
+  const transactionsQuery = useMemo(() => (userId)
     ? query(
         collection(firestore, 'users', userId, 'transactions'),
         orderBy('date', 'desc')
       )
-    : null, [firestore, userId]);
+    : null, [userId, firestore]);
 
   const { data: transactions, loading } =
     useCollection<Transaction>(transactionsQuery);
@@ -73,7 +74,6 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
     transactionId: string,
     newStatus: 'Completed' | 'Failed'
   ) => {
-    if (!firestore) return;
     setUpdatingId(transactionId);
     const result = await updateTransactionStatus(
       firestore,
@@ -85,7 +85,6 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
         title: 'Transaction Updated',
         description: `The transaction has been marked as ${newStatus}.`,
       });
-      // The view will update automatically due to onSnapshot listener
     } else {
       toast({
         variant: 'destructive',

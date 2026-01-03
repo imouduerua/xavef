@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { UserTransactions } from '@/components/admin/user-transactions';
@@ -10,7 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useDoc, useFirestore } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { getFirebase } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ArrowLeft, Landmark, PiggyBank } from 'lucide-react';
@@ -46,13 +46,13 @@ function PageSkeleton() {
 export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
-  const firestore = useFirestore();
   const { user: adminUser } = useAuthContext();
   const { isSuperAdmin } = useAdminStatus();
   const [isUpdatingPermission, setIsUpdatingPermission] = React.useState(false);
+  const { firestore } = getFirebase();
 
-  const userDocRef = useMemo(() => (userId && firestore ? doc(firestore, 'users', userId) : null), [userId, firestore]);
-  const adminDocRef = useMemo(() => (userId && firestore ? doc(firestore, 'admins', userId) : null), [userId, firestore]);
+  const userDocRef = useMemo(() => (userId ? doc(firestore, 'users', userId) : null), [userId, firestore]);
+  const adminDocRef = useMemo(() => (userId ? doc(firestore, 'admins', userId) : null), [userId, firestore]);
 
   const { data: userData, loading: userLoading } = useDoc<UserData>(userDocRef);
   const { data: adminStatusData, loading: adminStatusLoading } = useDoc(adminDocRef);

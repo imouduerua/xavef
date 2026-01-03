@@ -1,8 +1,9 @@
 
 'use client';
 
-import { useCollection, useDoc, useFirestore } from '@/firebase';
+import { useCollection, useDoc } from '@/firebase/firestore/use-collection';
 import { useAuthContext } from '@/context/auth-context';
+import { firestore } from '@/firebase/client';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import { doc, getDoc, collection, getDocs, query, where, documentId, collectionGroup, Timestamp, orderBy } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
@@ -56,12 +57,11 @@ const formatCurrency = (amount: number) =>
 export default function GroupDetailsPage() {
     const params = useParams();
     const groupId = params.groupId as string;
-    const firestore = useFirestore();
     const { user } = useAuthContext();
     const [membersData, setMembersData] = useState<UserData[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(true);
 
-    const groupRef = useMemo(() => (firestore && groupId) ? doc(firestore, 'groups', groupId) : null, [firestore, groupId]);
+    const groupRef = useMemo(() => (groupId) ? doc(firestore, 'groups', groupId) : null, [groupId]);
     const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
     
     const [weekStart, weekEnd] = useMemo(() => {
@@ -83,7 +83,7 @@ export default function GroupDetailsPage() {
 
 
     const weeklyContributionsQuery = useMemo(() => {
-        if (!firestore || !group || group.members.length === 0 || !weekStart || !weekEnd) return null;
+        if (!group || group.members.length === 0 || !weekStart || !weekEnd) return null;
         return query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
@@ -91,13 +91,13 @@ export default function GroupDetailsPage() {
             where('date', '>=', weekStart),
             where('date', '<', weekEnd)
         )
-    }, [firestore, groupId, group?.members, weekStart, weekEnd]);
+    }, [groupId, group?.members, weekStart, weekEnd]);
     
-    const groupTransactionsQuery = useMemo(() => (firestore && groupId) ? query(
+    const groupTransactionsQuery = useMemo(() => (groupId) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             orderBy('date', 'desc')
-        ) : null, [firestore, groupId]);
+        ) : null, [groupId]);
 
 
     const { data: weeklyContributions, loading: contributionsLoading, indexCreationUrl } = useCollection<Transaction>(weeklyContributionsQuery);
@@ -111,7 +111,7 @@ export default function GroupDetailsPage() {
 
     useEffect(() => {
         const memberIds = group?.members;
-        if (!memberIds || memberIds.length === 0 || !firestore) {
+        if (!memberIds || memberIds.length === 0) {
             setLoadingMembers(false);
             return;
         }
@@ -140,7 +140,7 @@ export default function GroupDetailsPage() {
         return () => {
             isMounted = false;
         };
-    }, [group?.members, firestore]);
+    }, [group?.members]);
     
     const isLoading = groupLoading || loadingMembers || contributionsLoading || allTxsLoading;
 
@@ -158,7 +158,7 @@ export default function GroupDetailsPage() {
     const currentRecipientUid = currentPayoutIndex !== null && group.payoutOrder ? group.payoutOrder[currentPayoutIndex] : null;
 
     const handleDistribute = async () => {
-        if (!firestore || !currentRecipientUid) {
+        if (!currentRecipientUid) {
             toast({ variant: 'destructive', title: "Error", description: "Cannot determine recipient." });
             return;
         }

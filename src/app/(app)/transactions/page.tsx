@@ -13,7 +13,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Transaction, TransactionStatus } from "@/lib/types";
-import { useUser, useCollection, useFirestore } from "@/firebase";
+import { useCollection } from "@/firebase/firestore/use-collection";
+import { firestore } from "@/firebase/client";
+import { useAuthContext } from "@/context/auth-context";
 import { collection, query, orderBy } from "firebase/firestore";
 import React, { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -126,14 +128,12 @@ function TransactionsTable({ transactions, isLoading, indexCreationUrl }: { tran
 }
 
 export default function TransactionsPage() {
-  const { user } = useUser();
-  const firestore = useFirestore();
-  const uid = user?.uid;
+  const { uid } = useAuthContext();
 
   const transactionsQuery = useMemo(() => (uid && firestore) ? query(
       collection(firestore, "users", uid, "transactions"),
       orderBy("date", "desc")
-    ) : null, [uid, firestore]);
+    ) : null, [uid]);
 
   const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 

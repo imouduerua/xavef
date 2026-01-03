@@ -9,13 +9,13 @@ import {
   FirestoreError,
 } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
+import { getFirebase } from '@/firebase';
 
-// This function creates a stable, serializable key from a Firestore query object.
-// This is the key to preventing infinite loops in useEffect.
 const createQueryKey = (query: Query<any> | null): string | null => {
     if (!query) return null;
     try {
         const internalQuery = (query as any)._query;
+        if (!internalQuery) return null;
         return JSON.stringify({
             path: internalQuery.path.segments.join('/'),
             filters: internalQuery.filters?.map((f: any) => `${f.field.segments.join('.')}${f.op}${JSON.stringify(f.value)}`),
@@ -26,19 +26,15 @@ const createQueryKey = (query: Query<any> | null): string | null => {
         });
     } catch (e) {
         console.error("Could not serialize query:", e);
-        // Fallback to a less stable but still useful key
-        return query.toString();
+        return String(Math.random());
     }
 };
-
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
-
-  // The key is now stable and will only change if the query's definition changes.
   const queryKey = useMemo(() => createQueryKey(query), [query]);
 
   useEffect(() => {
@@ -69,7 +65,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       (err: FirestoreError) => {
         console.error('Error fetching collection:', err.message);
 
-        // This logic is for helping developers by providing a direct link to create a missing Firestore index.
         if (
           err.code === 'failed-precondition' &&
           err.message.includes('requires an index')
@@ -88,9 +83,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       }
     );
 
-    // This cleanup function is crucial.
     return () => unsubscribe();
-  }, [queryKey]); // The hook now ONLY re-runs when the stable key changes.
+  }, [queryKey]);
 
   return { data, loading, error, indexCreationUrl };
 }

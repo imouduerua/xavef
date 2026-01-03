@@ -21,7 +21,7 @@ import {
 } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { MoreHorizontal, CheckCircle, XCircle, Loader2, Image as ImageIcon } from 'lucide-react';
-import { useFirestore } from '@/firebase';
+import { getFirebase } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { updateTransactionStatus } from './actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
@@ -47,15 +47,15 @@ export function PendingTransactionsTable({
   onUpdate
 }: PendingTransactionsTableProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const firestore = useFirestore();
   const [processedTransactions, setProcessedTransactions] = useState<TransactionWithUserDetails[]>([]);
   const [processing, setProcessing] = useState(true);
+  const { firestore } = getFirebase();
 
   const transactionIds = useMemo(() => transactions.map(t => t.id).join(','), [transactions]);
 
   useEffect(() => {
     let isMounted = true;
-    if (!firestore || transactions.length === 0) {
+    if (transactions.length === 0) {
       setProcessing(false);
       setProcessedTransactions([]);
       return;
@@ -110,7 +110,7 @@ export function PendingTransactionsTable({
     processData();
 
     return () => { isMounted = false; };
-  }, [transactionIds, firestore, transactions]);
+  }, [transactionIds, transactions, firestore]);
 
 
   const handleUpdate = async (
@@ -118,7 +118,6 @@ export function PendingTransactionsTable({
     transactionPath: string,
     newStatus: 'Completed' | 'Failed'
   ) => {
-    if (!firestore) return;
     setUpdatingId(transactionId);
     const result = await updateTransactionStatus(firestore, transactionPath, newStatus);
     if (result.success) {

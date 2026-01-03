@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/firebase";
+import { getFirebase } from "@/firebase";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -31,9 +31,9 @@ const formSchema = z.object({
 });
 
 export function AdminLoginForm() {
-  const auth = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const { auth } = getFirebase();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -45,15 +45,6 @@ export function AdminLoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth) {
-        toast({
-            variant: "destructive",
-            title: "Login Failed",
-            description: "Authentication service not available. Please try again later.",
-        });
-        setIsLoading(false);
-        return;
-    }
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       
@@ -61,7 +52,6 @@ export function AdminLoginForm() {
         title: "Login Successful",
         description: "Redirecting to the admin dashboard...",
       });
-      // The AdminAuthGuard will now handle the role check correctly.
       router.push("/admin");
 
     } catch (error: any) {

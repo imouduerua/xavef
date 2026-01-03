@@ -27,7 +27,8 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import type { SavingGoal, UserData } from '@/lib/types';
-import { useDoc, useFirestore } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { firestore } from '@/firebase/client';
 import { useAuthContext } from '@/context/auth-context';
 import { deleteSavingGoal, withdrawCompletedGoal } from '@/app/(app)/savings/client-actions';
 import { AddFundsDialog } from './add-funds-dialog';
@@ -41,14 +42,13 @@ interface GoalCardProps {
 
 export function GoalCard({ goal }: GoalCardProps) {
   const { user } = useAuthContext();
-  const firestore = useFirestore();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isWithdrawing, setIsWithdrawing] = React.useState(false);
 
   const userDocRef = React.useMemo(() => {
-    if (!user || !firestore) return null;
+    if (!user) return null;
     return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
+  }, [user]);
   const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
   const isCompleted = goal.targetAmount > 0 && goal.currentAmount >= goal.targetAmount;
@@ -61,7 +61,7 @@ export function GoalCard({ goal }: GoalCardProps) {
     })}`;
 
   const handleDelete = async () => {
-    if (!user || !firestore) return;
+    if (!user) return;
     setIsDeleting(true);
     const result = await deleteSavingGoal(firestore, user.uid, goal.id);
     if (result.success) {
@@ -80,7 +80,7 @@ export function GoalCard({ goal }: GoalCardProps) {
   };
 
   const handleWithdraw = async () => {
-    if (!user || !firestore) return;
+    if (!user) return;
     setIsWithdrawing(true);
     const result = await withdrawCompletedGoal(firestore, user.uid, goal.id);
     if (result.success) {

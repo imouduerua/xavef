@@ -17,7 +17,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '../ui/sidebar';
-import { useAuth, useFirestore, useCollection } from '@/firebase';
+import { auth, firestore } from '@/firebase/client';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { useAuthContext } from '@/context/auth-context';
 import { toast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
@@ -38,9 +39,7 @@ const formatDate = (date: any) => {
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
-  const authService = useAuth();
   const { user } = useAuthContext();
-  const firestore = useFirestore();
 
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');
@@ -49,13 +48,13 @@ export function AppHeader() {
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    ) : null, [user?.uid, firestore]);
+    ) : null, [user?.uid]);
   
   const notificationsQuery = useMemo(() => (user?.uid && firestore) ? query(
           collection(firestore, `users/${user.uid}/notifications`),
           orderBy('createdAt', 'desc'),
-          limit(10) // Limit to the 10 most recent notifications
-      ) : null, [user?.uid, firestore]);
+          limit(10)
+      ) : null, [user?.uid]);
 
   const { data: joinRequests, loading: joinRequestsLoading } = useCollection<GroupJoinRequest>(joinRequestsQuery);
   const { data: notifications, loading: notificationsLoading } = useCollection<Notification>(notificationsQuery);
@@ -71,7 +70,7 @@ export function AppHeader() {
                 title: 'Group Join Request',
                 description: `${req.requesterName} wants to join "${req.groupName}".`,
                 date: req.createdAt,
-                read: false, // All pending requests are "unread" in this context
+                read: false, 
                 actionUrl: '/groups'
             } as Notification & { date: any });
         });
@@ -83,7 +82,6 @@ export function AppHeader() {
         });
     }
 
-    // Sort combined notifications by date, most recent first
     allNotifs.sort((a, b) => {
         const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
         const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
@@ -106,9 +104,8 @@ export function AppHeader() {
   }, []);
 
   const handleLogout = useCallback(async () => {
-    if (!authService) return;
     try {
-      await signOut(authService);
+      await signOut(auth);
       toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
@@ -121,7 +118,7 @@ export function AppHeader() {
         description: 'There was an error logging you out. Please try again.',
       });
     }
-  }, [authService, router]);
+  }, [router]);
   
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';

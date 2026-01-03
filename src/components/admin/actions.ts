@@ -26,12 +26,10 @@ export async function updateTransactionStatus(
         throw new Error('This transaction has already been processed.');
       }
 
-      // Update the transaction status
       transaction.update(transactionRef, { status: newStatus });
 
-      // If approved, update the user's balance
       if (newStatus === 'Completed') {
-        const amount = txData.amount; // Can be positive (deposit) or negative (withdrawal)
+        const amount = txData.amount; 
         const targetAccount = txData.targetAccount;
 
         if (targetAccount === 'solidara') {
@@ -39,7 +37,6 @@ export async function updateTransactionStatus(
         } else if (targetAccount === 'annual') {
           transaction.update(userRef, { annualBalance: increment(amount) });
         }
-        // Note: 'group' transactions are handled by a separate flow and should not appear here.
       }
     });
 

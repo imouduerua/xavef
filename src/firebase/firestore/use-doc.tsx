@@ -15,7 +15,6 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
 
-  // The path is a stable dependency
   const docPath = useMemo(() => ref?.path, [ref]);
 
   useEffect(() => {
@@ -48,7 +47,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [docPath, ref]);
+  }, [docPath]);
 
   return { data, loading, error };
 }

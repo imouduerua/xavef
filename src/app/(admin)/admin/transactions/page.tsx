@@ -15,7 +15,8 @@ import type {
 } from '@/lib/types';
 import React, { useMemo, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { getFirebase } from '@/firebase';
 import {
   collection,
   collectionGroup,
@@ -26,22 +27,19 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
-import { SuperAdminAuthGuard } from '@/components/admin/super-admin-auth-guard';
 import { AllTransactionsTable } from '@/components/admin/all-transactions-table';
 import { toast } from '@/hooks/use-toast';
 
 function AllTransactionsPageContent() {
-  const firestore = useFirestore();
   const [processedTransactions, setProcessedTransactions] = useState<
     TransactionWithUserDetails[] | null
   >(null);
   const [processing, setProcessing] = useState(true);
+  const { firestore } = getFirebase();
 
   const allTxsQuery = useMemo(
     () =>
-      firestore
-        ? query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc'))
-        : null,
+      query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc')),
     [firestore]
   );
 
@@ -51,15 +49,13 @@ function AllTransactionsPageContent() {
     indexCreationUrl,
   } = useCollection<Transaction>(allTxsQuery);
   
-  // Create a stable key from transaction IDs to avoid re-running the effect unnecessarily.
   const rawTransactionsKey = useMemo(() => rawTransactions?.map(t => t.id).join(',') || '', [rawTransactions]);
 
   useEffect(() => {
     let isMounted = true;
     
-    // If there's nothing to process, stop.
-    if (!rawTransactions || !firestore) {
-      if (!rawLoading) { // if not loading and no data, we are done processing.
+    if (!rawTransactions) {
+      if (!rawLoading) {
           setProcessedTransactions([]);
           setProcessing(false);
       }
@@ -82,7 +78,6 @@ function AllTransactionsPageContent() {
         const userCache = new Map<string, UserData>();
         if (userIds.length > 0) {
           const usersRef = collection(firestore, 'users');
-          // Firestore 'in' query is limited to 30 items. Chunking is required for larger sets.
           const chunks: string[][] = [];
            for (let i = 0; i < userIds.length; i += 30) {
               chunks.push(userIds.slice(i, i + 30));
@@ -143,7 +138,7 @@ function AllTransactionsPageContent() {
     return () => {
       isMounted = false;
     };
-  }, [rawTransactionsKey, firestore, rawLoading]); // Depend on the stable key
+  }, [rawTransactionsKey, rawLoading, firestore]);
 
 
   const renderContent = () => {
@@ -151,7 +146,6 @@ function AllTransactionsPageContent() {
       return <MissingIndexAlert url={indexCreationUrl} />;
     }
 
-    // Show skeleton if we are in any loading state
     if (rawLoading || processing) {
       return <Skeleton className="h-64 w-full" />;
     }
@@ -175,9 +169,6 @@ function AllTransactionsPageContent() {
 }
 
 export default function AllTransactionsPage() {
-  return (
-    <SuperAdminAuthGuard>
-      <AllTransactionsPageContent />
-    </SuperAdminAuthGuard>
-  );
+    // This page is protected by the admin layout's super admin check
+    return <AllTransactionsPageContent />;
 }

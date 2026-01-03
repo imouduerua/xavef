@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import type { BankAccount } from '@/lib/types';
-import { useFirestore } from '@/firebase';
+import { firestore } from '@/firebase/client';
 import { useAuthContext } from '@/context/auth-context';
 import { Card, CardContent } from '../ui/card';
 
@@ -37,12 +37,11 @@ interface WithdrawalFormProps {
   bankAccounts: BankAccount[];
 }
 
-const WITHDRAWAL_FEE_PERCENTAGE = 0.033; // 3.3%
+const WITHDRAWAL_FEE_PERCENTAGE = 0.033;
 
 export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { user } = useAuthContext();
-  const firestore = useFirestore();
 
   const withdrawalSchema = z.object({
     amount: z.coerce
@@ -69,7 +68,7 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
   async function onSubmit(values: z.infer<typeof withdrawalSchema>) {
     setIsSubmitting(true);
     
-    if (!user || !firestore) {
+    if (!user) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
@@ -93,7 +92,6 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
       return;
     }
     
-    // Recalculate here to ensure accuracy at the time of submission
     const finalAmount = Number(values.amount);
     const finalFee = finalAmount * WITHDRAWAL_FEE_PERCENTAGE;
     const finalPayout = finalAmount - finalFee;
@@ -104,9 +102,9 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
       
       const newTransaction = {
         date: serverTimestamp(),
-        amount: -finalAmount, // The full amount deducted from user's balance
+        amount: -finalAmount, 
         fee: finalFee,
-        payoutAmount: finalPayout, // The amount sent to the user's bank
+        payoutAmount: finalPayout, 
         description: `Withdrawal to ${selectedAccount.bankName}`,
         type: 'Withdrawal' as const,
         status: 'Pending' as const,

@@ -10,7 +10,8 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { getFirebase } from '@/firebase';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import { collection, collectionGroup, query, where } from 'firebase/firestore';
 import {
@@ -68,12 +69,11 @@ function StatCard({
 }
 
 export default function AdminDashboardPage() {
-  const firestore = useFirestore();
-
-  const usersQuery = useMemo(() => (firestore ? collection(firestore, 'users') : null), [firestore]);
-  const groupsQuery = useMemo(() => (firestore ? query(collection(firestore, 'groups'), where('status', '==', 'active')) : null), [firestore]);
-  const transactionsQuery = useMemo(() => (firestore ? query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Completed')) : null), [firestore]);
-  const pendingTxsQuery = useMemo(() => (firestore ? query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Pending')) : null), [firestore]);
+  const { firestore } = getFirebase();
+  const usersQuery = useMemo(() => query(collection(firestore, 'users')), [firestore]);
+  const groupsQuery = useMemo(() => query(collection(firestore, 'groups'), where('status', '==', 'active')), [firestore]);
+  const transactionsQuery = useMemo(() => query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Completed')), [firestore]);
+  const pendingTxsQuery = useMemo(() => query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Pending')), [firestore]);
 
 
   const { data: users, loading: usersLoading } = useCollection<UserData>(usersQuery);
