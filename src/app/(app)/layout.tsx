@@ -1,45 +1,20 @@
 
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
-import { useUser, useFirestore } from '@/firebase/provider';
-import { useDoc } from '@/firebase/firestore/use-collection';
+import React, { useEffect } from 'react';
+import { useUser } from '@/firebase/provider';
 import { useRouter, usePathname } from 'next/navigation';
-import { doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/header";
 import { SidebarInset } from "@/components/ui/sidebar";
-
-// This is a new, local implementation of the admin status logic.
-function useAdminStatusCheck() {
-  const { user, loading: authLoading } = useUser();
-  const firestore = useFirestore();
-
-  const isSuperAdmin = user?.email === 'admin@xavef.com';
-
-  const adminDocRef = useMemo(() => {
-    if (!user?.uid || isSuperAdmin) return null;
-    return doc(firestore, 'admins', user.uid);
-  }, [user?.uid, isSuperAdmin, firestore]);
-
-  const { data: adminData, loading: docLoading } = useDoc<{ isAdmin: boolean }>(adminDocRef);
-
-  const result = useMemo(() => {
-    const regularAdmin = !!adminData;
-    const isAdmin = isSuperAdmin || regularAdmin;
-    const loading = authLoading || (!isSuperAdmin && !!user && docLoading);
-    return { isAdmin, isSuperAdmin, loading };
-  }, [isSuperAdmin, adminData, authLoading, docLoading, user]);
-
-  return result;
-}
+import { useAdminStatus } from '@/hooks/use-admin-status';
 
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useUser();
-  const { isAdmin, loading: adminLoading } = useAdminStatusCheck();
+  const { isAdmin, loading: adminLoading } = useAdminStatus();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -102,7 +77,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname === '/' || pathname === '/register' || pathname === '/admin-login';
-  const { isAdmin, isSuperAdmin } = useAdminStatusCheck();
+  const { isAdmin, isSuperAdmin } = useAdminStatus();
 
   return (
     <AuthGuard>

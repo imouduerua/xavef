@@ -13,16 +13,15 @@ import {
 import { useEffect, useState, useMemo } from 'react';
 
 // This function creates a stable string representation of a query for use in dependency arrays.
-const getQueryKey = (q: Query | DocumentReference | null) => {
+const getQueryKey = (q: Query | DocumentReference | null): string | null => {
     if (!q) return null;
-
-    if ('_query' in q) { // It's a query
-      const queryObj = q as Query;
-      // Combine path and internal query constraints to create a unique key
-      return `${queryObj.path}_${(queryObj as any)._query.canonicalId()}`;
-    } else { // It's a DocumentReference
-      return q.path;
+    // The canonicalId is a stable, unique string representation of the query's constraints.
+    if ('_query' in q) { // It's a Query
+      const queryObj = q as any;
+      return queryObj._query.canonicalId();
     }
+    // For a DocumentReference, the path is a stable unique identifier.
+    return q.path;
 }
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
@@ -78,6 +77,8 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
+  // We use queryKey which is a stable string representation of the query.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryKey]); 
 
   return { data, loading, error, indexCreationUrl };
@@ -119,6 +120,8 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
     );
 
     return () => unsubscribe();
+    // We use docKey which is a stable string representation of the doc path.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docKey]);
 
   return { data, loading, error };
