@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '../ui/sidebar';
-import { auth, firestore } from '@/firebase/client';
+import { getFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useAuthContext } from '@/context/auth-context';
 import { toast } from '@/hooks/use-toast';
@@ -40,6 +40,7 @@ export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuthContext();
+  const { firestore, auth } = getFirebase();
 
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');
@@ -48,13 +49,13 @@ export function AppHeader() {
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    ) : null, [user?.uid]);
+    ) : null, [user?.uid, firestore]);
   
   const notificationsQuery = useMemo(() => (user?.uid && firestore) ? query(
           collection(firestore, `users/${user.uid}/notifications`),
           orderBy('createdAt', 'desc'),
           limit(10)
-      ) : null, [user?.uid]);
+      ) : null, [user?.uid, firestore]);
 
   const { data: joinRequests, loading: joinRequestsLoading } = useCollection<GroupJoinRequest>(joinRequestsQuery);
   const { data: notifications, loading: notificationsLoading } = useCollection<Notification>(notificationsQuery);
@@ -118,7 +119,7 @@ export function AppHeader() {
         description: 'There was an error logging you out. Please try again.',
       });
     }
-  }, [router]);
+  }, [router, auth]);
   
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';

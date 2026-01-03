@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { firestore } from '@/firebase/client';
+import { getFirebase } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import React, { useMemo } from 'react';
@@ -33,12 +33,13 @@ function GroupSkeleton() {
 
 export function AvailableGroupsList() {
   const { user } = useAuthContext();
+  const { firestore } = getFirebase();
 
   const groupsQuery = useMemo(() => query(
         collection(firestore, `groups`), 
         where('status', '==', 'forming'),
         orderBy('createdAt', 'desc')
-    ), []);
+    ), [firestore]);
 
   const { data: groups, loading, indexCreationUrl } = useCollection<Group>(groupsQuery);
   

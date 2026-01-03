@@ -12,7 +12,7 @@ import type { UserData, Transaction } from "@/lib/types";
 import { WithdrawalForm } from "@/components/withdrawal/withdrawal-form";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useDoc } from "@/firebase/firestore/use-doc";
-import { firestore } from "@/firebase/client";
+import { getFirebase } from "@/firebase";
 import React, { useMemo } from "react";
 import { collection, query, where, doc } from "firebase/firestore";
 import { PendingWithdrawalCard } from "@/components/withdrawal/pending-withdrawal-card";
@@ -73,11 +73,12 @@ function PageSkeleton() {
 
 export default function WithdrawalPage() {
     const { user, loading: authLoading } = useAuthContext();
+    const { firestore } = getFirebase();
 
     const userDocRef = useMemo(() => {
         if (!user) return null;
         return doc(firestore, 'users', user.uid);
-    }, [user]);
+    }, [user, firestore]);
     const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
     const pendingWithdrawalQuery = useMemo(() => (user?.uid) ? query(
@@ -85,7 +86,7 @@ export default function WithdrawalPage() {
             where('status', '==', 'Pending'),
             where('type', '==', 'Withdrawal'),
             where('targetAccount', '==', 'solidara')
-        ) : null, [user?.uid]);
+        ) : null, [user?.uid, firestore]);
 
     const { data: pendingWithdrawals, loading: pendingWithdrawalsLoading } = useCollection<Transaction>(pendingWithdrawalQuery);
 

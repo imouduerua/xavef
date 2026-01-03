@@ -29,7 +29,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { firestore } from '@/firebase/client';
+import { getFirebase } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import type { SavingGoal } from '@/lib/types';
@@ -45,6 +45,7 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useAuthContext();
   const { toast } = useToast();
+  const { firestore } = getFirebase();
 
   const formSchema = z.object({
     amount: z.coerce

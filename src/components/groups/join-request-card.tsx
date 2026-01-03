@@ -3,7 +3,7 @@
 
 import { respondToJoinRequest } from '@/app/(app)/groups/client-actions';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { firestore } from '@/firebase/client';
+import { getFirebase } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import type { GroupJoinRequest, Transaction } from '@/lib/types';
 import { collection, query, where, Timestamp } from 'firebase/firestore';
@@ -33,6 +33,7 @@ const formatCurrency = (amount: number) =>
 export function JoinRequestCard({ request }: JoinRequestCardProps) {
   const [isResponding, setIsResponding] = React.useState(false);
   const requesterUid = request.requesterUid;
+  const { firestore } = getFirebase();
   
   const transactionsQuery = useMemo(() => {
     if (!requesterUid) return null;
@@ -44,7 +45,7 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
         where('status', '==', 'Completed'),
         where('date', '>=', Timestamp.fromDate(ninetyDaysAgo))
     );
-  }, [requesterUid]);
+  }, [requesterUid, firestore]);
   
   const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 

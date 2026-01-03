@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { firestore } from '@/firebase/client';
+import { getFirebase } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { createGroup } from '@/app/(app)/groups/client-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -42,6 +42,7 @@ const formSchema = z.object({
 export function CreateGroupDialog() {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useAuthContext();
+  const { firestore } = getFirebase();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

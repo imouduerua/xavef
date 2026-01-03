@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { firestore } from '@/firebase/client';
+import { getFirebase } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { toast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
@@ -32,6 +32,7 @@ interface GroupCardProps {
 
 export function GroupCard({ group, isOwned = false }: GroupCardProps) {
   const { user } = useAuthContext();
+  const { firestore } = getFirebase();
   const [isStarting, setIsStarting] = React.useState(false);
   const [isJoining, setIsJoining] = React.useState(false);
   

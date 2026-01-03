@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { firestore } from '@/firebase/client';
+import { getFirebase } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import React, { useMemo } from 'react';
@@ -32,20 +32,21 @@ function SectionSkeleton() {
 
 export function MyGroupsSection() {
   const { user } = useAuthContext();
+  const { firestore } = getFirebase();
   const uid = user?.uid;
 
   const myGroupsQuery = useMemo(() => (uid) ? query(
         collection(firestore, `groups`), 
         where('members', 'array-contains', uid),
         orderBy('createdAt', 'desc')
-    ) : null, [uid]);
+    ) : null, [uid, firestore]);
 
   const joinRequestsQuery = useMemo(() => (uid) ? query(
           collection(firestore, 'joinRequests'),
           where('groupCreatorUid', '==', uid),
           where('status', '==', 'pending'),
           orderBy('createdAt', 'desc')
-      ) : null, [uid]);
+      ) : null, [uid, firestore]);
 
   const { data: groups, loading: groupsLoading, indexCreationUrl: groupsIndexUrl } = useCollection<Group>(myGroupsQuery);
   const { data: joinRequests, loading: requestsLoading, indexCreationUrl: requestsIndexUrl } = useCollection<GroupJoinRequest>(joinRequestsQuery);

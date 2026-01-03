@@ -4,7 +4,7 @@
 import { addDoc, collection, getDocs, query, serverTimestamp, where } from 'firebase/firestore';
 import React from 'react';
 
-import { firestore } from '@/firebase/client';
+import { getFirebase } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Copy, Share2 } from 'lucide-react';
@@ -21,6 +21,8 @@ export function ReferralCodeDialog({ children }: { children: React.ReactNode }) 
 
     const generateCode = async () => {
         if (!user) return;
+        
+        const { firestore } = getFirebase();
 
         setIsLoading(true);
         setGeneratedCode(null);

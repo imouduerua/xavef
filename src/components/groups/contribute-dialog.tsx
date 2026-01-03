@@ -13,7 +13,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { firestore } from '@/firebase/client';
+import { getFirebase } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
@@ -30,6 +30,7 @@ export function ContributeDialog({ group, children }: ContributeDialogProps) {
   const [isContributing, setIsContributing] = React.useState(false);
   const { user } = useAuthContext();
   const { toast } = useToast();
+  const { firestore } = getFirebase();
 
   const formatCurrency = (amount: number) =>
     `₦${amount.toLocaleString('en-US', {

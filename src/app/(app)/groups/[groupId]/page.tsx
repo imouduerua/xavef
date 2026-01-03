@@ -1,9 +1,10 @@
 
 'use client';
 
-import { useCollection, useDoc } from '@/firebase/firestore/use-collection';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { useAuthContext } from '@/context/auth-context';
-import { firestore } from '@/firebase/client';
+import { getFirebase } from '@/firebase';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import { doc, getDoc, collection, getDocs, query, where, documentId, collectionGroup, Timestamp, orderBy } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
@@ -58,10 +59,11 @@ export default function GroupDetailsPage() {
     const params = useParams();
     const groupId = params.groupId as string;
     const { user } = useAuthContext();
+    const { firestore } = getFirebase();
     const [membersData, setMembersData] = useState<UserData[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(true);
 
-    const groupRef = useMemo(() => (groupId) ? doc(firestore, 'groups', groupId) : null, [groupId]);
+    const groupRef = useMemo(() => (groupId) ? doc(firestore, 'groups', groupId) : null, [groupId, firestore]);
     const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
     
     const [weekStart, weekEnd] = useMemo(() => {
@@ -91,13 +93,13 @@ export default function GroupDetailsPage() {
             where('date', '>=', weekStart),
             where('date', '<', weekEnd)
         )
-    }, [groupId, group?.members, weekStart, weekEnd]);
+    }, [groupId, group?.members, weekStart, weekEnd, firestore]);
     
     const groupTransactionsQuery = useMemo(() => (groupId) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             orderBy('date', 'desc')
-        ) : null, [groupId]);
+        ) : null, [groupId, firestore]);
 
 
     const { data: weeklyContributions, loading: contributionsLoading, indexCreationUrl } = useCollection<Transaction>(weeklyContributionsQuery);
@@ -140,7 +142,7 @@ export default function GroupDetailsPage() {
         return () => {
             isMounted = false;
         };
-    }, [group?.members]);
+    }, [group?.members, firestore]);
     
     const isLoading = groupLoading || loadingMembers || contributionsLoading || allTxsLoading;
 
