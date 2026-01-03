@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 
 import { useUser } from '@/firebase/provider';
-import { useAdminStatus } from '@/hooks/use-admin-status';
 import {
   Sidebar,
   SidebarContent,
@@ -52,10 +51,14 @@ const adminNavItems = [
 
 const bottomNavItems = [{ href: '/settings', icon: Settings, label: 'Settings' }];
 
-export function AppSidebar() {
+interface AppSidebarProps {
+    isAdmin: boolean;
+    isSuperAdmin: boolean;
+}
+
+export function AppSidebar({ isAdmin, isSuperAdmin }: AppSidebarProps) {
   const pathname = usePathname();
   const { user } = useUser();
-  const { isAdmin, isSuperAdmin } = useAdminStatus();
   const { isMobile, setOpenMobile } = useSidebar();
 
   const isInsideAdmin = pathname.startsWith('/admin');
