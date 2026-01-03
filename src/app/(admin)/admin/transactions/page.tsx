@@ -51,18 +51,17 @@ function AllTransactionsPageContent() {
     indexCreationUrl,
   } = useCollection<Transaction>(allTxsQuery);
   
+  // Create a stable key from transaction IDs to avoid re-running the effect unnecessarily.
   const rawTransactionsKey = useMemo(() => rawTransactions?.map(t => t.id).join(',') || '', [rawTransactions]);
 
   useEffect(() => {
     let isMounted = true;
+    
+    // If there's nothing to process, stop.
     if (!rawTransactions || !firestore) {
-      if (rawLoading) {
-         setProcessing(true);
-      } else {
-        if(isMounted) {
+      if (!rawLoading) { // if not loading and no data, we are done processing.
           setProcessedTransactions([]);
           setProcessing(false);
-        }
       }
       return;
     }
@@ -83,24 +82,26 @@ function AllTransactionsPageContent() {
         const userCache = new Map<string, UserData>();
         if (userIds.length > 0) {
           const usersRef = collection(firestore, 'users');
-          // Firestore 'in' query is limited to 30 items. For more, chunking is needed.
+          // Firestore 'in' query is limited to 30 items. Chunking is required for larger sets.
           const chunks: string[][] = [];
            for (let i = 0; i < userIds.length; i += 30) {
               chunks.push(userIds.slice(i, i + 30));
            }
 
           for (const chunk of chunks) {
-              const usersQuery = query(
-                usersRef,
-                where(documentId(), 'in', chunk)
-              );
-              const userSnapshots = await getDocs(usersQuery);
-              userSnapshots.forEach((userDoc) => {
-                userCache.set(
-                  userDoc.id,
-                  { id: userDoc.id, ...userDoc.data() } as UserData
+              if (chunk.length > 0) {
+                const usersQuery = query(
+                    usersRef,
+                    where(documentId(), 'in', chunk)
                 );
-              });
+                const userSnapshots = await getDocs(usersQuery);
+                userSnapshots.forEach((userDoc) => {
+                    userCache.set(
+                    userDoc.id,
+                    { id: userDoc.id, ...userDoc.data() } as UserData
+                    );
+                });
+              }
           }
         }
 
@@ -142,7 +143,7 @@ function AllTransactionsPageContent() {
     return () => {
       isMounted = false;
     };
-  }, [rawTransactionsKey, firestore, rawLoading]);
+  }, [rawTransactionsKey, firestore, rawLoading]); // Depend on the stable key
 
 
   const renderContent = () => {
@@ -150,7 +151,8 @@ function AllTransactionsPageContent() {
       return <MissingIndexAlert url={indexCreationUrl} />;
     }
 
-    if (processing) {
+    // Show skeleton if we are in any loading state
+    if (rawLoading || processing) {
       return <Skeleton className="h-64 w-full" />;
     }
 
