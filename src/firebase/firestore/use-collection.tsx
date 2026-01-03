@@ -74,7 +74,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
 
     // This now correctly depends on the stable queryKey.
     return () => unsubscribe();
-  }, [queryKey]); 
+  }, [queryKey, query]); 
 
   return { data, loading, error, indexCreationUrl };
 }
