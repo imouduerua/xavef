@@ -10,10 +10,8 @@ import {
   DocumentReference,
   DocumentSnapshot,
   getFirestore,
-  getApp,
-  getApps,
-  initializeApp,
 } from 'firebase/firestore';
+import { getApp, getApps, initializeApp } from 'firebase/app';
 import { useEffect, useState, useMemo } from 'react';
 import { firebaseConfig } from '../config';
 
@@ -131,5 +129,3 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
 
   return { data, loading, error };
 }
-
-    
