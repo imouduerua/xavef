@@ -8,37 +8,16 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import { useEffect, useState, useMemo } from 'react';
-import { useFirestore } from '@/firebase/provider';
-
-const createQueryKey = (query: Query<any> | null): string | null => {
-    if (!query) return null;
-    try {
-        const internalQuery = (query as any)._query;
-        if (!internalQuery) return null;
-        return JSON.stringify({
-            path: internalQuery.path.segments.join('/'),
-            filters: internalQuery.filters?.map((f: any) => `${f.field.segments.join('.')}${f.op}${JSON.stringify(f.value)}`),
-            orderBy: internalQuery.orderBy?.map((o: any) => `${o.field.segments.join('.')}${o.dir}`),
-            limit: internalQuery.limit,
-            startAt: internalQuery.startAt,
-            endAt: internalQuery.endAt,
-        });
-    } catch (e) {
-        console.error("Could not serialize query:", e);
-        return String(Math.random());
-    }
-};
+import { useEffect, useState } from 'react';
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
-  const queryKey = useMemo(() => createQueryKey(query), [query]);
 
   useEffect(() => {
-    if (!query || !queryKey) {
+    if (!query) {
       setData(null);
       setLoading(false);
       setError(null);
@@ -48,6 +27,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
 
     setLoading(true);
     setIndexCreationUrl(null);
+    setError(null);
 
     const unsubscribe = onSnapshot(
       query,
@@ -60,7 +40,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         
         setData(resultData);
         setLoading(false);
-        setError(null);
       },
       (err: FirestoreError) => {
         console.error('Error fetching collection:', err.message);
@@ -84,7 +63,9 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [queryKey]);
+    // The query object from Firestore is stable as long as the inputs to its creation are stable.
+    // The calling components must use useMemo to stabilize the query.
+  }, [query]);
 
   return { data, loading, error, indexCreationUrl };
 }
