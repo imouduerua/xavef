@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseProvider } from "@/firebase/provider";
 import { AuthProvider } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -32,7 +33,9 @@ export default function RootLayout({
       >
         <FirebaseProvider>
           <AuthProvider>
-            {children}
+            <SidebarProvider>
+                {children}
+            </SidebarProvider>
             <Toaster />
           </AuthProvider>
         </FirebaseProvider>
