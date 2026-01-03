@@ -20,7 +20,7 @@ import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { addFundsToGoal } from '@/app/(app)/savings/client-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { transferToAnnual } from './actions';
+import { transferToAnnual } from '@/app/(app)/dashboard/actions';
 import { CreateProfileForm } from './create-profile-form';
 
 export function DashboardContent() {
