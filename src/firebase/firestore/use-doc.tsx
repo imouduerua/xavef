@@ -15,11 +15,10 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
 
-  // The document's path is a stable string, making it a reliable dependency.
   const docPath = useMemo(() => ref?.path, [ref]);
 
   useEffect(() => {
-    if (!docPath || !ref) {
+    if (!ref || !docPath) {
       setData(null);
       setLoading(false);
       setError(null);
@@ -32,8 +31,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
       ref,
       (snapshot: DocumentSnapshot<T>) => {
         if (snapshot.exists()) {
-          // Combine id and data into a single object
-          setData({ id: snapshot.id, path: snapshot.ref.path, ...snapshot.data() } as T & { id: string; path: string });
+          setData({ ...snapshot.data(), id: snapshot.id, path: snapshot.ref.path } as T & { id: string; path: string });
         } else {
           setData(null);
         }
@@ -42,14 +40,12 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
       },
       (err: FirestoreError) => {
         console.error(`Error fetching document at ${ref.path}:`, err);
-        
         setError(err);
         setData(null);
         setLoading(false);
       }
     );
 
-    // This useEffect will re-run only if the document path changes.
     return () => unsubscribe();
   }, [docPath, ref]);
 

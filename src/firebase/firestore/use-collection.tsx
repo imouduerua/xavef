@@ -10,33 +10,26 @@ import {
 } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
 
-// This hook is now stable and will not cause infinite loops.
-// It uses the query's string representation for stability.
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  // By using `JSON.stringify` on the query object's internal properties,
-  // we create a stable, primitive dependency for the useEffect hook.
-  // The effect will only re-run if the query's actual definition changes.
+  // Create a stable key from the query's properties to use as a dependency.
   const queryKey = useMemo(() => {
     if (!query) return null;
-    // The internal _query property provides a consistent representation of the query
-    const internalQuery = (query as any)._query;
-    if (!internalQuery) return null;
-    
-    // A simple serialization of the key query properties
     try {
+        const internalQuery = (query as any)._query;
         return JSON.stringify({
             path: internalQuery.path.segments.join('/'),
-            filters: internalQuery.filters?.map((f: any) => `${f.field.segments.join('.')}${f.op}${f.value}`),
+            filters: internalQuery.filters?.map((f: any) => `${f.field.segments.join('.')}${f.op}${JSON.stringify(f.value)}`),
             orderBy: internalQuery.orderBy?.map((o: any) => `${o.field.segments.join('.')}${o.dir}`),
+            limit: internalQuery.limit,
         });
     } catch (e) {
-        // Fallback for complex queries that can't be easily serialized
-        return new Date().getTime().toString();
+        console.error("Could not serialize query:", e);
+        return null;
     }
   }, [query]);
 
@@ -56,9 +49,9 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       query,
       (snapshot: QuerySnapshot<T>) => {
         const resultData = snapshot.docs.map((doc) => ({
+          ...doc.data(),
           id: doc.id,
           path: doc.ref.path,
-          ...doc.data(),
         } as T & { id: string; path: string; }));
         
         setData(resultData);
@@ -67,7 +60,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setIndexCreationUrl(null);
       },
       (err: FirestoreError) => {
-        console.error('Error fetching collection:', err);
+        console.error('Error fetching collection:', err.message);
 
         if (
           err.code === 'failed-precondition' &&
@@ -87,7 +80,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       }
     );
 
-    // This now correctly depends on the stable queryKey.
     return () => unsubscribe();
   }, [queryKey, query]); 
 

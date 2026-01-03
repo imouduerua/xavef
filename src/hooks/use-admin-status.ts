@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { doc } from 'firebase/firestore';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 
 type AdminData = {
   isAdmin: boolean;
@@ -22,7 +23,7 @@ export function useAdminStatus() {
 
   const { data: adminData, loading: docLoading } = useDoc<AdminData>(adminDocRef);
   
-  const isAdmin = isSuperAdmin || !!adminData?.isAdmin;
+  const isAdmin = useMemo(() => isSuperAdmin || !!adminData?.isAdmin, [isSuperAdmin, adminData]);
 
   const loading = authLoading || (user && !isSuperAdmin ? docLoading : false);
 
