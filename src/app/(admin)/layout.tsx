@@ -3,26 +3,60 @@
 
 import { AppHeader } from "@/components/layout/header";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AdminAuthGuard } from "@/components/admin/admin-auth-guard";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { useAdminStatus } from "@/hooks/use-admin-status";
+import { useRouter } from "next/navigation";
+import React, { useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function AdminLayoutContent({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { isAdmin, loading } = useAdminStatus();
+  const router = useRouter();
 
-  return (
-    <AdminAuthGuard>
-      <AppSidebar />
-      <main className="flex flex-1 flex-col">
-        <AppHeader />
-        <div className="flex-1 overflow-y-auto">
-          {children}
+  useEffect(() => {
+    if (!loading && !isAdmin) {
+      router.replace('/admin-login');
+    }
+  }, [isAdmin, loading, router]);
+
+  if (loading) {
+    return (
+        <div className="flex items-center justify-center min-h-screen w-full">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Verifying Admin Privileges...</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-8 w-full" />
+                </CardContent>
+            </Card>
         </div>
-      </main>
-    </AdminAuthGuard>
-  );
+    );
+  }
+
+  // If authenticated and is an admin, render the children.
+  // Otherwise, the effect will have already triggered a redirect.
+  if (isAdmin) {
+    return (
+      <>
+        <AppSidebar />
+        <main className="flex flex-1 flex-col">
+          <AppHeader />
+          <div className="flex-1 overflow-y-auto">
+            {children}
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  // Render null while redirecting
+  return null;
 }
 
 
