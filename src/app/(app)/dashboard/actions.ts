@@ -17,6 +17,7 @@ import {
     addDoc,
     getDoc,
     writeBatch,
+    DocumentReference,
 } from "firebase/firestore";
 import type { User as AuthUser } from "firebase/auth";
 import type { ReferralCode, UserData, BankAccount } from "@/lib/types";
@@ -59,37 +60,38 @@ export async function createUserProfile(
   data: CreateProfileData
 ): Promise<{ success: boolean; error?: string }> {
   const userDocRef = doc(firestore, 'users', user.uid);
+  let referredBy: string | null = null;
+  let referralCodeRef: DocumentReference | null = null;
 
   try {
+    // Perform all read operations BEFORE the transaction
+    if (data.referralCode) {
+      const codeQuery = query(
+        collection(firestore, 'referralCodes'),
+        where('code', '==', data.referralCode.trim().toUpperCase()),
+        limit(1)
+      );
+      const codeSnap = await getDocs(codeQuery);
+
+      if (codeSnap.empty) {
+        throw new Error('Invalid referral code.');
+      }
+      
+      const codeDoc = codeSnap.docs[0];
+      const codeData = codeDoc.data() as ReferralCode;
+
+      if (codeData.used) {
+        throw new Error('This referral code has already been used.');
+      }
+      
+      referredBy = codeData.creatorUid;
+      referralCodeRef = codeDoc.ref;
+    }
+
+    // Now, perform all write operations within the transaction
     await runTransaction(firestore, async (transaction) => {
       const xavefId = await generateUniqueXavefId(firestore);
-      let referredBy: string | null = null;
-
-      // Handle referral code if provided
-      if (data.referralCode) {
-        const codeQuery = query(
-          collection(firestore, 'referralCodes'),
-          where('code', '==', data.referralCode.trim().toUpperCase()),
-          limit(1)
-        );
-        const codeSnap = await getDocs(codeQuery); // Use getDocs within a transaction
-        
-        if (codeSnap.empty) {
-          throw new Error('Invalid referral code.');
-        }
-        
-        const codeDoc = codeSnap.docs[0];
-        const codeData = codeDoc.data() as ReferralCode;
-
-        if (codeData.used) {
-          throw new Error('This referral code has already been used.');
-        }
-
-        // Set the referrer and mark the code as used
-        referredBy = codeData.creatorUid;
-        transaction.update(codeDoc.ref, { used: true });
-      }
-
+      
       const newUserProfile: UserData = {
         uid: user.uid,
         email: data.email,
@@ -109,7 +111,13 @@ export async function createUserProfile(
         bankAccounts: [],
       };
 
+      // 1. Create the new user profile
       transaction.set(userDocRef, newUserProfile);
+
+      // 2. If a referral code was used, mark it as used
+      if (referralCodeRef) {
+        transaction.update(referralCodeRef, { used: true });
+      }
     });
 
     return { success: true };
