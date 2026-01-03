@@ -57,7 +57,7 @@ export default function AdminPendingTransactionsPage() {
     if (loading && !transactions) {
       return <Skeleton className="h-64 w-full" />;
     }
-    return <PendingTransactionsTable transactions={filteredTransactions} onUpdate={handleTransactionUpdate} />;
+    return <PendingTransactionsTable transactions={filteredTransactions || []} onUpdate={handleTransactionUpdate} />;
   }
   
   return (
@@ -77,3 +77,5 @@ export default function AdminPendingTransactionsPage() {
     </div>
   );
 }
+
+    

@@ -59,7 +59,7 @@ const formatDate = (date: any) => {
     return d.toLocaleDateString();
 };
 
-function TransactionsTable({ transactions, isLoading, indexCreationUrl }: { transactions: Transaction[] | null, isLoading: boolean, indexCreationUrl?: string | null }) {
+function TransactionsTable({ transactions, isLoading, indexCreationUrl }: { transactions: Transaction[], isLoading: boolean, indexCreationUrl?: string | null }) {
   if (isLoading) {
     return (
       <Card>
@@ -179,3 +179,5 @@ export default function TransactionsPage() {
     </div>
   );
 }
+
+    

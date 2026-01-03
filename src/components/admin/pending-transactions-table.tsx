@@ -77,11 +77,13 @@ export function PendingTransactionsTable({
           }
 
           for (const chunk of chunks) {
-            const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', chunk));
-            const userSnapshots = await getDocs(usersQuery);
-            userSnapshots.forEach(userDoc => {
-              userCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
-            });
+            if (chunk.length > 0) {
+              const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', chunk));
+              const userSnapshots = await getDocs(usersQuery);
+              userSnapshots.forEach(userDoc => {
+                userCache.set(userDoc.id, { id: userDoc.id, ...userDoc.data() } as UserData);
+              });
+            }
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
@@ -218,7 +220,7 @@ export function PendingTransactionsTable({
                                   <DialogTitle>Proof of Payment</DialogTitle>
                               </DialogHeader>
                               <div className="relative h-96 w-full">
-                                  <Image src={tx.proofOfPaymentUrl} alt="Proof of payment" fill objectFit="contain" />
+                                  <Image src={tx.proofOfPaymentUrl} alt="Proof of payment" fill style={{objectFit: 'contain'}} />
                               </div>
                           </DialogContent>
                       </Dialog>
@@ -266,3 +268,5 @@ export function PendingTransactionsTable({
     </div>
   );
 }
+
+    

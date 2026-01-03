@@ -9,14 +9,27 @@ import {
   FirestoreError,
   DocumentReference,
   DocumentSnapshot,
+  getFirestore,
+  getApp,
+  getApps,
+  initializeApp,
 } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
+import { firebaseConfig } from '../config';
 
-// A stable string representation of a query for dependency arrays.
-const getQueryPath = (q: Query | DocumentReference | null) => {
+// This ensures Firebase is initialized only once, and returns a stable firestore instance.
+const getStableFirestore = () => {
+    if (getApps().length === 0) {
+        return getFirestore(initializeApp(firebaseConfig));
+    } else {
+        return getFirestore(getApp());
+    }
+};
+const firestore = getStableFirestore();
+
+// Creates a stable key from a query object without stringifying it.
+const getQueryKey = (q: Query | DocumentReference | null) => {
     if (!q) return null;
-    // This is a simplified but effective way to get a unique key for a query/ref.
-    // It combines the path with the internal query constraints representation.
     return `${q.path}_${(q as any)._query?.canonicalId() || 'doc'}`;
 }
 
@@ -26,17 +39,15 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  const queryKey = useMemo(() => getQueryPath(query), [query]);
+  const queryKey = useMemo(() => getQueryKey(query), [query]);
 
   useEffect(() => {
-    if (!query || !queryKey) {
-      setData(null);
+    if (!queryKey || !query) {
       setLoading(false);
-      setError(null);
-      setIndexCreationUrl(null);
+      setData([]);
       return;
     }
-
+    
     setLoading(true);
     setIndexCreationUrl(null);
     setError(null);
@@ -54,7 +65,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setLoading(false);
       },
       (err: FirestoreError) => {
-        console.error('Error fetching collection:', err.message);
+        console.error(`[useCollection] Error fetching collection at ${query.path}:`, err.message);
 
         if (
           err.code === 'failed-precondition' &&
@@ -75,7 +86,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [queryKey]); // Use the stable key for the dependency array
+  }, [queryKey]); 
 
   return { data, loading, error, indexCreationUrl };
 }
@@ -85,13 +96,12 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   
-  const docKey = useMemo(() => getQueryPath(ref), [ref]);
+  const docKey = useMemo(() => getQueryKey(ref), [ref]);
 
   useEffect(() => {
-    if (!ref || !docKey) {
-      setData(null);
+    if (!docKey || !ref) {
       setLoading(false);
-      setError(null);
+      setData(null);
       return;
     }
     
@@ -109,7 +119,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
         setLoading(false);
       },
       (err: FirestoreError) => {
-        console.error(`Error fetching document at ${ref.path}:`, err);
+        console.error(`[useDoc] Error fetching document at ${ref.path}:`, err);
         setError(err);
         setData(null);
         setLoading(false);
@@ -117,7 +127,9 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
     );
 
     return () => unsubscribe();
-  }, [docKey]); // Use the stable key for the dependency array
+  }, [docKey]);
 
   return { data, loading, error };
 }
+
+    

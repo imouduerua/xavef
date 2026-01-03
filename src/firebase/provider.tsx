@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
@@ -6,35 +7,34 @@ import { getAuth, onAuthStateChanged, type Auth, type User } from 'firebase/auth
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
-// --- Initialize Firebase Services ---
-// This logic runs once when the module is first loaded, ensuring services are singletons.
-let app: FirebaseApp;
-if (getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
+// --- Initialize Firebase App ---
+// This ensures Firebase is initialized only once.
+function initializeFirebase() {
+  if (getApps().length === 0) {
+    return initializeApp(firebaseConfig);
+  } else {
+    return getApp();
+  }
 }
-const auth = getAuth(app);
-const firestore = getFirestore(app);
+const app = initializeFirebase();
 
 // --- Define Context Types ---
-interface FirebaseContextType {
-  app: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
+interface AuthContextType {
   user: User | null;
   loading: boolean;
 }
 
 // --- Create Context ---
-const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const FirebaseAppContext = createContext<FirebaseApp | undefined>(undefined);
 
-// --- Provider Component ---
-export function FirebaseProvider({ children }: { children: React.ReactNode }) {
+// --- Auth Provider Component ---
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
@@ -43,43 +43,60 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({
-    app,
-    auth,
-    firestore,
     user,
     loading,
   }), [user, loading]);
 
   return (
-    <FirebaseContext.Provider value={value}>
-      {children}
-    </FirebaseContext.Provider>
+    <AuthContext.Provider value={value}>
+      <FirebaseAppContext.Provider value={app}>
+        {children}
+      </FirebaseAppContext.Provider>
+    </AuthContext.Provider>
   );
 }
 
 // --- Custom Hooks for easy access ---
-function useFirebase() {
-  const context = useContext(FirebaseContext);
-  if (context === undefined) {
-    throw new Error('useFirebase must be used within a FirebaseProvider');
-  }
-  return context;
-}
 
-export function useFirebaseApp(): FirebaseApp {
-  return useFirebase().app;
-}
-
-export function useAuth(): Auth {
-  return useFirebase().auth;
-}
-
-export function useFirestore(): Firestore {
-  return useFirebase().firestore;
+function useAuthContext() {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuthContext must be used within an AuthProvider');
+    }
+    return context;
 }
 
 export function useUser() {
-    const { user, loading } = useFirebase();
-    const uid = user?.uid ?? null;
-    return { user, uid, loading };
+    const { user, loading } = useAuthContext();
+    return { user, uid: user?.uid ?? null, loading };
 }
+
+function useFirebaseApp() {
+    const context = useContext(FirebaseAppContext);
+    if (context === undefined) {
+        throw new Error('useFirebaseApp must be used within an AuthProvider');
+    }
+    return context;
+}
+
+// These hooks provide stable instances of Auth and Firestore
+export function useAuth(): Auth {
+  const app = useFirebaseApp();
+  return useMemo(() => getAuth(app), [app]);
+}
+
+export function useFirestore(): Firestore {
+  const app = useFirebaseApp();
+  return useMemo(() => getFirestore(app), [app]);
+}
+
+// Main provider to wrap the application
+export function FirebaseProvider({ children }: { children: React.ReactNode }) {
+  return (
+      <AuthProvider>
+          {children}
+      </AuthProvider>
+  )
+}
+
+    

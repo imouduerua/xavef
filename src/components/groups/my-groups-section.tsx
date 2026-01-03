@@ -78,16 +78,18 @@ export function MyGroupsSection() {
       {hasRequests && (
         <div>
             <h3 className="text-xl font-semibold mb-4">Pending Join Requests</h3>
-            <JoinRequestsList requests={joinRequests} />
+            <JoinRequestsList requests={joinRequests || []} />
         </div>
       )}
        {hasRequests && hasGroups && <Separator />}
       {hasGroups && (
         <div>
             <h3 className="text-xl font-semibold mb-4">My Groups</h3>
-            <MyGroupsList groups={groups} />
+            <MyGroupsList groups={groups || []} />
         </div>
       )}
     </div>
   );
 }
+
+    

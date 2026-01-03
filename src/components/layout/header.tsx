@@ -75,6 +75,7 @@ export function AppHeader() {
                 id: req.id,
                 title: 'Group Join Request',
                 description: `${req.requesterName} wants to join "${req.groupName}".`,
+                createdAt: req.createdAt,
                 date: req.createdAt,
                 read: false, 
                 actionUrl: '/groups'
@@ -226,3 +227,5 @@ export function AppHeader() {
     </>
   );
 }
+
+    

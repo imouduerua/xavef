@@ -120,7 +120,7 @@ export function RecentTransactions() {
                                 <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
                             </TableCell>
                             <TableCell className="hidden lg:table-cell">{formatDate(tx.date)}</TableCell>
-                            <TableCell className={`text-right font-semibold ${amount > 0 ? 'text-green-600' : ''}`}>
+                            <TableCell className={`text-right font-semibold ${amount > 0 ? 'text-green-600' : 'text-destructive'}`}>
                                 {amount > 0 ? `+₦${amount.toFixed(2)}` : `-₦${Math.abs(amount).toFixed(2)}`}
                             </TableCell>
                         </TableRow>
@@ -132,3 +132,5 @@ export function RecentTransactions() {
     </Card>
   );
 }
+
+    

@@ -91,7 +91,7 @@ export default function GroupDetailsPage() {
             where('date', '>=', weekStart),
             where('date', '<', weekEnd)
         )
-    }, [groupId, group?.members, weekStart, weekEnd, firestore]);
+    }, [groupId, group, weekStart, weekEnd, firestore]);
     
     const groupTransactionsQuery = useMemo(() => (groupId) ? query(
             collectionGroup(firestore, 'transactions'),
@@ -144,8 +144,21 @@ export default function GroupDetailsPage() {
     
     const isLoading = groupLoading || loadingMembers || contributionsLoading || allTxsLoading;
 
-    if (isLoading || !group) {
+    if (isLoading) {
         return <PageSkeleton />;
+    }
+    
+    if (!group) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Group Not Found</CardTitle>
+                        <CardDescription>This group could not be loaded.</CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
+        )
     }
 
     const expectedWeeklyPurse = group.contributionAmount * group.members.length;
@@ -242,7 +255,7 @@ export default function GroupDetailsPage() {
                                  <Button>
                                     <HandCoins className="mr-2 h-4 w-4" />
                                     Contribute to Group
-                                </Button>
+                                 </Button>
                            </ContributeDialog>
                         )}
                         {isGroupCreator && group.status === 'active' && (

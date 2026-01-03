@@ -106,7 +106,7 @@ export default function WithdrawalPage() {
         if (userData) {
              return <WithdrawalForm 
                 solidaraBalance={userData.solidaraBalance} 
-                bankAccounts={userData.bankAccounts} 
+                bankAccounts={userData.bankAccounts || []} 
             />;
         }
         return <CompleteProfilePrompt />; // Fallback

@@ -17,7 +17,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 interface UserListProps {
-    users: UserData[] | null;
+    users: UserData[];
     loading: boolean;
 }
 
@@ -80,3 +80,5 @@ export function UserList({ users, loading }: UserListProps) {
     </Table>
   );
 }
+
+    

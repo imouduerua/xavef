@@ -245,7 +245,7 @@ export function DepositDialog({
                       </FormDescription>
                       {proofOfPayment.dataUrl && (
                           <div className="mt-4 relative w-full h-40 rounded-md overflow-hidden border">
-                              <Image src={proofOfPayment.dataUrl} alt="Receipt preview" layout="fill" objectFit="contain" />
+                              <Image src={proofOfPayment.dataUrl} alt="Receipt preview" layout="fill" style={{objectFit: 'contain'}} />
                           </div>
                       )}
                     </FormItem>
@@ -277,3 +277,5 @@ export function DepositDialog({
     </Dialog>
   );
 }
+
+    

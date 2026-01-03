@@ -33,9 +33,11 @@ export default function AdminUsersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <UserList users={users} loading={loading} />
+          <UserList users={users || []} loading={loading} />
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    

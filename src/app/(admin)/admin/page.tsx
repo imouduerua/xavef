@@ -155,6 +155,7 @@ export default function AdminDashboardPage() {
             value={isLoading ? '...' : stats.totalActiveGroups.toString()}
             description="Number of currently active savings groups."
             icon={Activity}
+            link="/admin/groups"
         />
         <StatCard
             title="Pending Transactions"
@@ -184,3 +185,5 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    

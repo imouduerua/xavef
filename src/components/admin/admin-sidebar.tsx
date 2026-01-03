@@ -9,6 +9,7 @@ import {
   Clock,
   PanelLeft,
   History,
+  Shield,
 } from 'lucide-react';
 
 import {
@@ -28,6 +29,7 @@ import { useAdminStatus } from '@/hooks/use-admin-status';
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { href: '/admin/users', icon: Users, label: 'User Management' },
+  { href: '/admin/groups', icon: Shield, label: 'Group Management' },
   { href: '/admin/pending-transactions', icon: Clock, label: 'Pending Transactions' },
 ];
 
@@ -96,3 +98,5 @@ export function AdminSidebar() {
     </Sidebar>
   );
 }
+
+    
