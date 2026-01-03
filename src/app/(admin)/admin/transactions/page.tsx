@@ -16,7 +16,7 @@ import type {
 import React, { useMemo, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { getFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
 import {
   collection,
   collectionGroup,
@@ -35,7 +35,7 @@ function AllTransactionsPageContent() {
     TransactionWithUserDetails[] | null
   >(null);
   const [processing, setProcessing] = useState(true);
-  const { firestore } = getFirebase();
+  const firestore = useFirestore();
 
   const allTxsQuery = useMemo(
     () =>

@@ -10,8 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { getFirebase } from '@/firebase';
-import { useAuthContext } from '@/context/auth-context';
+import { useFirestore, useUser } from '@/firebase/provider';
 import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ArrowLeft, Landmark, PiggyBank } from 'lucide-react';
 import Link from 'next/link';
@@ -46,10 +45,10 @@ function PageSkeleton() {
 export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
-  const { user: adminUser } = useAuthContext();
+  const { user: adminUser } = useUser();
   const { isSuperAdmin } = useAdminStatus();
   const [isUpdatingPermission, setIsUpdatingPermission] = React.useState(false);
-  const { firestore } = getFirebase();
+  const firestore = useFirestore();
 
   const userDocRef = useMemo(() => (userId ? doc(firestore, 'users', userId) : null), [userId, firestore]);
   const adminDocRef = useMemo(() => (userId ? doc(firestore, 'admins', userId) : null), [userId, firestore]);

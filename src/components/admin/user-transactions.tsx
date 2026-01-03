@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { getFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
 import { Transaction, TransactionStatus } from '@/lib/types';
 import { collection, orderBy, query } from 'firebase/firestore';
 import React, { useMemo, useState } from 'react';
@@ -47,7 +47,7 @@ interface UserTransactionsProps {
 
 export function UserTransactions({ userId }: UserTransactionsProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const { firestore } = getFirebase();
+  const firestore = useFirestore();
 
   const transactionsQuery = useMemo(() => (userId)
     ? query(

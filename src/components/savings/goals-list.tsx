@@ -2,8 +2,7 @@
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { getFirebase } from '@/firebase';
-import { useAuthContext } from '@/context/auth-context';
+import { useFirestore, useUser } from '@/firebase/provider';
 import type { SavingGoal } from '@/lib/types';
 import { collection, query, orderBy } from 'firebase/firestore';
 import React, { useMemo } from 'react';
@@ -27,8 +26,8 @@ function GoalSkeleton() {
 
 
 export function GoalsList() {
-  const { uid } = useAuthContext();
-  const { firestore } = getFirebase();
+  const { uid } = useUser();
+  const firestore = useFirestore();
 
   const goalsQuery = useMemo(() => (uid) ? query(collection(firestore, `users/${uid}/goals`), orderBy('createdAt', 'desc')) : null, [uid, firestore]);
 

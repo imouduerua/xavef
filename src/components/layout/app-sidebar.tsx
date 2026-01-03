@@ -17,7 +17,7 @@ import {
   Clock,
 } from 'lucide-react';
 
-import { useAuthContext } from '@/context/auth-context';
+import { useUser } from '@/firebase/provider';
 import { useAdminStatus } from '@/hooks/use-admin-status';
 import {
   Sidebar,
@@ -54,7 +54,7 @@ const bottomNavItems = [{ href: '/settings', icon: Settings, label: 'Settings' }
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { user } = useAuthContext();
+  const { user } = useUser();
   const { isAdmin, isSuperAdmin } = useAdminStatus();
   const { isMobile, setOpenMobile } = useSidebar();
 

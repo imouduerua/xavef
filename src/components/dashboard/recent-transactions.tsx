@@ -16,11 +16,10 @@ import type { Transaction, TransactionStatus } from "@/lib/types";
 import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
 import { useCollection } from "@/firebase/firestore/use-collection";
-import { getFirebase } from "@/firebase";
+import { useFirestore, useUser } from "@/firebase/provider";
 import { collection, limit, query, where, orderBy } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
-import { useAuthContext } from "@/context/auth-context";
 
 const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destructive"> = {
     "Completed": "default",
@@ -30,8 +29,8 @@ const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destru
 
 
 export function RecentTransactions() {
-  const { uid } = useAuthContext();
-  const { firestore } = getFirebase();
+  const { uid } = useUser();
+  const firestore = useFirestore();
 
   const transactionsQuery = useMemo(() => (uid) ? query(
       collection(firestore, "users", uid, "transactions"),

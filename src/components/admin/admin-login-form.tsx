@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { getFirebase } from "@/firebase";
+import { useAuth } from "@/firebase/provider";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -33,7 +33,7 @@ const formSchema = z.object({
 export function AdminLoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
-  const { auth } = getFirebase();
+  const auth = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

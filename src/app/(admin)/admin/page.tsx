@@ -11,7 +11,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { getFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import { collection, collectionGroup, query, where } from 'firebase/firestore';
 import {
@@ -69,7 +69,7 @@ function StatCard({
 }
 
 export default function AdminDashboardPage() {
-  const { firestore } = getFirebase();
+  const firestore = useFirestore();
   const usersQuery = useMemo(() => query(collection(firestore, 'users')), [firestore]);
   const groupsQuery = useMemo(() => query(collection(firestore, 'groups'), where('status', '==', 'active')), [firestore]);
   const transactionsQuery = useMemo(() => query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Completed')), [firestore]);

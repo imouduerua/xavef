@@ -3,8 +3,7 @@
 
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { getFirebase } from '@/firebase';
-import { useAuthContext } from '@/context/auth-context';
+import { useUser, useFirestore } from '@/firebase/provider';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import {
   doc,
@@ -84,7 +83,7 @@ function GroupMembers({
 }) {
   const [members, setMembers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
-  const { firestore } = getFirebase();
+  const firestore = useFirestore();
 
   useEffect(() => {
     if (memberIds.length === 0) {
@@ -179,8 +178,8 @@ function GroupMembers({
 export default function GroupDetailsPage() {
   const params = useParams();
   const groupId = params.groupId as string;
-  const { user } = useAuthContext();
-  const { firestore } = getFirebase();
+  const { user } = useUser();
+  const firestore = useFirestore();
 
   const groupRef = useMemo(
     () => (groupId ? doc(firestore, 'groups', groupId) : null),

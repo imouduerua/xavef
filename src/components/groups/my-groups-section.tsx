@@ -2,8 +2,7 @@
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { getFirebase } from '@/firebase';
-import { useAuthContext } from '@/context/auth-context';
+import { useFirestore, useUser } from '@/firebase/provider';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import React, { useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
@@ -31,8 +30,8 @@ function SectionSkeleton() {
 }
 
 export function MyGroupsSection() {
-  const { user } = useAuthContext();
-  const { firestore } = getFirebase();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const uid = user?.uid;
 
   const myGroupsQuery = useMemo(() => (uid) ? query(

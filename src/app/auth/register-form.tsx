@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { getFirebase } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase/provider";
 import { Loader2 } from "lucide-react";
 import { createUserProfile } from "../(app)/dashboard/actions";
 
@@ -38,7 +38,8 @@ const formSchema = z.object({
 export function RegisterForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
-  const { auth, firestore } = getFirebase();
+  const auth = useAuth();
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

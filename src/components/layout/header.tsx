@@ -17,9 +17,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '../ui/sidebar';
-import { getFirebase } from '@/firebase';
+import { useFirestore, useAuth, useUser } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useAuthContext } from '@/context/auth-context';
 import { toast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
@@ -38,8 +37,9 @@ const formatDate = (date: any) => {
 
 export function AppHeader() {
   const router = useRouter();
-  const { user } = useAuthContext();
-  const { firestore, auth } = getFirebase();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const auth = useAuth();
 
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');

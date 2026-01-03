@@ -13,8 +13,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { getFirebase } from '@/firebase';
-import { useAuthContext } from '@/context/auth-context';
+import { useFirestore, useUser } from '@/firebase/provider';
 import { useToast } from '@/hooks/use-toast';
 import type { Group } from '@/lib/types';
 import { HandCoins, Loader2 } from 'lucide-react';
@@ -28,9 +27,9 @@ interface ContributeDialogProps {
 
 export function ContributeDialog({ group, children }: ContributeDialogProps) {
   const [isContributing, setIsContributing] = React.useState(false);
-  const { user } = useAuthContext();
+  const { user } = useUser();
   const { toast } = useToast();
-  const { firestore } = getFirebase();
+  const firestore = useFirestore();
 
   const formatCurrency = (amount: number) =>
     `₦${amount.toLocaleString('en-US', {

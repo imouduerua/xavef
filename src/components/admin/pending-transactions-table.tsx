@@ -21,7 +21,7 @@ import {
 } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { MoreHorizontal, CheckCircle, XCircle, Loader2, Image as ImageIcon } from 'lucide-react';
-import { getFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
 import { toast } from '@/hooks/use-toast';
 import { updateTransactionStatus } from './actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
@@ -49,7 +49,7 @@ export function PendingTransactionsTable({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [processedTransactions, setProcessedTransactions] = useState<TransactionWithUserDetails[]>([]);
   const [processing, setProcessing] = useState(true);
-  const { firestore } = getFirebase();
+  const firestore = useFirestore();
 
   const transactionIds = useMemo(() => transactions.map(t => t.id).join(','), [transactions]);
 

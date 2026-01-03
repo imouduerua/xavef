@@ -13,8 +13,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { getFirebase } from '@/firebase';
-import { useAuthContext } from '@/context/auth-context';
+import { useFirestore, useUser } from '@/firebase/provider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AccountType, SavingGoal, Transaction, GroupJoinRequest, UserData } from '@/lib/types';
@@ -25,8 +24,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { transferToAnnual } from '@/app/(app)/dashboard/actions';
 
 export function DashboardContent() {
-  const { user, loading: authLoading } = useAuthContext();
-  const { firestore } = getFirebase();
+  const { user, loading: authLoading } = useUser();
+  const firestore = useFirestore();
 
   const userDocRef = useMemo(() => {
     if (!user) return null;
@@ -75,7 +74,7 @@ export function DashboardContent() {
 
 function DashboardApp({ user, userData }: { user: import('firebase/auth').User, userData: UserData }) {
   const uid = user.uid;
-  const { firestore } = getFirebase();
+  const firestore = useFirestore();
 
   const pendingTransactionsQuery = useMemo(() => (uid) ? query(
       collection(firestore, "users", uid, "transactions"),

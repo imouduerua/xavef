@@ -13,7 +13,7 @@ import type { Transaction } from '@/lib/types';
 import React, { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { getFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
 import {
   collectionGroup,
   query,
@@ -23,7 +23,7 @@ import {
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 
 export default function AdminPendingTransactionsPage() {
-  const { firestore } = getFirebase();
+  const firestore = useFirestore();
   const pendingTxsQuery = useMemo(() => {
     return query(
       collectionGroup(firestore, 'transactions'),

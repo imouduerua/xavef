@@ -2,14 +2,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useAuthContext } from '@/context/auth-context';
+import { useUser } from '@/firebase/provider';
 import { useAdminStatus } from '@/hooks/use-admin-status';
 import { useRouter, usePathname } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading } = useAuthContext();
+  const { user, loading: authLoading } = useUser();
   const { isAdmin, loading: adminLoading } = useAdminStatus();
   const router = useRouter();
   const pathname = usePathname();
@@ -20,9 +20,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     // Wait until authentication status is resolved
     if (authLoading) return;
 
-    // If no user, redirect to login page
+    // If no user, redirect to login page, except for auth pages
     if (!user) {
-      router.replace('/');
+      if (pathname !== '/' && pathname !== '/register' && pathname !== '/admin-login') {
+         router.replace('/');
+      }
       return;
     }
 
@@ -61,6 +63,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Render nothing while redirecting
+  // Render nothing while redirecting or on auth pages if logged in
+  if (user && (pathname === '/' || pathname === '/register' || pathname === '/admin-login')) {
+      // If user is already logged in, redirect them from auth pages to dashboard.
+      useEffect(() => {
+          router.replace(isAdmin ? '/admin' : '/dashboard');
+      }, [router, isAdmin]);
+      return null;
+  }
+
+
   return null;
 }

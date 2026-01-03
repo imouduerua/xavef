@@ -9,7 +9,7 @@ import {
   FirestoreError,
 } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
-import { getFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
 
 const createQueryKey = (query: Query<any> | null): string | null => {
     if (!query) return null;

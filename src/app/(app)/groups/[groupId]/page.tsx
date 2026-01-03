@@ -3,8 +3,7 @@
 
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useAuthContext } from '@/context/auth-context';
-import { getFirebase } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase/provider';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import { doc, getDoc, collection, getDocs, query, where, documentId, collectionGroup, Timestamp, orderBy } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
@@ -58,8 +57,8 @@ const formatCurrency = (amount: number) =>
 export default function GroupDetailsPage() {
     const params = useParams();
     const groupId = params.groupId as string;
-    const { user } = useAuthContext();
-    const { firestore } = getFirebase();
+    const { user } = useUser();
+    const firestore = useFirestore();
     const [membersData, setMembersData] = useState<UserData[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(true);
 

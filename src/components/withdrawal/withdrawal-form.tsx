@@ -28,8 +28,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import type { BankAccount } from '@/lib/types';
-import { getFirebase } from '@/firebase';
-import { useAuthContext } from '@/context/auth-context';
+import { useFirestore, useUser } from '@/firebase/provider';
 import { Card, CardContent } from '../ui/card';
 
 interface WithdrawalFormProps {
@@ -41,8 +40,8 @@ const WITHDRAWAL_FEE_PERCENTAGE = 0.033;
 
 export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const { user } = useAuthContext();
-  const { firestore } = getFirebase();
+  const { user } = useUser();
+  const firestore = useFirestore();
 
   const withdrawalSchema = z.object({
     amount: z.coerce
