@@ -15,10 +15,11 @@ import { Badge } from "@/components/ui/badge";
 import type { Transaction, TransactionStatus } from "@/lib/types";
 import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
-import { useCollection, useFirestore, useUser } from "@/firebase";
+import { useCollection, useFirestore } from "@/firebase";
 import { collection, limit, query, where, orderBy } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
+import { useAuthContext } from "@/context/auth-context";
 
 const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destructive"> = {
     "Completed": "default",
@@ -28,7 +29,7 @@ const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destru
 
 
 export function RecentTransactions() {
-  const { user } = useUser();
+  const { user } = useAuthContext();
   const firestore = useFirestore();
   const uid = user?.uid;
 
