@@ -3,7 +3,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { useUser, useFirestore } from '@/firebase/provider';
-import { useDoc } from '@/firebase/firestore/use-doc';
+import { useDoc } from '@/firebase/firestore/use-collection';
 import { useRouter, usePathname } from 'next/navigation';
 import { doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -120,4 +120,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </AuthGuard>
   );
 }
-
