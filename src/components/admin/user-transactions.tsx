@@ -48,12 +48,12 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
   const firestore = useFirestore();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const transactionsQuery = (firestore && userId)
+  const transactionsQuery = useMemo(() => (firestore && userId)
     ? query(
         collection(firestore, 'users', userId, 'transactions'),
         orderBy('date', 'desc')
       )
-    : null;
+    : null, [firestore, userId]);
 
   const { data: transactions, loading } =
     useCollection<Transaction>(transactionsQuery);

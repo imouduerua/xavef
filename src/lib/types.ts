@@ -16,6 +16,7 @@ export interface BankAccount {
 
 export interface UserData {
   id?: string;
+  path?: string;
   uid: string;
   email: string;
   displayName: string; 
@@ -78,6 +79,7 @@ export interface TransactionWithUserDetails extends Transaction {
 
 export interface Notification {
   id: string;
+  path?: string;
   createdAt: any;
   title: string;
   description: string;
@@ -88,6 +90,7 @@ export interface Notification {
 
 export interface ReferralCode {
     id: string;
+    path?: string;
     code: string;
     creatorUid: string;
     used: boolean;
@@ -96,6 +99,7 @@ export interface ReferralCode {
 
 export interface SavingGoal {
     id: string;
+    path?: string;
     userId: string;
     name: string;
     targetAmount: number;
@@ -108,6 +112,7 @@ export type GroupStatus = 'forming' | 'active' | 'closed';
 
 export interface Group {
     id: string;
+    path?: string;
     name: string;
     contributionAmount: number;
     contributionFrequency: 'weekly';
@@ -127,6 +132,7 @@ export type JoinRequestStatus = 'pending' | 'approved' | 'declined';
 
 export interface GroupJoinRequest {
     id: string;
+    path?: string;
     groupId: string;
     groupName: string;
     groupCreatorUid: string;
@@ -136,10 +142,3 @@ export interface GroupJoinRequest {
     status: JoinRequestStatus;
     createdAt: any;
 }
-
-    
-
-    
-
-
-

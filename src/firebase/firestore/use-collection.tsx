@@ -7,30 +7,26 @@ import {
   QuerySnapshot,
   DocumentData,
   FirestoreError,
-  queryEqual,
 } from 'firebase/firestore';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
-// This hook is designed to be stable even if the query object reference changes on every render.
-// It uses a ref to store the previous query and only re-subscribes if the new query is different.
+// This hook is now stable and will not cause infinite loops.
+// It uses the query's string representation for stability.
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  const queryRef = useRef<Query<T> | null>(query);
+  // By using `JSON.stringify` on the query object's internal properties,
+  // we create a stable, primitive dependency for the useEffect hook.
+  // The effect will only re-run if the query's actual definition changes.
+  const queryKey = useMemo(() => {
+    return query ? JSON.stringify((query as any)._query) : null;
+  }, [query]);
+
 
   useEffect(() => {
-    // If the query object itself is the same or if they are deeply equal, do nothing.
-    // This is the core of the stability fix.
-    if (queryRef.current === query || (queryRef.current && query && queryEqual(queryRef.current, query))) {
-      return;
-    }
-    
-    // Update the ref to the new query for the next render cycle.
-    queryRef.current = query;
-
     if (!query) {
       setData(null);
       setLoading(false);
@@ -76,10 +72,9 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       }
     );
 
-    // The cleanup function will be called when the component unmounts
-    // or when the dependencies of the useEffect hook change.
+    // This now correctly depends on the stable queryKey.
     return () => unsubscribe();
-  }, [query]); // The dependency is the query itself, but the logic inside prevents re-running if it's deeply equal.
+  }, [queryKey]); 
 
   return { data, loading, error, indexCreationUrl };
 }
