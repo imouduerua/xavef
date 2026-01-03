@@ -9,26 +9,20 @@ import {
   FirestoreError,
   DocumentReference,
   DocumentSnapshot,
-  getFirestore,
 } from 'firebase/firestore';
-import { getApp, getApps, initializeApp } from 'firebase/app';
 import { useEffect, useState, useMemo } from 'react';
-import { firebaseConfig } from '../config';
 
-// This ensures Firebase is initialized only once, and returns a stable firestore instance.
-const getStableFirestore = () => {
-    if (getApps().length === 0) {
-        return getFirestore(initializeApp(firebaseConfig));
-    } else {
-        return getFirestore(getApp());
-    }
-};
-const firestore = getStableFirestore();
-
-// Creates a stable key from a query object without stringifying it.
+// This function creates a stable string representation of a query for use in dependency arrays.
 const getQueryKey = (q: Query | DocumentReference | null) => {
     if (!q) return null;
-    return `${q.path}_${(q as any)._query?.canonicalId() || 'doc'}`;
+
+    if ('_query' in q) { // It's a query
+      const queryObj = q as Query;
+      // Combine path and internal query constraints to create a unique key
+      return `${queryObj.path}_${(queryObj as any)._query.canonicalId()}`;
+    } else { // It's a DocumentReference
+      return q.path;
+    }
 }
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
@@ -63,7 +57,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setLoading(false);
       },
       (err: FirestoreError) => {
-        console.error(`[useCollection] Error fetching collection at ${query.path}:`, err.message);
+        console.error(`[useCollection] Error fetching collection:`, err.message);
 
         if (
           err.code === 'failed-precondition' &&
@@ -117,7 +111,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
         setLoading(false);
       },
       (err: FirestoreError) => {
-        console.error(`[useDoc] Error fetching document at ${ref.path}:`, err);
+        console.error(`[useDoc] Error fetching document:`, err);
         setError(err);
         setData(null);
         setLoading(false);

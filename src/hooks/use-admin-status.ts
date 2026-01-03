@@ -39,5 +39,3 @@ export function useAdminStatus() {
 
   return result;
 }
-
-    

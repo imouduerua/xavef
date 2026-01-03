@@ -82,5 +82,3 @@ export function AvailableGroupsList() {
     </div>
   );
 }
-
-    

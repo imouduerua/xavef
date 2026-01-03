@@ -8,95 +8,74 @@ import { getFirestore, type Firestore } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
 // --- Initialize Firebase App ---
-// This ensures Firebase is initialized only once.
-function initializeFirebase() {
-  if (getApps().length === 0) {
-    return initializeApp(firebaseConfig);
-  } else {
-    return getApp();
-  }
-}
-const app = initializeFirebase();
+// This ensures Firebase is initialized only once, globally.
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 // --- Define Context Types ---
-interface AuthContextType {
+interface FirebaseContextType {
+  app: FirebaseApp;
+  auth: Auth;
+  firestore: Firestore;
   user: User | null;
   loading: boolean;
 }
 
 // --- Create Context ---
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const FirebaseAppContext = createContext<FirebaseApp | undefined>(undefined);
+const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
 
-// --- Auth Provider Component ---
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+
+// --- Main Provider Component ---
+export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
     });
+    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
   const value = useMemo(() => ({
+    app,
+    auth,
+    firestore,
     user,
     loading,
   }), [user, loading]);
 
   return (
-    <AuthContext.Provider value={value}>
-      <FirebaseAppContext.Provider value={app}>
-        {children}
-      </FirebaseAppContext.Provider>
-    </AuthContext.Provider>
+    <FirebaseContext.Provider value={value}>
+      {children}
+    </FirebaseContext.Provider>
   );
 }
 
 // --- Custom Hooks for easy access ---
 
-function useAuthContext() {
-    const context = useContext(AuthContext);
+function useFirebaseContext() {
+    const context = useContext(FirebaseContext);
     if (context === undefined) {
-        throw new Error('useAuthContext must be used within an AuthProvider');
+        throw new Error('useFirebaseContext must be used within a FirebaseProvider');
     }
     return context;
 }
 
 export function useUser() {
-    const { user, loading } = useAuthContext();
+    const { user, loading } = useFirebaseContext();
     return { user, uid: user?.uid ?? null, loading };
 }
 
-function useFirebaseApp() {
-    const context = useContext(FirebaseAppContext);
-    if (context === undefined) {
-        throw new Error('useFirebaseApp must be used within an AuthProvider');
-    }
-    return context;
-}
-
-// These hooks provide stable instances of Auth and Firestore
 export function useAuth(): Auth {
-  const app = useFirebaseApp();
-  return useMemo(() => getAuth(app), [app]);
+  const { auth } = useFirebaseContext();
+  return auth;
 }
 
 export function useFirestore(): Firestore {
-  const app = useFirebaseApp();
-  return useMemo(() => getFirestore(app), [app]);
+  const { firestore } = useFirebaseContext();
+  return firestore;
 }
-
-// Main provider to wrap the application
-export function FirebaseProvider({ children }: { children: React.ReactNode }) {
-  return (
-      <AuthProvider>
-          {children}
-      </AuthProvider>
-  )
-}
-
-    

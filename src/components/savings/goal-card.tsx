@@ -2,7 +2,7 @@
 'use client';
 
 import { MoreVertical, Trash2, Pencil, PartyPopper } from 'lucide-react';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import {
   AlertDialog,
@@ -45,10 +45,11 @@ export function GoalCard({ goal }: GoalCardProps) {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isWithdrawing, setIsWithdrawing] = React.useState(false);
 
-  const userDocRef = React.useMemo(() => {
+  const userDocRef = useMemo(() => {
     if (!user) return null;
     return doc(firestore, 'users', user.uid);
   }, [user, firestore]);
+  
   const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
   const isCompleted = goal.targetAmount > 0 && goal.currentAmount >= goal.targetAmount;
@@ -207,5 +208,3 @@ export function GoalCard({ goal }: GoalCardProps) {
     </Card>
   );
 }
-
-    

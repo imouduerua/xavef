@@ -132,5 +132,3 @@ export function RecentTransactions() {
     </Card>
   );
 }
-
-    

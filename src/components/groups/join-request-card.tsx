@@ -133,5 +133,3 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
     </Card>
   );
 }
-
-    

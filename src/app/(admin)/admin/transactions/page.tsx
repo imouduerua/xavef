@@ -172,5 +172,3 @@ export default function AllTransactionsPage() {
     // This page is protected by the admin layout's super admin check
     return <AllTransactionsPageContent />;
 }
-
-    
