@@ -11,8 +11,7 @@ import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
 import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useDoc } from '@/firebase/firestore/use-doc';
+import { useCollection, useDoc } from '@/firebase/firestore/use-collection';
 import { useFirestore, useUser } from '@/firebase/provider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -257,3 +256,5 @@ export default function DashboardPage() {
       </Suspense>
     );
   }
+
+    

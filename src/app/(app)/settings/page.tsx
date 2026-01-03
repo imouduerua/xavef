@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useDoc } from "@/firebase/firestore/use-doc";
+import { useDoc } from "@/firebase/firestore/use-collection";
 import { useFirestore, useUser } from "@/firebase/provider";
 import { doc, updateDoc } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -279,3 +279,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    

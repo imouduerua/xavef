@@ -10,8 +10,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { UserData, Transaction } from "@/lib/types";
 import { WithdrawalForm } from "@/components/withdrawal/withdrawal-form";
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { useDoc } from "@/firebase/firestore/use-doc";
+import { useCollection, useDoc } from "@/firebase/firestore/use-collection";
 import React, { useMemo } from "react";
 import { collection, query, where, doc } from "firebase/firestore";
 import { PendingWithdrawalCard } from "@/components/withdrawal/pending-withdrawal-card";
@@ -132,3 +131,5 @@ export default function WithdrawalPage() {
         </div>
     );
 }
+
+    

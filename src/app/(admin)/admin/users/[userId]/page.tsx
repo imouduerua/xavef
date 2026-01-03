@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useDoc } from '@/firebase/firestore/use-doc';
+import { useDoc } from '@/firebase/firestore/use-collection';
 import { useFirestore, useUser } from '@/firebase/provider';
 import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ArrowLeft, Landmark, PiggyBank } from 'lucide-react';
@@ -192,3 +192,5 @@ export default function UserDetailPage() {
     </div>
   );
 }
+
+    

@@ -27,7 +27,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import type { SavingGoal, UserData } from '@/lib/types';
-import { useDoc } from '@/firebase/firestore/use-doc';
+import { useDoc } from '@/firebase/firestore/use-collection';
 import { useFirestore, useUser } from '@/firebase/provider';
 import { deleteSavingGoal, withdrawCompletedGoal } from '@/app/(app)/savings/client-actions';
 import { AddFundsDialog } from './add-funds-dialog';
@@ -207,3 +207,5 @@ export function GoalCard({ goal }: GoalCardProps) {
     </Card>
   );
 }
+
+    

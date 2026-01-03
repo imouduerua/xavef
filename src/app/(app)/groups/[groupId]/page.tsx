@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useDoc } from '@/firebase/firestore/use-doc';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useDoc, useCollection } from '@/firebase/firestore/use-collection';
 import { useUser, useFirestore } from '@/firebase/provider';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import { doc, getDoc, collection, getDocs, query, where, documentId, collectionGroup, Timestamp, orderBy } from 'firebase/firestore';
@@ -335,3 +334,5 @@ export default function GroupDetailsPage() {
         </div>
     );
 }
+
+    
