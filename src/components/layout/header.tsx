@@ -2,8 +2,8 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { ArrowLeft, Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent, Users } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
+import { Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent, Users } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -38,24 +38,29 @@ const formatDate = (date: any) => {
 
 export function AppHeader() {
   const router = useRouter();
-  const pathname = usePathname();
   const { user } = useAuthContext();
   const { firestore, auth } = getFirebase();
 
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');
 
-  const joinRequestsQuery = useMemo(() => (user?.uid && firestore) ? query(
+  const joinRequestsQuery = useMemo(() => {
+    if (!user?.uid || !firestore) return null;
+    return query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    ) : null, [user?.uid, firestore]);
+    );
+  }, [user?.uid, firestore]);
   
-  const notificationsQuery = useMemo(() => (user?.uid && firestore) ? query(
-          collection(firestore, `users/${user.uid}/notifications`),
-          orderBy('createdAt', 'desc'),
-          limit(10)
-      ) : null, [user?.uid, firestore]);
+  const notificationsQuery = useMemo(() => {
+    if (!user?.uid || !firestore) return null;
+    return query(
+      collection(firestore, `users/${user.uid}/notifications`),
+      orderBy('createdAt', 'desc'),
+      limit(10)
+    );
+  }, [user?.uid, firestore]);
 
   const { data: joinRequests, loading: joinRequestsLoading } = useCollection<GroupJoinRequest>(joinRequestsQuery);
   const { data: notifications, loading: notificationsLoading } = useCollection<Notification>(notificationsQuery);
@@ -95,8 +100,6 @@ export function AppHeader() {
   const unreadCount = combinedNotifications.filter((n) => !n.read).length;
   const isLoading = joinRequestsLoading || notificationsLoading;
 
-  const isDashboard = pathname === '/dashboard';
-
   useEffect(() => {
     setIsClient(true);
     const storedTheme = localStorage.getItem('theme') || 'light';
@@ -132,12 +135,6 @@ export function AppHeader() {
     <>
       <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background px-4">
         <SidebarTrigger />
-        {!isDashboard && (
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => router.back()}>
-                <ArrowLeft />
-                <span className="sr-only">Back</span>
-            </Button>
-        )}
         <div className="flex-1" />
 
         <div className="flex items-center gap-4">
