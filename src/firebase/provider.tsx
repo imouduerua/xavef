@@ -2,31 +2,42 @@
 'use client';
 
 import type { FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { User } from 'firebase/auth';
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { getFirestore } from 'firebase/firestore';
+import { createContext, useContext, useMemo } from 'react';
+import { firebaseConfig } from './config';
 
-const FirebaseContext = createContext<{
+interface FirebaseContextValue {
   app: FirebaseApp;
   auth: Auth;
   firestore: Firestore;
-} | null>(null);
+}
 
-export function useFirebase() {
+const FirebaseContext = createContext<FirebaseContextValue | null>(null);
+
+export function FirebaseProvider({ children }: { children: React.ReactNode }) {
+  const services = useMemo(() => {
+    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    const auth = getAuth(app);
+    const firestore = getFirestore(app);
+    return { app, auth, firestore };
+  }, []);
+
+  return (
+    <FirebaseContext.Provider value={services}>
+      {children}
+    </FirebaseContext.Provider>
+  );
+}
+
+function useFirebase() {
   const context = useContext(FirebaseContext);
-
   if (!context) {
     throw new Error('useFirebase must be used within a FirebaseProvider');
   }
-
   return context;
 }
 
@@ -41,26 +52,3 @@ export function useAuth() {
 export function useFirestore() {
   return useFirebase().firestore;
 }
-
-export const FirebaseProvider = (props: {
-  children: React.ReactNode;
-  app: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
-}) => {
-  const { app, auth, firestore, children } = props;
-  const value = useMemo(
-    () => ({
-      app,
-      auth,
-      firestore,
-    }),
-    [app, auth, firestore]
-  );
-
-  return (
-    <FirebaseContext.Provider value={value}>
-      {children}
-    </FirebaseContext.Provider>
-  );
-};

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { FirebaseClientProvider } from "@/firebase";
+import { FirebaseProvider } from "@/firebase/provider";
 import { AuthProvider } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 
@@ -30,12 +30,12 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <FirebaseClientProvider>
+        <FirebaseProvider>
           <AuthProvider>
             {children}
             <Toaster />
           </AuthProvider>
-        </FirebaseClientProvider>
+        </FirebaseProvider>
       </body>
     </html>
   );
