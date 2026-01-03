@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { UserTransactions } from '@/components/admin/user-transactions';
@@ -75,7 +76,7 @@ export default function UserDetailPage() {
     } finally {
         setIsUpdatingPermission(false);
     }
-  }, [adminDocRef, userData?.email, adminUser?.email]);
+  }, [adminDocRef, userData, adminUser?.email]);
 
   const PageSkeleton = () => (
      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -93,8 +94,23 @@ export default function UserDetailPage() {
     </div>
   )
 
-  if (userLoading || adminStatusLoading || !userId || !userData) {
+  if (userLoading || adminStatusLoading || !userId) {
     return <PageSkeleton />;
+  }
+
+  if (!userData) {
+    return (
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>User Not Found</CardTitle>
+                    <CardDescription>
+                        This user does not have a profile in the database.
+                    </CardDescription>
+                </CardHeader>
+            </Card>
+        </div>
+    )
   }
 
   const fullName = userData?.firstName || userData?.lastName ? `${userData.firstName} ${userData.lastName}`.trim() : (userData?.displayName || 'User');

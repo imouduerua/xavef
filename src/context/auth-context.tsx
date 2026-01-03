@@ -9,49 +9,36 @@ import type { UserData } from '@/lib/types';
 
 interface AuthContextType {
   user: User | null;
-  userData: UserData | null;
   uid: string | null;
   loading: boolean;
+  userData: UserData | null;
+  userDataLoading: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
-  userData: null,
   uid: null,
   loading: true,
+  userData: null,
+  userDataLoading: true,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const auth = useFirebaseAuth();
   const firestore = useFirestore();
   const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // This effect runs once on mount to set up the auth state listener.
-    if (!auth) {
-      // Firebase auth service might not be available on the very first render.
-      // The hook will re-run once `auth` is available.
-      return;
-    }
+    if (!auth) return;
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      // Use the functional form of setUser to safely update state
-      // based on the previous state, avoiding stale closure issues.
-      setUser(currentUser => {
-        if (firebaseUser?.uid !== currentUser?.uid) {
-          return firebaseUser;
-        }
-        return currentUser;
-      });
+      setUser(firebaseUser);
+      setLoading(false);
     });
-    
-    // Once the listener is attached, we can consider auth state initialized.
-    setAuthLoading(false);
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [auth]); // Dependency on `auth` ensures this runs once `auth` is initialized.
+  }, [auth]);
 
   const uid = user?.uid ?? null;
 
@@ -60,16 +47,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return doc(firestore, 'users', uid);
   }, [uid, firestore]);
 
-  const { data: userData, loading: docLoading } = useDoc<UserData>(userDocRef);
-
-  const loading = authLoading || (!!uid && docLoading);
+  const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
   const value = useMemo(() => ({
     user,
-    userData,
     uid,
     loading,
-  }), [user, userData, uid, loading]);
+    userData,
+    userDataLoading,
+  }), [user, uid, loading, userData, userDataLoading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -22,12 +22,27 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   // we create a stable, primitive dependency for the useEffect hook.
   // The effect will only re-run if the query's actual definition changes.
   const queryKey = useMemo(() => {
-    return query ? JSON.stringify((query as any)._query) : null;
+    if (!query) return null;
+    // The internal _query property provides a consistent representation of the query
+    const internalQuery = (query as any)._query;
+    if (!internalQuery) return null;
+    
+    // A simple serialization of the key query properties
+    try {
+        return JSON.stringify({
+            path: internalQuery.path.segments.join('/'),
+            filters: internalQuery.filters?.map((f: any) => `${f.field.segments.join('.')}${f.op}${f.value}`),
+            orderBy: internalQuery.orderBy?.map((o: any) => `${o.field.segments.join('.')}${o.dir}`),
+        });
+    } catch (e) {
+        // Fallback for complex queries that can't be easily serialized
+        return new Date().getTime().toString();
+    }
   }, [query]);
 
 
   useEffect(() => {
-    if (!query) {
+    if (!query || !queryKey) {
       setData(null);
       setLoading(false);
       setError(null);

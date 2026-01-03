@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { createUserWithEmailAndPassword, updateProfile, deleteUser, type UserCredential } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useAuth, useFirestore } from "@/firebase";
-import { createUserProfile } from "@/app/(app)/dashboard/actions";
+import { useAuth } from "@/firebase";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
@@ -38,7 +37,6 @@ const formSchema = z.object({
 export function RegisterForm() {
   const router = useRouter();
   const auth = useAuth();
-  const firestore = useFirestore();
   const [isLoading, setIsLoading] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -54,9 +52,8 @@ export function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    let userCredential: UserCredential | null = null;
     
-    if(!auth || !firestore) {
+    if(!auth) {
       toast({
         variant: "destructive",
         title: "Registration Failed",
@@ -68,61 +65,28 @@ export function RegisterForm() {
 
     try {
         // Step 1: Create the Firebase Auth user
-        userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         const user = userCredential.user;
         
         // Step 2: Update their Auth profile display name
         const displayName = `${values.firstName} ${values.lastName}`;
         await updateProfile(user, { displayName });
 
-        toast({
-            title: "Account Created",
-            description: "Finalizing your profile setup...",
-        });
-
-        // Step 3: Create the Firestore user profile document
-        const profileResult = await createUserProfile(firestore, user, {
-            firstName: values.firstName,
-            lastName: values.lastName,
-            displayName: displayName,
-            email: user.email!,
-            referralCode: values.referralCode,
-        });
-
-        if (!profileResult.success) {
-            // If profile creation fails (e.g., bad referral code), delete the auth user
-            if (userCredential) {
-              await deleteUser(userCredential.user).catch(deleteError => {
-                  console.error("Failed to clean up orphaned auth user:", deleteError);
-              });
-            }
-
-            toast({
-                variant: "destructive",
-                title: "Registration Failed",
-                description: profileResult.error || "Failed to create user profile. Please check your details and try again.",
-                duration: 10000,
-            });
-            setIsLoading(false);
-            return; 
+        // Step 3: Pass referral code via query param to dashboard for profile creation
+        const params = new URLSearchParams();
+        if (values.referralCode) {
+          params.set('ref', values.referralCode);
         }
         
         toast({
-            title: "Setup Complete!",
-            description: "Welcome! Redirecting to your dashboard...",
+            title: "Account Created",
+            description: "Redirecting to complete your profile...",
         });
         
-        router.push("/dashboard");
+        router.push(`/dashboard?${params.toString()}`);
 
     } catch (error: any) {
         console.error("Registration Error:", error);
-        
-        // If auth creation fails, this will also try to clean up, though it's less likely to exist.
-        if (userCredential) {
-            await deleteUser(userCredential.user).catch(deleteError => {
-                console.error("Failed to clean up orphaned auth user during general error:", deleteError);
-            });
-        }
         
         let errorMessage = "An unknown error occurred during registration.";
         if (error.code === 'auth/email-already-in-use') {
