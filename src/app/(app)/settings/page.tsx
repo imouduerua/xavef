@@ -18,12 +18,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useUser, useFirestore } from "@/firebase";
+import { useDoc, useFirestore } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { useAuthContext } from "@/context/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import type { UserData } from "@/lib/types";
 
 const bankAccountSchema = z.object({
   bankName: z.string().min(1, "Bank name is required"),
@@ -53,9 +54,16 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function SettingsPage() {
-  const { user, userData, loading } = useAuthContext();
+  const { user, loading: authLoading } = useAuthContext();
   const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const userDocRef = React.useMemo(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, "users", user.uid);
+  }, [user, firestore]);
+
+  const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -113,7 +121,7 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading) {
+  if (authLoading || userDataLoading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         <Card>

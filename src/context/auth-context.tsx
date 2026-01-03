@@ -2,38 +2,31 @@
 'use client';
 
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import { useAuth as useFirebaseAuth, useFirestore, useDoc } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { UserData } from '@/lib/types';
+import React, from 'react';
+import { useAuth as useFirebaseAuth } from '@/firebase';
 
 interface AuthContextType {
   user: User | null;
   uid: string | null;
   loading: boolean;
-  userData: UserData | null;
-  userDataLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({
+const AuthContext = React.createContext<AuthContextType>({
   user: null,
   uid: null,
   loading: true,
-  userData: null,
-  userDataLoading: true,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const auth = useFirebaseAuth();
-  const firestore = useFirestore();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!auth) {
-        setLoading(false);
-        return;
-    };
+      setLoading(false);
+      return;
+    }
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
@@ -43,28 +36,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [auth]);
 
-  const uid = user?.uid ?? null;
-
-  const userDocRef = useMemo(() => {
-    if (!uid || !firestore) return null;
-    return doc(firestore, 'users', uid);
-  }, [uid, firestore]);
-
-  const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
-
-  const value = useMemo(() => ({
+  const value = React.useMemo(() => ({
     user,
-    uid,
+    uid: user?.uid ?? null,
     loading,
-    userData,
-    userDataLoading,
-  }), [user, uid, loading, userData, userDataLoading]);
+  }), [user, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuthContext() {
-  const context = useContext(AuthContext);
+  const context = React.useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuthContext must be used within an AuthProvider');
   }

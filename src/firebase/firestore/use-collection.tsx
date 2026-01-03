@@ -10,14 +10,9 @@ import {
 } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
 
-export function useCollection<T = DocumentData>(query: Query<T> | null) {
-  const [data, setData] = useState<T[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<FirestoreError | null>(null);
-  const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
-
-  // Create a stable key from the query's properties to use as a dependency.
-  const queryKey = useMemo(() => {
+// This function creates a stable, serializable key from a Firestore query object.
+// This is the key to preventing infinite loops in useEffect.
+const createQueryKey = (query: Query<any> | null): string | null => {
     if (!query) return null;
     try {
         const internalQuery = (query as any)._query;
@@ -26,13 +21,25 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             filters: internalQuery.filters?.map((f: any) => `${f.field.segments.join('.')}${f.op}${JSON.stringify(f.value)}`),
             orderBy: internalQuery.orderBy?.map((o: any) => `${o.field.segments.join('.')}${o.dir}`),
             limit: internalQuery.limit,
+            startAt: internalQuery.startAt,
+            endAt: internalQuery.endAt,
         });
     } catch (e) {
         console.error("Could not serialize query:", e);
-        return null;
+        // Fallback to a less stable but still useful key
+        return query.toString();
     }
-  }, [query]);
+};
 
+
+export function useCollection<T = DocumentData>(query: Query<T> | null) {
+  const [data, setData] = useState<T[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<FirestoreError | null>(null);
+  const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
+
+  // The key is now stable and will only change if the query's definition changes.
+  const queryKey = useMemo(() => createQueryKey(query), [query]);
 
   useEffect(() => {
     if (!query || !queryKey) {
@@ -44,6 +51,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     }
 
     setLoading(true);
+    setIndexCreationUrl(null);
 
     const unsubscribe = onSnapshot(
       query,
@@ -57,11 +65,11 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setData(resultData);
         setLoading(false);
         setError(null);
-        setIndexCreationUrl(null);
       },
       (err: FirestoreError) => {
         console.error('Error fetching collection:', err.message);
 
+        // This logic is for helping developers by providing a direct link to create a missing Firestore index.
         if (
           err.code === 'failed-precondition' &&
           err.message.includes('requires an index')
@@ -80,8 +88,9 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       }
     );
 
+    // This cleanup function is crucial.
     return () => unsubscribe();
-  }, [queryKey, query]); 
+  }, [queryKey]); // The hook now ONLY re-runs when the stable key changes.
 
   return { data, loading, error, indexCreationUrl };
 }

@@ -26,12 +26,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
-import type { SavingGoal } from '@/lib/types';
-import { useFirestore } from '@/firebase';
+import type { SavingGoal, UserData } from '@/lib/types';
+import { useDoc, useFirestore } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { deleteSavingGoal, withdrawCompletedGoal } from '@/app/(app)/savings/client-actions';
 import { AddFundsDialog } from './add-funds-dialog';
 import { EditGoalDialog } from './edit-goal-dialog';
+import { doc } from 'firebase/firestore';
 
 
 interface GoalCardProps {
@@ -39,10 +40,16 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ goal }: GoalCardProps) {
-  const { user, userData, loading: userDataLoading } = useAuthContext();
+  const { user } = useAuthContext();
   const firestore = useFirestore();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isWithdrawing, setIsWithdrawing] = React.useState(false);
+
+  const userDocRef = React.useMemo(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+  const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
   const isCompleted = goal.targetAmount > 0 && goal.currentAmount >= goal.targetAmount;
   const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;

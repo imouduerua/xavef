@@ -10,9 +10,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { UserData, Transaction } from "@/lib/types";
 import { WithdrawalForm } from "@/components/withdrawal/withdrawal-form";
-import { useCollection, useFirestore, useUser } from "@/firebase";
+import { useCollection, useFirestore, useDoc } from "@/firebase";
 import React, { useMemo } from "react";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, doc } from "firebase/firestore";
 import { PendingWithdrawalCard } from "@/components/withdrawal/pending-withdrawal-card";
 
 function isProfileComplete(userData: UserData | null) {
@@ -70,22 +70,27 @@ function PageSkeleton() {
 
 
 export default function WithdrawalPage() {
-    const { user, userData, loading } = useAuthContext();
+    const { user, loading: authLoading } = useAuthContext();
     const firestore = useFirestore();
-    const uid = user?.uid;
 
-    const pendingWithdrawalQuery = useMemo(() => (uid && firestore) ? query(
-            collection(firestore, 'users', uid, 'transactions'),
+    const userDocRef = useMemo(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [user, firestore]);
+    const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
+
+    const pendingWithdrawalQuery = useMemo(() => (user?.uid && firestore) ? query(
+            collection(firestore, 'users', user.uid, 'transactions'),
             where('status', '==', 'Pending'),
             where('type', '==', 'Withdrawal'),
             where('targetAccount', '==', 'solidara')
-        ) : null, [uid, firestore]);
+        ) : null, [user?.uid, firestore]);
 
     const { data: pendingWithdrawals, loading: pendingWithdrawalsLoading } = useCollection<Transaction>(pendingWithdrawalQuery);
 
     const pendingSolidaraWithdrawal = pendingWithdrawals?.[0];
 
-    if (loading || pendingWithdrawalsLoading) {
+    if (authLoading || userDataLoading || pendingWithdrawalsLoading) {
         return <PageSkeleton />;
     }
 

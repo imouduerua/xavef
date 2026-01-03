@@ -11,22 +11,30 @@ import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
 import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useDoc } from '@/firebase';
 import { useAuthContext } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AccountType, SavingGoal, Transaction, GroupJoinRequest, UserData } from '@/lib/types';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc } from 'firebase/firestore';
 import { addFundsToGoal } from '@/app/(app)/savings/client-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { transferToAnnual } from '@/app/(app)/dashboard/actions';
 
 export function DashboardContent() {
-  const { user, userData, loading, userDataLoading } = useAuthContext();
+  const { user, loading: authLoading } = useAuthContext();
+  const firestore = useFirestore();
+
+  const userDocRef = useMemo(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
   // Show a skeleton while either authentication or user data is loading.
-  if (loading || userDataLoading) {
+  if (authLoading || userDataLoading) {
     return <PageSkeleton />;
   }
 
