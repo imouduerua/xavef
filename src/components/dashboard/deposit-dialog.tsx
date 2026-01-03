@@ -29,13 +29,14 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { useUser, useFirestore } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { addDoc, collection, Timestamp } from 'firebase/firestore';
 import type { AccountType } from '@/lib/types';
 import { BankDetailsCard } from './bank-details-card';
 import Image from 'next/image';
 import { ScrollArea } from '../ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useAuthContext } from '@/context/auth-context';
 
 const depositSchema = z.object({
   amount: z.coerce
@@ -64,7 +65,7 @@ export function DepositDialog({
   const [step, setStep] = React.useState<'amount' | 'details'>('amount');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [proofOfPayment, setProofOfPayment] = React.useState<{ file: File | null, dataUrl: string | null }>({ file: null, dataUrl: null });
-  const { user } = useUser();
+  const { user } = useAuthContext();
   const firestore = useFirestore();
 
 
