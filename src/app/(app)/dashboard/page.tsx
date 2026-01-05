@@ -85,7 +85,7 @@ function DashboardApp() {
     }
     
     if (to === 'annual') {
-        const result = await transferToAnnual(firestore, user.uid, amount);
+        const result = await transferToAnnual(user.uid, amount);
         if (result.success) {
             toast({
                 title: "Transfer Successful!",

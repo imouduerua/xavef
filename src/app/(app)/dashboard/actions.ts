@@ -116,16 +116,15 @@ export async function transferToAnnual(
   userId: string,
   amount: number
 ): Promise<{ success: boolean; error?: string }> {
-    const userDocRef = doc(firestore, 'users', userId);
-    const userTransactionsRef = collection(userDocRef, 'transactions');
-    
     if (!firestore) {
       return {
           success: false,
           error: "Server is not configured for database access. Please contact support."
       }
     }
-
+    
+    const userDocRef = doc(firestore, 'users', userId);
+    const userTransactionsRef = collection(userDocRef, 'transactions');
 
     try {
         await runTransaction(firestore, async (transaction) => {
