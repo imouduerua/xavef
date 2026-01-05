@@ -4,7 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { FirebaseProvider } from "@/firebase/provider";
+import { FirebaseClientProvider } from "@/firebase/client-provider";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -30,12 +30,12 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <FirebaseProvider>
+        <FirebaseClientProvider>
           <SidebarProvider>
             {children}
           </SidebarProvider>
           <Toaster />
-        </FirebaseProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

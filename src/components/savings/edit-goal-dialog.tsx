@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { useFirestore, useUser } from '@/firebase/provider';
+import { useFirestore, useUser } from '@/firebase';
 import { updateSavingGoal } from '@/app/(app)/savings/client-actions';
 import { SavingGoal } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';

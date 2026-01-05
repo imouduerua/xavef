@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import type { BankAccount } from '@/lib/types';
-import { useFirestore, useUser } from '@/firebase/provider';
+import { useFirestore, useUser } from '@/firebase';
 import { Card, CardContent } from '../ui/card';
 
 interface WithdrawalFormProps {

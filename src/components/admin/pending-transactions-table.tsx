@@ -21,7 +21,7 @@ import {
 } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { MoreHorizontal, CheckCircle, XCircle, Loader2, Image as ImageIcon } from 'lucide-react';
-import { useFirestore } from '@/firebase/provider';
+import { useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { updateTransactionStatus } from './actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';

@@ -9,8 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useDoc } from '@/firebase/firestore/use-collection';
-import { useFirestore, useUser } from '@/firebase/provider';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { ArrowLeft, Landmark, PiggyBank } from 'lucide-react';
 import Link from 'next/link';

@@ -13,8 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Transaction, TransactionStatus } from "@/lib/types";
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { useFirestore, useUser } from "@/firebase/provider";
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, orderBy } from "firebase/firestore";
 import React, { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -179,5 +178,3 @@ export default function TransactionsPage() {
     </div>
   );
 }
-
-    

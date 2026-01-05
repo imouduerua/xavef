@@ -1,1 +1,9 @@
-// This file is intentionally left blank. It is being replaced by provider.tsx
+export { initializeApp } from 'firebase/app';
+export { getAuth } from 'firebase/auth';
+export { getFirestore } from 'firebase/firestore';
+
+export { useCollection, useDoc } from './firestore/use-collection';
+export { useUser, useAuth, useFirestore, useFirebaseApp } from './provider';
+
+export * from './provider';
+export { FirebaseClientProvider } from './client-provider';

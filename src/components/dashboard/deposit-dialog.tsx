@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { useFirestore, useUser } from '@/firebase/provider';
+import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, Timestamp } from 'firebase/firestore';
 import type { AccountType } from '@/lib/types';
 import { BankDetailsCard } from './bank-details-card';

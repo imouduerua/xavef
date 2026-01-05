@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore } from '@/firebase/provider';
+import { useFirestore } from '@/firebase';
 import { Transaction, TransactionStatus } from '@/lib/types';
 import { collection, orderBy, query } from 'firebase/firestore';
 import React, { useMemo, useState } from 'react';

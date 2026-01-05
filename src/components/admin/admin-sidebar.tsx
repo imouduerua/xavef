@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/sidebar';
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { useUser } from '@/firebase/provider';
+import { useUser } from '@/firebase';
 import { useAdminStatus } from '@/hooks/use-admin-status';
 
 const navItems = [

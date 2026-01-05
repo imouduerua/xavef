@@ -2,15 +2,14 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, type Auth, type User } from 'firebase/auth';
-import { getFirestore, type Firestore, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
-import { firebaseConfig } from './config';
+import { type FirebaseApp } from 'firebase/app';
+import { onAuthStateChanged, type Auth, type User } from 'firebase/auth';
+import { type Firestore } from 'firebase/firestore';
 
 // --- Define Context Types ---
 interface FirebaseContextType {
-  app: FirebaseApp;
-  auth: Auth;
+  app: FirebaseApp | null;
+  auth: Auth | null;
   firestore: Firestore | null;
   user: User | null;
   loading: boolean;
@@ -19,23 +18,26 @@ interface FirebaseContextType {
 // --- Create Context ---
 const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
 
-// --- Initialize Firebase App ---
-// This ensures Firebase is initialized only once, globally.
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-
 // --- Main Provider Component ---
-export function FirebaseProvider({ children }: { children: React.ReactNode }) {
+export function FirebaseProvider({ 
+  app, 
+  auth, 
+  firestore, 
+  children 
+}: { 
+  app: FirebaseApp | null;
+  auth: Auth | null;
+  firestore: Firestore | null;
+  children: React.ReactNode; 
+}) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [firestore, setFirestore] = useState<Firestore | null>(null);
 
   useEffect(() => {
-    // Initialize Firestore on the client side, only once.
-    const db = initializeFirestore(app, {
-        localCache: memoryLocalCache()
-    });
-    setFirestore(db);
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
     
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
@@ -44,7 +46,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, []);
+  }, [auth]);
 
   const value = useMemo(() => ({
     app,
@@ -52,7 +54,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     firestore,
     user,
     loading,
-  }), [user, loading, firestore]);
+  }), [app, auth, firestore, user, loading]);
 
   return (
     <FirebaseContext.Provider value={value}>
@@ -86,9 +88,16 @@ export function useAuth(): Auth {
 
 export function useFirestore(): Firestore {
   const { firestore } = useFirebaseContext();
-  // This now returns a valid instance or throws an error, but the provider ensures it's available.
   if (!firestore) {
     throw new Error("Firestore has not been initialized on the client.");
   }
   return firestore;
+}
+
+export function useFirebaseApp(): FirebaseApp {
+  const { app } = useFirebaseContext();
+  if (!app) {
+    throw new Error("Firebase App has not been initialized.");
+  }
+  return app;
 }

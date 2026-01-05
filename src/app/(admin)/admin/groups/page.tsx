@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { MyGroupsSection } from "@/components/groups/my-groups-section";
 import { XavefLoanPoolCard } from "@/components/groups/xavef-loan-pool-card";
 import { AvailableGroupsList } from "@/components/admin/available-groups-list";
-import { useFirestore } from "@/firebase/provider";
+import { useFirestore } from "@/firebase";
 
 export default function AdminGroupsPage() {
     const firestore = useFirestore();

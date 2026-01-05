@@ -15,8 +15,7 @@ import type {
 } from '@/lib/types';
 import React, { useMemo, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore } from '@/firebase/provider';
+import { useCollection, useFirestore } from '@/firebase';
 import {
   collection,
   collectionGroup,

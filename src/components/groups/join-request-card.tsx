@@ -2,8 +2,7 @@
 'use client';
 
 import { respondToJoinRequest } from '@/app/(app)/groups/client-actions';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore } from '@/firebase/provider';
+import { useCollection, useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import type { GroupJoinRequest, Transaction } from '@/lib/types';
 import { collection, query, where, Timestamp } from 'firebase/firestore';

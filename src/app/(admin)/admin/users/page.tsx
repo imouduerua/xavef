@@ -9,8 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore } from '@/firebase/provider';
+import { useCollection, useFirestore } from '@/firebase';
 import type { UserData } from '@/lib/types';
 import { collection, orderBy, query } from 'firebase/firestore';
 import React, { useMemo } from 'react';

@@ -17,7 +17,7 @@ import {
   Clock,
 } from 'lucide-react';
 
-import { useUser } from '@/firebase/provider';
+import { useUser } from '@/firebase';
 import {
   Sidebar,
   SidebarContent,

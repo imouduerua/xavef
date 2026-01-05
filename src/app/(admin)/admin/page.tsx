@@ -10,8 +10,7 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore } from '@/firebase/provider';
+import { useCollection, useFirestore } from '@/firebase';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import { collection, collectionGroup, query, where } from 'firebase/firestore';
 import {

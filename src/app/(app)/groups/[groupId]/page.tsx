@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useDoc, useCollection } from '@/firebase/firestore/use-collection';
-import { useUser, useFirestore } from '@/firebase/provider';
+import { useDoc, useCollection, useUser, useFirestore } from '@/firebase';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import { doc, collection, getDocs, query, where, documentId, collectionGroup, Timestamp, orderBy } from 'firebase/firestore';
 import { useParams } from 'next/navigation';

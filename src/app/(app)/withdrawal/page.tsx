@@ -3,14 +3,13 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useUser, useFirestore } from "@/firebase/provider";
+import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { UserData, Transaction } from "@/lib/types";
 import { WithdrawalForm } from "@/components/withdrawal/withdrawal-form";
-import { useCollection, useDoc } from "@/firebase/firestore/use-collection";
 import React, { useMemo } from "react";
 import { collection, query, where, doc } from "firebase/firestore";
 import { PendingWithdrawalCard } from "@/components/withdrawal/pending-withdrawal-card";

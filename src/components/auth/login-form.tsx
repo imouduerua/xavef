@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/firebase/provider";
+import { useAuth } from "@/firebase";
 import { ForgotPasswordDialog } from "./forgot-password-dialog";
 
 const formSchema = z.object({
