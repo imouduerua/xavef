@@ -52,7 +52,7 @@ export function RegisterForm() {
     },
   });
   
-  const handleRegistration = async (values: z.infer<typeof formSchema>) => {
+  async function handleRegistration(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);

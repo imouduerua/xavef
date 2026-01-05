@@ -37,7 +37,6 @@ export async function createUserProfile(
 ): Promise<{ success: boolean; error?: string }> {
   const userDocRef = doc(firestore, 'users', user.uid);
   let referredBy: string | null = null;
-  let referralCodeRef: DocumentReference | null = null;
   let referralCodeDocId: string | null = null;
 
   try {
@@ -62,7 +61,6 @@ export async function createUserProfile(
       referralCodeDocId = codeDoc.id; // Get the ID to reference inside the transaction
     }
 
-    // Generate the unique ID once, outside the transaction.
     const xavefId = uuidv4().substring(0, 6).toUpperCase();
 
     // Now, perform all write operations within the transaction
