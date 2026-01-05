@@ -46,7 +46,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, authLoading, isAdmin, adminLoading, router, pathname, isAuthPage, isInsideAdmin]);
 
-  const isLoading = authLoading || (user && isInsideAdmin && adminLoading);
+  const isLoading = authLoading || (user && isAuthPage && adminLoading) || (user && isInsideAdmin && adminLoading);
 
   // While loading, show a skeleton on protected pages.
   if (isLoading && !isAuthPage) {
