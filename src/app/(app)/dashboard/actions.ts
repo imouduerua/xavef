@@ -31,6 +31,14 @@ export async function createUserProfile(
   uid: string,
   data: CreateProfileData
 ): Promise<{ success: boolean; error?: string }> {
+  // Gracefully fail if server is not configured.
+  if (!firestore) {
+    return {
+        success: false,
+        error: "Server is not configured for database access. Please contact support."
+    }
+  }
+
   const userDocRef = doc(firestore, 'users', uid);
   let referredBy: string | null = null;
   let referralCodeDocId: string | null = null;
@@ -110,6 +118,14 @@ export async function transferToAnnual(
 ): Promise<{ success: boolean; error?: string }> {
     const userDocRef = doc(firestore, 'users', userId);
     const userTransactionsRef = collection(userDocRef, 'transactions');
+    
+    if (!firestore) {
+      return {
+          success: false,
+          error: "Server is not configured for database access. Please contact support."
+      }
+    }
+
 
     try {
         await runTransaction(firestore, async (transaction) => {
