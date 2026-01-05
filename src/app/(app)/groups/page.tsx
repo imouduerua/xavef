@@ -24,7 +24,7 @@ export default function GroupsPage() {
                            Create or join a rotating savings group (Ajo/Esusu).
                         </CardDescription>
                     </div>
-                    {firestore && <CreateGroupDialog />}
+                    <CreateGroupDialog firestore={firestore} />
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-8">

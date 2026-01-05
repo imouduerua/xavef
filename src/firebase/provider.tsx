@@ -86,11 +86,8 @@ export function useAuth(): Auth {
   return auth;
 }
 
-export function useFirestore(): Firestore {
+export function useFirestore(): Firestore | null {
   const { firestore } = useFirebaseContext();
-  if (!firestore) {
-    throw new Error("Firestore has not been initialized on the client.");
-  }
   return firestore;
 }
 

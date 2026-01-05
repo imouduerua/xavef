@@ -28,9 +28,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { useFirestore, useUser } from '@/firebase';
+import { useUser } from '@/firebase';
 import { createGroup } from '@/app/(app)/groups/client-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Firestore } from 'firebase/firestore';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Group name must be at least 3 characters long.'),
@@ -38,11 +39,14 @@ const formSchema = z.object({
   numberOfMembers: z.coerce.number().min(2, "Group must have at least 2 members.").max(10, "Group can have a maximum of 10 members."),
 });
 
-export function CreateGroupDialog() {
+interface CreateGroupDialogProps {
+    firestore: Firestore | null;
+}
+
+export function CreateGroupDialog({ firestore }: CreateGroupDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useUser();
-  const firestore = useFirestore();
-
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -86,7 +90,7 @@ export function CreateGroupDialog() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button disabled={!firestore}>
           <Plus className="mr-2 h-4 w-4" />
           Create Group
         </Button>
