@@ -31,7 +31,7 @@ import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import { createGroup } from '@/app/(app)/groups/client-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Firestore } from 'firebase/firestore';
+import type { Firestore } from 'firebase/firestore';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Group name must be at least 3 characters long.'),
@@ -40,7 +40,7 @@ const formSchema = z.object({
 });
 
 interface CreateGroupDialogProps {
-    firestore: Firestore | null;
+    firestore: any;
 }
 
 export function CreateGroupDialog({ firestore }: CreateGroupDialogProps) {
