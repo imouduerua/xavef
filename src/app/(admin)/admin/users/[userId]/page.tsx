@@ -50,8 +50,8 @@ export default function UserDetailPage() {
   const [isUpdatingPermission, setIsUpdatingPermission] = React.useState(false);
   const firestore = useFirestore();
 
-  const userDocRef = useMemo(() => (userId ? doc(firestore, 'users', userId) : null), [userId, firestore]);
-  const adminDocRef = useMemo(() => (userId ? doc(firestore, 'admins', userId) : null), [userId, firestore]);
+  const userDocRef = useMemo(() => (userId && firestore ? doc(firestore, 'users', userId) : null), [userId, firestore]);
+  const adminDocRef = useMemo(() => (userId && firestore ? doc(firestore, 'admins', userId) : null), [userId, firestore]);
 
   const { data: userData, loading: userLoading } = useDoc<UserData>(userDocRef);
   const { data: adminStatusData, loading: adminStatusLoading } = useDoc(adminDocRef);
@@ -66,7 +66,7 @@ export default function UserDetailPage() {
   };
   
   const handlePermissionChange = useCallback(async (isNowAdmin: boolean) => {
-    if (!adminDocRef || !userData || !adminUser?.email) return;
+    if (!adminDocRef || !userData || !adminUser?.email || !firestore) return;
 
     setIsUpdatingPermission(true);
     try {
@@ -93,7 +93,7 @@ export default function UserDetailPage() {
     } finally {
         setIsUpdatingPermission(false);
     }
-  }, [adminDocRef, userData, adminUser?.email]);
+  }, [adminDocRef, userData, adminUser?.email, firestore]);
 
   if (userLoading || adminStatusLoading) {
     return <PageSkeleton />;

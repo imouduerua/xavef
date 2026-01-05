@@ -25,6 +25,7 @@ import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 export default function AdminPendingTransactionsPage() {
   const firestore = useFirestore();
   const pendingTxsQuery = useMemo(() => {
+    if (!firestore) return null;
     return query(
       collectionGroup(firestore, 'transactions'),
       where('status', '==', 'Pending'),

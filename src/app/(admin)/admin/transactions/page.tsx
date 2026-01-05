@@ -39,7 +39,7 @@ function AllTransactionsPageContent() {
 
   const allTxsQuery = useMemo(
     () =>
-      query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc')),
+      firestore ? query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc')) : null,
     [firestore]
   );
 
@@ -54,7 +54,7 @@ function AllTransactionsPageContent() {
   useEffect(() => {
     let isMounted = true;
     
-    if (!rawTransactions) {
+    if (!rawTransactions || !firestore) {
       if (!rawLoading) {
           setProcessedTransactions([]);
           setProcessing(false);

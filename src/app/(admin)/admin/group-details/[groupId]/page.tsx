@@ -85,7 +85,7 @@ function GroupMembers({
   const firestore = useFirestore();
 
   useEffect(() => {
-    if (memberIds.length === 0) {
+    if (memberIds.length === 0 || !firestore) {
       setLoading(false);
       return;
     }
@@ -181,7 +181,7 @@ export default function GroupDetailsPage() {
   const firestore = useFirestore();
 
   const groupRef = useMemo(
-    () => (groupId ? doc(firestore, 'groups', groupId) : null),
+    () => (groupId && firestore ? doc(firestore, 'groups', groupId) : null),
     [groupId, firestore]
   );
   const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
@@ -202,7 +202,7 @@ export default function GroupDetailsPage() {
 
   useEffect(() => {
     const memberIds = serializableGroup?.members;
-    if (!memberIds || memberIds.length === 0) {
+    if (!memberIds || memberIds.length === 0 || !firestore) {
       setLoadingMembers(false);
       return;
     }
@@ -258,7 +258,7 @@ export default function GroupDetailsPage() {
 
   const groupTransactionsQuery = useMemo(
     () =>
-      (groupId)
+      (groupId && firestore)
         ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
