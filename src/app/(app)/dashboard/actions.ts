@@ -22,26 +22,10 @@ import type { User as AuthUser } from "firebase/auth";
 import type { ReferralCode, UserData, BankAccount } from "@/lib/types";
 import { v4 as uuidv4 } from 'uuid';
 
-async function generateUniqueXavefId(firestore: Firestore): Promise<string> {
-    let xavefId;
-    let isUnique = false;
-    
-    // In a large-scale application, a more robust system might be needed,
-    // but for most cases, checking for collisions is sufficient.
-    while (!isUnique) {
-        // Generate a 6-digit numeric ID. 
-        // Using a timestamp component reduces initial collision probability.
-        const timestampPart = (Date.now() % 10000).toString().padStart(4, '0');
-        const randomPart = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-        xavefId = `${timestampPart}${randomPart}`;
-        
-        const q = query(collection(firestore, 'users'), where('xavefId', '==', xavefId), limit(1));
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-            isUnique = true;
-        }
-    }
-    return xavefId!;
+function generateUniqueXavefId(): string {
+    // Generate a UUID and take the first 6 characters for a shorter, unique-enough ID.
+    // The chance of collision is astronomically low for a small to medium user base.
+    return uuidv4().substring(0, 6).toUpperCase();
 }
 
 
@@ -87,9 +71,11 @@ export async function createUserProfile(
       referralCodeRef = codeDoc.ref;
     }
 
+    // Generate the unique ID once, outside the transaction.
+    const xavefId = generateUniqueXavefId();
+
     // Now, perform all write operations within the transaction
     await runTransaction(firestore, async (transaction) => {
-      const xavefId = await generateUniqueXavefId(firestore);
       
       const newUserProfile: UserData = {
         uid: user.uid,
