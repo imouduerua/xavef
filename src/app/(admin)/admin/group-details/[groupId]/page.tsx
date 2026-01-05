@@ -189,8 +189,19 @@ export default function GroupDetailsPage() {
   const [membersData, setMembersData] = useState<UserData[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
 
+  // Convert Firestore Timestamps to JS Date objects for serialization
+  const serializableGroup = useMemo(() => {
+    if (!group) return null;
+    return {
+      ...group,
+      startedAt: group.startedAt?.toDate(),
+      lastDistributionDate: group.lastDistributionDate?.toDate(),
+    };
+  }, [group]);
+
+
   useEffect(() => {
-    const memberIds = group?.members;
+    const memberIds = serializableGroup?.members;
     if (!memberIds || memberIds.length === 0) {
       setLoadingMembers(false);
       return;
@@ -221,16 +232,16 @@ export default function GroupDetailsPage() {
     return () => {
       isMounted = false;
     };
-  }, [group?.members, firestore]);
+  }, [serializableGroup?.members, firestore]);
 
   const membersMap = useMemo(() => {
     return new Map(membersData.map((m: UserData) => [m.uid, m]));
   }, [membersData]);
   
   const [weekStart, weekEnd] = useMemo(() => {
-    if (!group?.startedAt) return [null, null];
-    const startDate = group.startedAt.toDate();
-    const currentWeek = group.currentCollectionWeek || 1;
+    if (!serializableGroup?.startedAt) return [null, null];
+    const startDate = serializableGroup.startedAt;
+    const currentWeek = serializableGroup.currentCollectionWeek || 1;
     const weekOffset = (currentWeek - 1) * 7;
 
     const start = new Date(startDate);
@@ -242,7 +253,7 @@ export default function GroupDetailsPage() {
     end.setHours(0, 0, 0, 0);
 
     return [Timestamp.fromDate(start), Timestamp.fromDate(end)];
-  }, [group]);
+  }, [serializableGroup]);
 
 
   const groupTransactionsQuery = useMemo(
@@ -283,7 +294,7 @@ export default function GroupDetailsPage() {
     return <PageSkeleton />;
   }
 
-  if (!group) {
+  if (!serializableGroup) {
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
             <Card>
@@ -296,17 +307,17 @@ export default function GroupDetailsPage() {
     )
   }
 
-  const expectedWeeklyPurse = group.contributionAmount * group.members.length;
+  const expectedWeeklyPurse = serializableGroup.contributionAmount * serializableGroup.members.length;
   const isPurseComplete = currentWeekDeposits >= expectedWeeklyPurse;
-  const isGroupCreator = user?.uid === group.creatorUid;
+  const isGroupCreator = user?.uid === serializableGroup.creatorUid;
 
-  const currentWeek = group.currentCollectionWeek || 1;
-  const currentPayoutIndex = group.payoutOrder
-    ? (currentWeek - 1) % group.members.length
+  const currentWeek = serializableGroup.currentCollectionWeek || 1;
+  const currentPayoutIndex = serializableGroup.payoutOrder
+    ? (currentWeek - 1) % serializableGroup.members.length
     : null;
     
-  const memoizedMemberIds = group.members || [];
-  const memoizedPayoutOrder = group.payoutOrder || [];
+  const memoizedMemberIds = serializableGroup.members || [];
+  const memoizedPayoutOrder = serializableGroup.payoutOrder || [];
 
 
   return (
@@ -322,16 +333,16 @@ export default function GroupDetailsPage() {
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle>{group.name}</CardTitle>
+              <CardTitle>{serializableGroup.name}</CardTitle>
               <CardDescription>
                 Details and activities for the savings group.
               </CardDescription>
             </div>
             <Badge
-              variant={group.status === 'active' ? 'default' : 'secondary'}
+              variant={serializableGroup.status === 'active' ? 'default' : 'secondary'}
               className="capitalize"
             >
-              {group.status}
+              {serializableGroup.status}
             </Badge>
           </div>
         </CardHeader>
@@ -360,15 +371,15 @@ export default function GroupDetailsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {group.members.length} / {group.numberOfMembers}
+                  {serializableGroup.members.length} / {serializableGroup.numberOfMembers}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {group.numberOfMembers - group.members.length} slots
+                  {serializableGroup.numberOfMembers - serializableGroup.members.length} slots
                   remaining
                 </p>
               </CardContent>
             </Card>
-            {group.startedAt && (
+            {serializableGroup.startedAt && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">
@@ -379,7 +390,7 @@ export default function GroupDetailsPage() {
                 <CardContent>
                   <div className="text-2xl font-bold">Week {currentWeek}</div>
                   <p className="text-xs text-muted-foreground">
-                    Started on {group.startedAt.toDate().toLocaleDateString()}
+                    Started on {serializableGroup.startedAt.toLocaleDateString()}
                   </p>
                 </CardContent>
               </Card>
