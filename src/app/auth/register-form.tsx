@@ -72,14 +72,12 @@ export function RegisterForm() {
         const profileResult = await createUserProfile(user.uid, profileData);
 
         if (!profileResult.success) {
-            // Instead of throwing an error, show a toast notification.
             toast({
                 variant: "destructive",
                 title: "Registration Error",
                 description: profileResult.error || "Failed to create user profile in database. Please contact support.",
                 duration: 9000,
             });
-            // We should not proceed if the profile creation fails.
              setIsLoading(false);
              return;
         }
