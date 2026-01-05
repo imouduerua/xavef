@@ -23,7 +23,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   
   useEffect(() => {
     // Wait for auth to be resolved.
-    if (authLoading) return;
+    if (authLoading || adminLoading) return;
 
     // If no user and not on a public auth page, redirect to login.
     if (!user && !isAuthPage) {
@@ -35,18 +35,16 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     if (user) {
       // If on an auth page, redirect away. Admins go to /admin, others to /dashboard.
       if (isAuthPage) {
-        if (!adminLoading) { // wait for admin status to redirect correctly
           router.replace(isAdmin ? '/admin' : '/dashboard');
-        }
       } 
       // If trying to access an admin page but is not an admin, redirect to dashboard.
-      else if (isInsideAdmin && !adminLoading && !isAdmin) {
+      else if (isInsideAdmin && !isAdmin) {
         router.replace('/dashboard');
       }
     }
   }, [user, authLoading, isAdmin, adminLoading, router, pathname, isAuthPage, isInsideAdmin]);
 
-  const isLoading = authLoading || (user && isAuthPage && adminLoading) || (user && isInsideAdmin && adminLoading);
+  const isLoading = authLoading || adminLoading;
 
   // While loading, show a skeleton on protected pages.
   if (isLoading && !isAuthPage) {
@@ -65,9 +63,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
   
   // Render nothing while redirecting to prevent flicker.
-  if (!user && !isAuthPage) return null;
-  if (user && isAuthPage) return null;
-  if (isInsideAdmin && !isAdmin && !adminLoading) return null;
+  if ((!user && !isAuthPage) || (user && isAuthPage)) return null;
+  if (isInsideAdmin && !isAdmin) return null;
 
   // If all checks pass, render the children.
   return <>{children}</>;
