@@ -5,7 +5,7 @@ import {
     doc, 
     runTransaction, 
     collection, 
-    serverTimestamp,
+    Timestamp,
     Firestore,
     query,
     where,
@@ -21,12 +21,6 @@ import {
 import type { User as AuthUser } from "firebase/auth";
 import type { ReferralCode, UserData, BankAccount } from "@/lib/types";
 import { v4 as uuidv4 } from 'uuid';
-
-function generateUniqueXavefId(): string {
-    // Generate a UUID and take the first 6 characters for a shorter, unique-enough ID.
-    // The chance of collision is astronomically low for a small to medium user base.
-    return uuidv4().substring(0, 6).toUpperCase();
-}
 
 
 interface CreateProfileData {
@@ -72,7 +66,7 @@ export async function createUserProfile(
     }
 
     // Generate the unique ID once, outside the transaction.
-    const xavefId = generateUniqueXavefId();
+    const xavefId = uuidv4().substring(0, 6).toUpperCase();
 
     // Now, perform all write operations within the transaction
     await runTransaction(firestore, async (transaction) => {
@@ -89,7 +83,7 @@ export async function createUserProfile(
         state: null,
         country: null,
         xavefId,
-        createdAt: serverTimestamp(),
+        createdAt: Timestamp.now(),
         referredBy: referredBy,
         solidaraBalance: 0,
         annualBalance: 0,
@@ -148,7 +142,7 @@ export async function transferToAnnual(
             const newTxRef = doc(userTransactionsRef);
             transaction.set(newTxRef, {
                 amount: amount,
-                date: serverTimestamp(),
+                date: Timestamp.now(),
                 description: "Transfer to Annual Savings",
                 type: 'Internal Transfer',
                 status: 'Completed', // Set status to Completed directly
