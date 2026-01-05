@@ -125,7 +125,16 @@
           ]
         },
         "amount": {
-          "type": "number"
+          "type": "number",
+          "description": "For withdrawals, this is the total amount deducted from the user's balance (a negative number)."
+        },
+        "fee": {
+            "type": "number",
+            "description": "The fee charged for a transaction, like a withdrawal."
+        },
+        "payoutAmount": {
+            "type": "number",
+            "description": "The net amount sent to the user after fees (e.g., for a withdrawal)."
         },
         "targetAccount": {
           "type": "string",
@@ -138,12 +147,15 @@
         },
         "proofOfPaymentUrl": {
           "type": "string",
-          "description": "URL of the uploaded proof of payment image."
+          "description": "URL of the uploaded proof of payment image (as a data URI)."
         },
         "groupId": {
           "type": "string",
           "description": "The ID of the group for group-related transactions."
-        }
+        },
+        "destinationBankName": { "type": "string" },
+        "destinationAccountName": { "type": "string" },
+        "destinationAccountNumber": { "type": "string" }
       },
       "required": [
         "date",
@@ -282,6 +294,27 @@
             "actionUrl": { "type": "string", "description": "A URL the user can navigate to from the notification." }
         },
         "required": ["userId", "title", "description", "createdAt", "read"]
+    },
+    "fcmToken": {
+      "title": "FCM Token",
+      "description": "A Firebase Cloud Messaging token for a user's device.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user this token belongs to."
+        },
+        "token": {
+          "type": "string",
+          "description": "The FCM registration token."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the token was last updated."
+        }
+      },
+      "required": ["userId", "token", "updatedAt"]
     }
   },
   "auth": {
@@ -333,6 +366,12 @@
     "/joinRequests/{requestId}": {
         "schema": { "$ref": "#/entities/joinRequest" },
         "description": "Stores requests from users to join savings groups."
+    },
+    "/fcmTokens/{userId}": {
+      "schema": {
+        "$ref": "#/entities/fcmToken"
+      },
+      "description": "Stores FCM tokens for admin users to receive push notifications."
     }
   }
 }

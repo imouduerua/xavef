@@ -47,7 +47,7 @@ export async function createGroup(
   creatorUid: string,
   data: GroupData
 ): Promise<{ success: boolean; error?: string }> {
-  if (!firestore?.collection) {
+  if (!firestore) {
     return { success: false, error: 'Database not initialized.' };
   }
   try {
@@ -71,7 +71,7 @@ export async function startGroup(
   firestore: Firestore,
   groupId: string
 ): Promise<{ success: boolean; error?: string }> {
-  if (!firestore?.doc) {
+  if (!firestore) {
     return { success: false, error: 'Database not initialized.' };
   }
   const groupDocRef = doc(firestore, 'groups', groupId);
@@ -129,7 +129,7 @@ export async function requestToJoinGroup(
   requester: User,
   group: Group
 ): Promise<{ success: boolean; error?: string }> {
-  if (!firestore?.collection) {
+  if (!firestore) {
     return { success: false, error: 'Database not initialized.' };
   }
   try {
@@ -187,7 +187,7 @@ export async function respondToJoinRequest(
   requestId: string,
   decision: 'approved' | 'declined'
 ): Promise<{ success: boolean; error?: string }> {
-  if (!firestore?.runTransaction) {
+  if (!firestore) {
     return { success: false, error: 'Database not initialized.' };
   }
   const requestDocRef = doc(firestore, 'joinRequests', requestId);
@@ -258,7 +258,7 @@ export async function distributeGroupFunds(
   recipientUid: string,
   totalPurse: number
 ): Promise<{ success: boolean; error?: string }> {
-  if (!firestore?.runTransaction) {
+  if (!firestore) {
     return { success: false, error: 'Database not initialized.' };
   }
   const groupRef = doc(firestore, 'groups', groupId);
@@ -339,7 +339,7 @@ export async function contributeToGroupFromSavings(
   userId: string,
   groupId: string
 ): Promise<{ success: boolean; error?: string }> {
-  if (!firestore?.doc) {
+  if (!firestore) {
     return { success: false, error: 'Database not initialized.' };
   }
   const groupRef = doc(firestore, 'groups', groupId);

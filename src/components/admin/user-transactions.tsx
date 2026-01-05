@@ -49,7 +49,7 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const firestore = useFirestore();
 
-  const transactionsQuery = useMemo(() => (userId)
+  const transactionsQuery = useMemo(() => (userId && firestore)
     ? query(
         collection(firestore, 'users', userId, 'transactions'),
         orderBy('date', 'desc')
@@ -76,7 +76,6 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
   ) => {
     setUpdatingId(transactionId);
     const result = await updateTransactionStatus(
-      firestore,
       transactionPath,
       newStatus
     );
@@ -181,5 +180,3 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
     </Table>
   );
 }
-
-    

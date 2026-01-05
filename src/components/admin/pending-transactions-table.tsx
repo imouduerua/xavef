@@ -55,7 +55,7 @@ export function PendingTransactionsTable({
 
   useEffect(() => {
     let isMounted = true;
-    if (transactions.length === 0) {
+    if (transactions.length === 0 || !firestore) {
       setProcessing(false);
       setProcessedTransactions([]);
       return;
@@ -121,7 +121,7 @@ export function PendingTransactionsTable({
     newStatus: 'Completed' | 'Failed'
   ) => {
     setUpdatingId(transactionId);
-    const result = await updateTransactionStatus(firestore, transactionPath, newStatus);
+    const result = await updateTransactionStatus(transactionPath, newStatus);
     if (result.success) {
       toast({
         title: 'Transaction Updated',
@@ -268,5 +268,3 @@ export function PendingTransactionsTable({
     </div>
   );
 }
-
-    

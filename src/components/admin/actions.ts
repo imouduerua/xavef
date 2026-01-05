@@ -6,11 +6,10 @@ import type { Transaction, TransactionStatus } from '@/lib/types';
 import { firestore as adminFirestore } from '@/firebase/server-init';
 
 export async function updateTransactionStatus(
-  firestore: Firestore, // This is the client-side firestore, we'll use the admin one.
   transactionPath: string,
   newStatus: 'Completed' | 'Failed'
 ): Promise<{ success: boolean; error?: string }> {
-  if (!adminFirestore || !adminFirestore.collection) {
+  if (!adminFirestore) {
     return {
       success: false,
       error: 'Server is not configured for database access. Please contact support.',
