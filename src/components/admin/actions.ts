@@ -3,19 +3,27 @@
 
 import { doc, runTransaction, Firestore, collection, serverTimestamp, increment } from 'firebase/firestore';
 import type { Transaction, TransactionStatus } from '@/lib/types';
+import { firestore as adminFirestore } from '@/firebase/server-init';
 
 export async function updateTransactionStatus(
-  firestore: Firestore,
+  firestore: Firestore, // This is the client-side firestore, we'll use the admin one.
   transactionPath: string,
   newStatus: 'Completed' | 'Failed'
 ): Promise<{ success: boolean; error?: string }> {
-  const transactionRef = doc(firestore, transactionPath);
+  if (!adminFirestore || !adminFirestore.collection) {
+    return {
+      success: false,
+      error: 'Server is not configured for database access. Please contact support.',
+    };
+  }
+
+  const transactionRef = doc(adminFirestore, transactionPath);
   const pathParts = transactionPath.split('/');
   const userId = pathParts[pathParts.indexOf('users') + 1];
-  const userRef = doc(firestore, 'users', userId);
+  const userRef = doc(adminFirestore, 'users', userId);
 
   try {
-    await runTransaction(firestore, async (transaction) => {
+    await runTransaction(adminFirestore, async (transaction) => {
       const txDoc = await transaction.get(transactionRef);
       if (!txDoc.exists()) {
         throw new Error('Transaction not found.');
@@ -28,7 +36,9 @@ export async function updateTransactionStatus(
 
       transaction.update(transactionRef, { status: newStatus });
 
-      if (newStatus === 'Completed') {
+      // If it's a deposit that's completed, credit the user's account.
+      // Withdrawals are debited at the time of request, so we only handle deposit logic here.
+      if (newStatus === 'Completed' && txData.type === 'Deposit') {
         const amount = txData.amount; 
         const targetAccount = txData.targetAccount;
 

@@ -68,7 +68,7 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
   async function onSubmit(values: z.infer<typeof withdrawalSchema>) {
     setIsSubmitting(true);
     
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
