@@ -60,7 +60,7 @@ export default function GroupDetailsPage() {
     const [membersData, setMembersData] = useState<UserData[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(true);
 
-    const groupRef = useMemo(() => (groupId && firestore) ? doc(firestore, 'groups', groupId) : null, [groupId, firestore]);
+    const groupRef = firestore && groupId ? doc(firestore, 'groups', groupId) : null;
     const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
     
     // Convert Firestore Timestamps to JS Date objects for serialization
@@ -91,22 +91,19 @@ export default function GroupDetailsPage() {
     }, [serializableGroup]);
 
 
-    const weeklyContributionsQuery = useMemo(() => {
-        if (!serializableGroup || serializableGroup.members.length === 0 || !weekStart || !weekEnd || !firestore) return null;
-        return query(
+    const weeklyContributionsQuery = (firestore && serializableGroup && weekStart && weekEnd) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             where('type', '==', 'Group Contribution'),
             where('date', '>=', weekStart),
             where('date', '<', weekEnd)
-        )
-    }, [groupId, serializableGroup, weekStart, weekEnd, firestore]);
+        ) : null;
     
-    const groupTransactionsQuery = useMemo(() => (groupId && firestore) ? query(
+    const groupTransactionsQuery = (firestore && groupId) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             orderBy('date', 'desc')
-        ) : null, [groupId, firestore]);
+        ) : null;
 
 
     const { data: weeklyContributions, loading: contributionsLoading, indexCreationUrl } = useCollection<Transaction>(weeklyContributionsQuery);
@@ -356,3 +353,5 @@ export default function GroupDetailsPage() {
         </div>
     );
 }
+
+    

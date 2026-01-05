@@ -36,11 +36,7 @@ function AllTransactionsPageContent() {
   const [processing, setProcessing] = useState(true);
   const firestore = useFirestore();
 
-  const allTxsQuery = useMemo(
-    () =>
-      firestore ? query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc')) : null,
-    [firestore]
-  );
+  const allTxsQuery = firestore ? query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc')) : null;
 
   const {
     data: rawTransactions,
@@ -171,3 +167,5 @@ export default function AllTransactionsPage() {
     // This page is protected by the admin layout's super admin check
     return <AllTransactionsPageContent />;
 }
+
+    

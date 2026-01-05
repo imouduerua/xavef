@@ -5,7 +5,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useUser } from '@/firebase';
 import type { SavingGoal } from '@/lib/types';
 import { collection, query, orderBy } from 'firebase/firestore';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { GoalCard } from './goal-card';
 import { Skeleton } from '../ui/skeleton';
 import { Card } from '../ui/card';
@@ -29,7 +29,7 @@ export function GoalsList() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const goalsQuery = useMemo(() => (user?.uid && firestore) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [user, firestore]);
+  const goalsQuery = user?.uid && firestore ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null;
 
   const { data: goals, loading } = useCollection<SavingGoal>(goalsQuery);
 
@@ -63,5 +63,7 @@ export function GoalsList() {
     </div>
   );
 }
+
+    
 
     

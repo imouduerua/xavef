@@ -34,11 +34,11 @@ export function AvailableGroupsList() {
   const firestore = useFirestore();
   const { user } = useUser();
   
-  const groupsQuery = useMemo(() => (firestore) ? query(
+  const groupsQuery = firestore ? query(
         collection(firestore, `groups`), 
         where('status', '==', 'forming'),
         orderBy('createdAt', 'desc')
-    ) : null, [firestore]);
+    ) : null;
 
   const { data: groups, loading, indexCreationUrl } = useCollection<Group>(groupsQuery);
 
@@ -82,5 +82,7 @@ export function AvailableGroupsList() {
     </div>
   );
 }
+
+    
 
     

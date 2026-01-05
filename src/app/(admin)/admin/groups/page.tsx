@@ -29,7 +29,7 @@ export default function AdminGroupsPage() {
                         <div>
                             <h3 className="text-xl font-semibold mb-4">All Active & Forming Groups</h3>
                              <Suspense fallback={<div>Loading groups...</div>}>
-                                {firestore ? <AvailableGroupsList /> : <div>Loading...</div>}
+                                <AvailableGroupsList />
                              </Suspense>
                         </div>
                     </div>
@@ -38,3 +38,5 @@ export default function AdminGroupsPage() {
         </div>
     );
 }
+
+    

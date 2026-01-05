@@ -25,25 +25,21 @@ function DashboardApp() {
   const { user, loading: authLoading } = useUser();
   const firestore = useFirestore();
 
-  const userDocRef = useMemo(() => {
-    if (!user || !firestore) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
-
+  const userDocRef = firestore && user?.uid ? doc(firestore, 'users', user.uid) : null;
   const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
-  const pendingTransactionsQuery = useMemo(() => (user?.uid && firestore) ? query(
+  const pendingTransactionsQuery = firestore && user?.uid ? query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "==", "Pending"),
-    ) : null, [user?.uid, firestore]);
+    ) : null;
   
-  const goalsQuery = useMemo(() => (user?.uid && firestore) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [user?.uid, firestore]);
+  const goalsQuery = firestore && user?.uid ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null;
 
-  const joinRequestsQuery = useMemo(() => (user?.uid && firestore) ? query(
+  const joinRequestsQuery = firestore && user?.uid ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    ) : null, [user?.uid, firestore]);
+    ) : null;
 
 
   const { data: pendingTransactions } = useCollection<Transaction>(pendingTransactionsQuery);
@@ -255,5 +251,7 @@ export default function DashboardPage() {
       </Suspense>
     );
   }
+
+    
 
     

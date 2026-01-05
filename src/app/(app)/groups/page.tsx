@@ -30,14 +30,14 @@ export default function GroupsPage() {
                     <div className="space-y-8">
                          <div>
                             <Suspense fallback={<div>Loading your groups...</div>}>
-                                {firestore ? <MyGroupsSection /> : <div>Loading...</div>}
+                                <MyGroupsSection />
                             </Suspense>
                         </div>
                         <Separator />
                         <div>
                             <h3 className="text-xl font-semibold mb-4">Available Groups to Join</h3>
                              <Suspense fallback={<div>Loading available groups...</div>}>
-                                {firestore ? <AvailableGroupsList /> : <div>Loading...</div>}
+                                <AvailableGroupsList />
                              </Suspense>
                         </div>
                     </div>
@@ -46,5 +46,7 @@ export default function GroupsPage() {
         </div>
     );
 }
+
+    
 
     

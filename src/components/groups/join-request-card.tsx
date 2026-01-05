@@ -7,7 +7,7 @@ import { toast } from '@/hooks/use-toast';
 import type { GroupJoinRequest, Transaction } from '@/lib/types';
 import { collection, query, where, Timestamp } from 'firebase/firestore';
 import { Check, Loader2, User, X, TrendingUp } from 'lucide-react';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
@@ -34,21 +34,19 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
   const requesterUid = request.requesterUid;
   const firestore = useFirestore();
   
-  const transactionsQuery = useMemo(() => {
-    if (!requesterUid || !firestore) return null;
-    const ninetyDaysAgo = new Date();
-    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-    return query(
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+  const transactionsQuery = firestore && requesterUid ? query(
         collection(firestore, `users/${requesterUid}/transactions`),
         where('type', '==', 'Deposit'),
         where('status', '==', 'Completed'),
         where('date', '>=', Timestamp.fromDate(ninetyDaysAgo))
-    );
-  }, [requesterUid, firestore]);
+    ) : null;
   
   const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 
-  const totalDeposits = useMemo(() => {
+  const totalDeposits = React.useMemo(() => {
       if (!transactions) return 0;
       return transactions.reduce((acc, tx) => acc + tx.amount, 0);
   }, [transactions]);
@@ -133,3 +131,5 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
     </Card>
   );
 }
+
+    

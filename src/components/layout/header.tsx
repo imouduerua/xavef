@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -43,29 +43,23 @@ export function AppHeader() {
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');
 
-  const joinRequestsQuery = useMemo(() => {
-    if (!user?.uid || !firestore) return null;
-    return query(
+  const joinRequestsQuery = (user?.uid && firestore) ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    );
-  }, [user?.uid, firestore]);
+    ) : null;
   
-  const notificationsQuery = useMemo(() => {
-    if (!user?.uid || !firestore) return null;
-    return query(
+  const notificationsQuery = (user?.uid && firestore) ? query(
       collection(firestore, `users/${user.uid}/notifications`),
       orderBy('createdAt', 'desc'),
       limit(10)
-    );
-  }, [user?.uid, firestore]);
+    ) : null;
 
   const { data: joinRequests, loading: joinRequestsLoading } = useCollection<GroupJoinRequest>(joinRequestsQuery);
   const { data: notifications, loading: notificationsLoading } = useCollection<Notification>(notificationsQuery);
 
 
-  const combinedNotifications = useMemo(() => {
+  const combinedNotifications = React.useMemo(() => {
     const allNotifs: (Notification & { date: any })[] = [];
 
     if (joinRequests) {
@@ -228,3 +222,5 @@ export function AppHeader() {
     </>
   );
 }
+
+    

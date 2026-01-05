@@ -179,10 +179,7 @@ export default function GroupDetailsPage() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const groupRef = useMemo(
-    () => (groupId && firestore ? doc(firestore, 'groups', groupId) : null),
-    [groupId, firestore]
-  );
+  const groupRef = firestore && groupId ? doc(firestore, 'groups', groupId) : null;
   const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
   
   const [membersData, setMembersData] = useState<UserData[]>([]);
@@ -255,17 +252,13 @@ export default function GroupDetailsPage() {
   }, [serializableGroup]);
 
 
-  const groupTransactionsQuery = useMemo(
-    () =>
-      (groupId && firestore)
+  const groupTransactionsQuery = (groupId && firestore)
         ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             orderBy('date', 'desc')
           )
-        : null,
-    [groupId, firestore]
-  );
+        : null;
 
   const {
     data: allGroupTransactions,
@@ -434,3 +427,5 @@ export default function GroupDetailsPage() {
     </div>
   );
 }
+
+    
