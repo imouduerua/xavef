@@ -2,11 +2,9 @@
 import { initializeApp, getApps, getApp, cert, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import 'server-only';
-import { config } from 'dotenv';
 
 // This is a server-only file. It is not exposed to the client.
-config();
-
+// dotenv config is now handled in next.config.js to ensure it's loaded on startup.
 
 // IMPORTANT: The service account credentials must be set as an environment variable.
 // In Firebase App Hosting, this is done automatically.
