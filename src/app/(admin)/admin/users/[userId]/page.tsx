@@ -41,29 +41,15 @@ function PageSkeleton() {
   );
 }
 
-export default function UserDetailPage() {
-  const params = useParams();
-  const userId = params.userId as string;
-  const { user: adminUser } = useUser();
-  const { isSuperAdmin } = useAdminStatus();
+function UserDetailsContent({ userData, adminUser, isSuperAdmin }: { userData: UserData, adminUser: any, isSuperAdmin: boolean }) {
+  const userId = userData.uid;
   const [isUpdatingPermission, setIsUpdatingPermission] = React.useState(false);
   const firestore = useFirestore();
-
-  const userDocRef = firestore && userId ? doc(firestore, 'users', userId) : null;
+  
   const adminDocRef = firestore && userId ? doc(firestore, 'admins', userId) : null;
-
-  const { data: userData, loading: userLoading } = useDoc<UserData>(userDocRef);
   const { data: adminStatusData, loading: adminStatusLoading } = useDoc(adminDocRef);
-
   const isUserAdmin = !!adminStatusData;
 
-  const formatCurrency = (amount: number | null | undefined) => {
-    if (amount === undefined || amount === null) {
-      return '₦0.00';
-    }
-    return `₦${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-  
   const handlePermissionChange = useCallback(async (isNowAdmin: boolean) => {
     if (!adminDocRef || !userData || !adminUser?.email || !firestore) return;
 
@@ -94,25 +80,13 @@ export default function UserDetailPage() {
     }
   }, [adminDocRef, userData, adminUser?.email, firestore]);
 
-  if (userLoading || adminStatusLoading) {
-    return <PageSkeleton />;
-  }
-
-  if (!userData) {
-    return (
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>User Not Found</CardTitle>
-                    <CardDescription>
-                        This user does not have a profile in the database.
-                    </CardDescription>
-                </CardHeader>
-            </Card>
-        </div>
-    )
-  }
-
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount === undefined || amount === null) {
+      return '₦0.00';
+    }
+    return `₦${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+  
   const fullName = userData?.firstName || userData?.lastName ? `${userData.firstName} ${userData.lastName}`.trim() : (userData?.displayName || 'User');
 
   return (
@@ -173,7 +147,7 @@ export default function UserDetailPage() {
                           id="admin-permission"
                           checked={isUserAdmin}
                           onCheckedChange={handlePermissionChange}
-                          disabled={isUpdatingPermission}
+                          disabled={isUpdatingPermission || adminStatusLoading}
                         />
                       </div>
                     </CardContent>
@@ -192,4 +166,35 @@ export default function UserDetailPage() {
   );
 }
 
-    
+
+export default function UserDetailPage() {
+  const params = useParams();
+  const userId = params.userId as string;
+  const { user: adminUser } = useUser();
+  const { isSuperAdmin } = useAdminStatus();
+  const firestore = useFirestore();
+
+  const userDocRef = firestore && userId ? doc(firestore, 'users', userId) : null;
+  const { data: userData, loading: userLoading } = useDoc<UserData>(userDocRef);
+
+  if (userLoading) {
+    return <PageSkeleton />;
+  }
+
+  if (!userData) {
+    return (
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>User Not Found</CardTitle>
+                    <CardDescription>
+                        This user does not have a profile in the database.
+                    </CardDescription>
+                </CardHeader>
+            </Card>
+        </div>
+    )
+  }
+
+  return <UserDetailsContent userData={userData} adminUser={adminUser} isSuperAdmin={isSuperAdmin} />
+}

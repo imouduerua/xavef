@@ -172,29 +172,10 @@ function GroupMembers({
   );
 }
 
-
-export default function GroupDetailsPage() {
-  const params = useParams();
-  const groupId = params.groupId as string;
-  const { user } = useUser();
+function GroupDetailsContent({ group: serializableGroup, user }: { group: Group, user: any }) {
   const firestore = useFirestore();
-
-  const groupRef = firestore && groupId ? doc(firestore, 'groups', groupId) : null;
-  const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
-  
   const [membersData, setMembersData] = useState<UserData[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
-
-  // Convert Firestore Timestamps to JS Date objects for serialization
-  const serializableGroup = useMemo(() => {
-    if (!group) return null;
-    return {
-      ...group,
-      startedAt: group.startedAt?.toDate(),
-      lastDistributionDate: group.lastDistributionDate?.toDate(),
-    };
-  }, [group]);
-
 
   useEffect(() => {
     const memberIds = serializableGroup?.members;
@@ -233,10 +214,10 @@ export default function GroupDetailsPage() {
   const membersMap = useMemo(() => {
     return new Map(membersData.map((m: UserData) => [m.uid, m]));
   }, [membersData]);
-  
+
   const [weekStart, weekEnd] = useMemo(() => {
     if (!serializableGroup?.startedAt) return [null, null];
-    const startDate = serializableGroup.startedAt;
+    const startDate = serializableGroup.startedAt as Date;
     const currentWeek = serializableGroup.currentCollectionWeek || 1;
     const weekOffset = (currentWeek - 1) * 7;
 
@@ -251,11 +232,10 @@ export default function GroupDetailsPage() {
     return [Timestamp.fromDate(start), Timestamp.fromDate(end)];
   }, [serializableGroup]);
 
-
-  const groupTransactionsQuery = (groupId && firestore)
+  const groupTransactionsQuery = (serializableGroup.id && firestore)
         ? query(
             collectionGroup(firestore, 'transactions'),
-            where('groupId', '==', groupId),
+            where('groupId', '==', serializableGroup.id),
             orderBy('date', 'desc')
           )
         : null;
@@ -270,37 +250,21 @@ export default function GroupDetailsPage() {
      if (!allGroupTransactions || !weekStart || !weekEnd) return [];
      return allGroupTransactions.filter(tx => 
         tx.type === 'Group Contribution' && 
-        tx.date >= weekStart &&
-        tx.date < weekEnd
+        (tx.date as Timestamp).toDate() >= (weekStart as Timestamp).toDate() &&
+        (tx.date as Timestamp).toDate() < (weekEnd as Timestamp).toDate()
      );
   }, [allGroupTransactions, weekStart, weekEnd]);
-
 
   const currentWeekDeposits = useMemo(() => {
     if (!weeklyContributions) return 0;
     return weeklyContributions.reduce((acc, tx) => acc + tx.amount, 0);
   }, [weeklyContributions]);
 
-
-  if (groupLoading || allTxsLoading || loadingMembers) {
+  if (allTxsLoading || loadingMembers) {
     return <PageSkeleton />;
   }
 
-  if (!serializableGroup) {
-    return (
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Group Not Found</CardTitle>
-                    <CardDescription>This group may have been deleted or you do not have permission to view it.</CardDescription>
-                </CardHeader>
-            </Card>
-        </div>
-    )
-  }
-
   const expectedWeeklyPurse = serializableGroup.contributionAmount * serializableGroup.members.length;
-  const isPurseComplete = currentWeekDeposits >= expectedWeeklyPurse;
   const isGroupCreator = user?.uid === serializableGroup.creatorUid;
 
   const currentWeek = serializableGroup.currentCollectionWeek || 1;
@@ -310,7 +274,8 @@ export default function GroupDetailsPage() {
     
   const memoizedMemberIds = serializableGroup.members || [];
   const memoizedPayoutOrder = serializableGroup.payoutOrder || [];
-
+  
+  const startedAtDate = serializableGroup.startedAt as Date;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -382,7 +347,7 @@ export default function GroupDetailsPage() {
                 <CardContent>
                   <div className="text-2xl font-bold">Week {currentWeek}</div>
                   <p className="text-xs text-muted-foreground">
-                    Started on {serializableGroup.startedAt.toLocaleDateString()}
+                    Started on {startedAtDate.toLocaleDateString()}
                   </p>
                 </CardContent>
               </Card>
@@ -428,4 +393,42 @@ export default function GroupDetailsPage() {
   );
 }
 
-    
+export default function GroupDetailsPage() {
+  const params = useParams();
+  const groupId = params.groupId as string;
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const groupRef = firestore && groupId ? doc(firestore, 'groups', groupId) : null;
+  const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
+  
+  // Convert Firestore Timestamps to JS Date objects for serialization
+  const serializableGroup = useMemo(() => {
+    if (!group) return null;
+    return {
+      ...group,
+      startedAt: group.startedAt?.toDate(),
+      lastDistributionDate: group.lastDistributionDate?.toDate(),
+    };
+  }, [group]);
+
+
+  if (groupLoading) {
+    return <PageSkeleton />;
+  }
+
+  if (!serializableGroup) {
+    return (
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Group Not Found</CardTitle>
+                    <CardDescription>This group may have been deleted or you do not have permission to view it.</CardDescription>
+                </CardHeader>
+            </Card>
+        </div>
+    )
+  }
+
+  return <GroupDetailsContent group={serializableGroup as Group} user={user} />;
+}
