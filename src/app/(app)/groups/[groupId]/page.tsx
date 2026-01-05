@@ -61,7 +61,7 @@ export default function GroupDetailsPage() {
     const [membersData, setMembersData] = useState<UserData[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(true);
 
-    const groupRef = useMemo(() => (groupId) ? doc(firestore, 'groups', groupId) : null, [groupId, firestore]);
+    const groupRef = useMemo(() => (groupId && firestore) ? doc(firestore, 'groups', groupId) : null, [groupId, firestore]);
     const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
     
     // Convert Firestore Timestamps to JS Date objects for serialization
@@ -93,7 +93,7 @@ export default function GroupDetailsPage() {
 
 
     const weeklyContributionsQuery = useMemo(() => {
-        if (!serializableGroup || serializableGroup.members.length === 0 || !weekStart || !weekEnd) return null;
+        if (!serializableGroup || serializableGroup.members.length === 0 || !weekStart || !weekEnd || !firestore) return null;
         return query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
@@ -103,7 +103,7 @@ export default function GroupDetailsPage() {
         )
     }, [groupId, serializableGroup, weekStart, weekEnd, firestore]);
     
-    const groupTransactionsQuery = useMemo(() => (groupId) ? query(
+    const groupTransactionsQuery = useMemo(() => (groupId && firestore) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             orderBy('date', 'desc')
@@ -121,7 +121,7 @@ export default function GroupDetailsPage() {
 
     useEffect(() => {
         const memberIds = serializableGroup?.members;
-        if (!memberIds || memberIds.length === 0) {
+        if (!memberIds || memberIds.length === 0 || !firestore) {
             setLoadingMembers(false);
             return;
         }
@@ -181,8 +181,8 @@ export default function GroupDetailsPage() {
     const currentRecipientUid = currentPayoutIndex !== null && serializableGroup.payoutOrder ? serializableGroup.payoutOrder[currentPayoutIndex] : null;
 
     const handleDistribute = async () => {
-        if (!currentRecipientUid) {
-            toast({ variant: 'destructive', title: "Error", description: "Cannot determine recipient." });
+        if (!currentRecipientUid || !firestore) {
+            toast({ variant: 'destructive', title: "Error", description: "Cannot determine recipient or database is unavailable." });
             return;
         }
         const result = await distributeGroupFunds(firestore, groupId, currentRecipientUid, currentWeekDeposits);
@@ -260,8 +260,8 @@ export default function GroupDetailsPage() {
                     </div>
                     
                     <div className="flex justify-end gap-2">
-                        {isUserMember && serializableGroup.status === 'active' && (
-                           <ContributeDialog group={group!}>
+                        {isUserMember && serializableGroup.status === 'active' && group && (
+                           <ContributeDialog group={group}>
                                  <Button>
                                     <HandCoins className="mr-2 h-4 w-4" />
                                     Contribute to Group

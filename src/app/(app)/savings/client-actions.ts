@@ -25,6 +25,9 @@ export async function createSavingGoal(
   userId: string,
   data: SavingGoalData
 ): Promise<{ success: boolean; error?: string }> {
+  if (!firestore?.collection) {
+    return { success: false, error: 'Database not initialized.' };
+  }
   try {
     const goalsCollectionRef = collection(firestore, `users/${userId}/goals`);
     await addDoc(goalsCollectionRef, {
@@ -48,6 +51,9 @@ export async function updateSavingGoal(
   goalId: string,
   data: Partial<SavingGoalData>
 ): Promise<{ success: boolean; error?: string }> {
+    if (!firestore?.doc) {
+        return { success: false, error: 'Database not initialized.' };
+    }
     try {
         const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
         await updateDoc(goalDocRef, {
@@ -68,6 +74,9 @@ export async function deleteSavingGoal(
   userId: string,
   goalId: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!firestore?.doc) {
+    return { success: false, error: 'Database not initialized.' };
+  }
   try {
     const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
     await deleteDoc(goalDocRef);
@@ -85,6 +94,9 @@ export async function addFundsToGoal(
   goalId: string,
   amount: number
 ): Promise<{ success: boolean; error?: string }> {
+    if (!firestore?.runTransaction) {
+        return { success: false, error: 'Database not initialized.' };
+    }
     const userDocRef = doc(firestore, 'users', userId);
     const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
 
@@ -121,6 +133,9 @@ export async function withdrawCompletedGoal(
   userId: string,
   goalId: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!firestore?.runTransaction) {
+    return { success: false, error: 'Database not initialized.' };
+  }
   const userDocRef = doc(firestore, 'users', userId);
   const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
 

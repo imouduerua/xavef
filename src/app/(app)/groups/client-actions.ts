@@ -47,6 +47,9 @@ export async function createGroup(
   creatorUid: string,
   data: GroupData
 ): Promise<{ success: boolean; error?: string }> {
+  if (!firestore?.collection) {
+    return { success: false, error: 'Database not initialized.' };
+  }
   try {
     const groupsCollectionRef = collection(firestore, `groups`);
     await addDoc(groupsCollectionRef, {
@@ -68,6 +71,9 @@ export async function startGroup(
   firestore: Firestore,
   groupId: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!firestore?.doc) {
+    return { success: false, error: 'Database not initialized.' };
+  }
   const groupDocRef = doc(firestore, 'groups', groupId);
   try {
     const groupSnap = await getDoc(groupDocRef);
@@ -123,6 +129,9 @@ export async function requestToJoinGroup(
   requester: User,
   group: Group
 ): Promise<{ success: boolean; error?: string }> {
+  if (!firestore?.collection) {
+    return { success: false, error: 'Database not initialized.' };
+  }
   try {
     const joinRequestsRef = collection(firestore, 'joinRequests');
 
@@ -178,6 +187,9 @@ export async function respondToJoinRequest(
   requestId: string,
   decision: 'approved' | 'declined'
 ): Promise<{ success: boolean; error?: string }> {
+  if (!firestore?.runTransaction) {
+    return { success: false, error: 'Database not initialized.' };
+  }
   const requestDocRef = doc(firestore, 'joinRequests', requestId);
 
   try {
@@ -246,6 +258,9 @@ export async function distributeGroupFunds(
   recipientUid: string,
   totalPurse: number
 ): Promise<{ success: boolean; error?: string }> {
+  if (!firestore?.runTransaction) {
+    return { success: false, error: 'Database not initialized.' };
+  }
   const groupRef = doc(firestore, 'groups', groupId);
   const recipientUserRef = doc(firestore, 'users', recipientUid);
 
@@ -324,6 +339,9 @@ export async function contributeToGroupFromSavings(
   userId: string,
   groupId: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!firestore?.doc) {
+    return { success: false, error: 'Database not initialized.' };
+  }
   const groupRef = doc(firestore, 'groups', groupId);
   const userRef = doc(firestore, 'users', userId);
   const userTransactionsRef = collection(userRef, 'transactions');

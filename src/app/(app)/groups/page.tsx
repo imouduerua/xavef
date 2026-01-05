@@ -8,8 +8,11 @@ import { AvailableGroupsList } from "@/components/groups/available-groups-list";
 import { Separator } from "@/components/ui/separator";
 import { MyGroupsSection } from "@/components/groups/my-groups-section";
 import { XavefLoanPoolCard } from "@/components/groups/xavef-loan-pool-card";
+import { useFirestore } from "@/firebase/provider";
 
 export default function GroupsPage() {
+    const firestore = useFirestore();
+    
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
              <XavefLoanPoolCard />
@@ -27,14 +30,14 @@ export default function GroupsPage() {
                     <div className="space-y-8">
                          <div>
                             <Suspense fallback={<div>Loading your groups...</div>}>
-                                <MyGroupsSection />
+                                {firestore ? <MyGroupsSection /> : <div>Loading...</div>}
                             </Suspense>
                         </div>
                         <Separator />
                         <div>
                             <h3 className="text-xl font-semibold mb-4">Available Groups to Join</h3>
                              <Suspense fallback={<div>Loading available groups...</div>}>
-                                <AvailableGroupsList />
+                                {firestore ? <AvailableGroupsList /> : <div>Loading...</div>}
                              </Suspense>
                         </div>
                     </div>
