@@ -51,10 +51,9 @@ export function RegisterForm() {
       referralCode: "",
     },
   });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  
+  const handleRegistration = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         const user = userCredential.user;
@@ -71,6 +70,7 @@ export function RegisterForm() {
         });
 
         if (!profileResult.success) {
+            // This will be caught by the outer catch block
             throw new Error(profileResult.error || "Failed to create user profile in database.");
         }
 
@@ -79,15 +79,18 @@ export function RegisterForm() {
             description: "Redirecting to your dashboard...",
         });
         
-        router.push(`/dashboard`);
+        // Using replace to prevent user from going back to the registration page
+        router.replace(`/dashboard`);
 
     } catch (error: any) {
         console.error("Registration Error:", error);
         
         let errorMessage = "An unknown error occurred during registration.";
+        // Firebase Auth errors have a 'code' property
         if (error.code === 'auth/email-already-in-use') {
             errorMessage = "This email address is already in use. Please log in instead.";
         } else if (error.message) {
+            // Use the error message from createUserProfile or other Firebase errors
             errorMessage = error.message;
         }
 
@@ -100,6 +103,12 @@ export function RegisterForm() {
     } finally {
         setIsLoading(false);
     }
+  }
+
+  // We wrap the async logic in a separate function.
+  // The form's `onSubmit` handler will just call this function.
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    handleRegistration(values);
   }
 
   return (
