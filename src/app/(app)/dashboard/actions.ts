@@ -12,7 +12,6 @@ import {
     limit,
     increment,
     writeBatch,
-    getDoc,
 } from "firebase/firestore";
 import type { ReferralCode, UserData, BankAccount } from "@/lib/types";
 import { v4 as uuidv4 } from 'uuid';
@@ -32,7 +31,8 @@ export async function createUserProfile(
   data: CreateProfileData
 ): Promise<{ success: boolean; error?: string }> {
   // Gracefully fail if server is not configured.
-  if (!firestore) {
+  if (!firestore || !firestore.collection) {
+    console.error("[createUserProfile] Firestore Admin SDK is not initialized. This is likely due to missing server credentials.");
     return {
         success: false,
         error: "Server is not configured for database access. Please contact support."
@@ -116,7 +116,7 @@ export async function transferToAnnual(
   userId: string,
   amount: number
 ): Promise<{ success: boolean; error?: string }> {
-    if (!firestore) {
+    if (!firestore || !firestore.collection) {
       return {
           success: false,
           error: "Server is not configured for database access. Please contact support."

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useAuth, useFirestore } from "@/firebase/provider";
+import { useAuth } from "@/firebase/provider";
 import { Loader2 } from "lucide-react";
 import { createUserProfile } from "../(app)/dashboard/actions";
 import type { User } from "firebase/auth";
@@ -73,7 +73,7 @@ export function RegisterForm() {
 
         if (!profileResult.success) {
             // This will be caught by the outer catch block
-            throw new Error(profileResult.error || "Failed to create user profile in database.");
+            throw new Error(profileResult.error || "Failed to create user profile in database. Please contact support.");
         }
 
         toast({
