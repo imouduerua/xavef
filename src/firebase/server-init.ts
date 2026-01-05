@@ -15,21 +15,17 @@ let app: App;
 let firestore: Firestore;
 
 try {
-  const serviceAccountString = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  
-  if (serviceAccountString) {
-    const serviceAccount = JSON.parse(Buffer.from(serviceAccountString, 'base64').toString('utf8'));
-
+  // The Admin SDK will automatically find and use the GOOGLE_APPLICATION_CREDENTIALS
+  // environment variable if it's set. No manual parsing is needed.
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     app = getApps().length
       ? getApp()
-      : initializeApp({
-          credential: cert(serviceAccount)
-      });
+      : initializeApp();
 
     firestore = getFirestore(app);
   } else {
-    // If no service account, create dummy objects to avoid crashes on import.
-    // The functions using these will have guards to prevent execution.
+     // If no service account, create dummy objects to avoid crashes on import.
+     // The functions using these will have guards to prevent execution.
     app = {} as App;
     firestore = {} as Firestore;
      if (process.env.NODE_ENV === 'development') {
