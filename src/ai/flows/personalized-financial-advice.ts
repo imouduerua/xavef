@@ -34,6 +34,9 @@ export type FinancialAdvice = z.infer<typeof FinancialAdviceSchema>;
 
 // Define the financial advice flow
 export async function getPersonalizedFinancialAdvice(input: FinancialSituation): Promise<FinancialAdvice> {
+  if (!ai) {
+    throw new Error('AI service is not configured.');
+  }
   return personalizedFinancialAdviceFlow(input);
 }
 
@@ -66,6 +69,9 @@ const personalizedFinancialAdviceFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await personalizedFinancialAdvicePrompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('Failed to generate financial advice.');
+    }
+    return output;
   }
 );
