@@ -7,21 +7,11 @@ import { getAuth, onAuthStateChanged, type Auth, type User } from 'firebase/auth
 import { getFirestore, type Firestore, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
-// --- Initialize Firebase App ---
-// This ensures Firebase is initialized only once, globally.
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-// Initialize Firestore with memory cache to avoid persistence-related issues in some environments.
-const firestore = initializeFirestore(app, {
-    localCache: memoryLocalCache()
-});
-
-
 // --- Define Context Types ---
 interface FirebaseContextType {
   app: FirebaseApp;
   auth: Auth;
-  firestore: Firestore;
+  firestore: Firestore | null;
   user: User | null;
   loading: boolean;
 }
@@ -29,17 +19,29 @@ interface FirebaseContextType {
 // --- Create Context ---
 const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
 
+// --- Initialize Firebase App ---
+// This ensures Firebase is initialized only once, globally.
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
 
 // --- Main Provider Component ---
 export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [firestore, setFirestore] = useState<Firestore | null>(null);
 
   useEffect(() => {
+    // Initialize Firestore on the client side, only once.
+    const db = initializeFirestore(app, {
+        localCache: memoryLocalCache()
+    });
+    setFirestore(db);
+    
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
     });
+
     // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
@@ -50,7 +52,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     firestore,
     user,
     loading,
-  }), [user, loading]);
+  }), [user, loading, firestore]);
 
   return (
     <FirebaseContext.Provider value={value}>
@@ -84,8 +86,9 @@ export function useAuth(): Auth {
 
 export function useFirestore(): Firestore {
   const { firestore } = useFirebaseContext();
+  // This now returns a valid instance or throws an error, but the provider ensures it's available.
   if (!firestore) {
-    throw new Error("Firestore has not been initialized.");
+    throw new Error("Firestore has not been initialized on the client.");
   }
   return firestore;
 }
