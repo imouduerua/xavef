@@ -47,7 +47,7 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
     })}`;
 
   const handleRequestToJoin = async () => {
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         variant: "destructive",
         title: "Authentication Error",
@@ -73,6 +73,7 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
   }
 
   const handleStartGroup = async () => {
+      if (!firestore) return;
       setIsStarting(true);
       const result = await startGroup(firestore, group.id);
       if (result.success) {
@@ -201,3 +202,5 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
     </Card>
   );
 }
+
+    

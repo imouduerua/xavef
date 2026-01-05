@@ -34,13 +34,13 @@ export function MyGroupsSection() {
   const firestore = useFirestore();
   const uid = user?.uid;
 
-  const myGroupsQuery = useMemo(() => (uid) ? query(
+  const myGroupsQuery = useMemo(() => (uid && firestore) ? query(
         collection(firestore, `groups`), 
         where('members', 'array-contains', uid),
         orderBy('createdAt', 'desc')
     ) : null, [uid, firestore]);
 
-  const joinRequestsQuery = useMemo(() => (uid) ? query(
+  const joinRequestsQuery = useMemo(() => (uid && firestore) ? query(
           collection(firestore, 'joinRequests'),
           where('groupCreatorUid', '==', uid),
           where('status', '==', 'pending'),
@@ -57,7 +57,9 @@ export function MyGroupsSection() {
     return <MissingIndexAlert url={requestsIndexUrl} />;
   }
 
-  if (groupsLoading || requestsLoading) {
+  const isLoading = groupsLoading || requestsLoading;
+
+  if (isLoading) {
     return <SectionSkeleton />;
   }
 
@@ -91,3 +93,5 @@ export function MyGroupsSection() {
     </div>
   );
 }
+
+    

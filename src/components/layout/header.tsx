@@ -158,7 +158,7 @@ export function AppHeader() {
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {combinedNotifications.length > 0 ? combinedNotifications.map((notification) => (
+                {firestore && combinedNotifications.length > 0 ? combinedNotifications.map((notification) => (
                   <DropdownMenuItem key={notification.id} asChild className="flex flex-col items-start gap-1 cursor-pointer">
                     <Link href={notification.actionUrl || '#'}>
                       <div className="flex w-full items-center">
@@ -208,12 +208,14 @@ export function AppHeader() {
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                <ReferralCodeDialog>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <BadgePercent className="mr-2 h-4 w-4" />
-                      <span>Generate Referral Code</span>
-                    </DropdownMenuItem>
-                </ReferralCodeDialog>
+                 {firestore && (
+                    <ReferralCodeDialog>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <BadgePercent className="mr-2 h-4 w-4" />
+                        <span>Generate Referral Code</span>
+                        </DropdownMenuItem>
+                    </ReferralCodeDialog>
+                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -227,3 +229,5 @@ export function AppHeader() {
     </>
   );
 }
+
+    

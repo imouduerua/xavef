@@ -66,7 +66,7 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -146,3 +146,5 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
     </Dialog>
   );
 }
+
+    

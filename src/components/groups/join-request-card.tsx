@@ -36,7 +36,7 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
   const firestore = useFirestore();
   
   const transactionsQuery = useMemo(() => {
-    if (!requesterUid) return null;
+    if (!requesterUid || !firestore) return null;
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     return query(
@@ -56,6 +56,7 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
 
 
   const handleResponse = async (decision: 'approved' | 'declined') => {
+      if (!firestore) return;
       setIsResponding(true);
       const result = await respondToJoinRequest(firestore, request.id, decision);
       if (result.success) {
@@ -133,3 +134,5 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
     </Card>
   );
 }
+
+    

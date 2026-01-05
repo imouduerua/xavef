@@ -29,15 +29,15 @@ const statusVariant: Record<TransactionStatus, "default" | "secondary" | "destru
 
 
 export function RecentTransactions() {
-  const { uid } = useUser();
+  const { user } = useUser();
   const firestore = useFirestore();
 
-  const transactionsQuery = useMemo(() => (uid) ? query(
-      collection(firestore, "users", uid, "transactions"),
+  const transactionsQuery = useMemo(() => (user?.uid && firestore) ? query(
+      collection(firestore, "users", user.uid, "transactions"),
       where("status", "in", ["Completed", "Failed"]),
       orderBy("date", "desc"),
       limit(5)
-    ) : null, [uid, firestore]);
+    ) : null, [user?.uid, firestore]);
 
   const { data: transactions, loading } = useCollection<Transaction>(transactionsQuery);
 
@@ -132,3 +132,5 @@ export function RecentTransactions() {
     </Card>
   );
 }
+
+    

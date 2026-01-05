@@ -27,20 +27,20 @@ function DashboardApp() {
   const firestore = useFirestore();
 
   const userDocRef = useMemo(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return doc(firestore, 'users', user.uid);
   }, [user, firestore]);
 
   const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
-  const pendingTransactionsQuery = useMemo(() => (user?.uid) ? query(
+  const pendingTransactionsQuery = useMemo(() => (user?.uid && firestore) ? query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "==", "Pending"),
     ) : null, [user?.uid, firestore]);
   
-  const goalsQuery = useMemo(() => (user?.uid) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [user?.uid, firestore]);
+  const goalsQuery = useMemo(() => (user?.uid && firestore) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [user?.uid, firestore]);
 
-  const joinRequestsQuery = useMemo(() => (user?.uid) ? query(
+  const joinRequestsQuery = useMemo(() => (user?.uid && firestore) ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
@@ -73,7 +73,7 @@ function DashboardApp() {
     from: AccountType,
     to: string
   ) => {
-     if (!user?.uid) return false;
+     if (!user?.uid || !firestore) return false;
 
      if (balances[from] < amount) {
         toast({
@@ -256,3 +256,5 @@ export default function DashboardPage() {
       </Suspense>
     );
   }
+
+    

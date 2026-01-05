@@ -46,7 +46,7 @@ export function GoalCard({ goal }: GoalCardProps) {
   const [isWithdrawing, setIsWithdrawing] = React.useState(false);
 
   const userDocRef = useMemo(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return doc(firestore, 'users', user.uid);
   }, [user, firestore]);
   
@@ -62,7 +62,7 @@ export function GoalCard({ goal }: GoalCardProps) {
     })}`;
 
   const handleDelete = async () => {
-    if (!user) return;
+    if (!user || !firestore) return;
     setIsDeleting(true);
     const result = await deleteSavingGoal(firestore, user.uid, goal.id);
     if (result.success) {
@@ -81,7 +81,7 @@ export function GoalCard({ goal }: GoalCardProps) {
   };
 
   const handleWithdraw = async () => {
-    if (!user) return;
+    if (!user || !firestore) return;
     setIsWithdrawing(true);
     const result = await withdrawCompletedGoal(firestore, user.uid, goal.id);
     if (result.success) {
@@ -131,9 +131,9 @@ export function GoalCard({ goal }: GoalCardProps) {
       <AddFundsDialog
         goal={goal}
         solidaraBalance={userData?.solidaraBalance ?? 0}
-        disabled={userDataLoading}
+        disabled={userDataLoading || !firestore}
       >
-        <Button variant="outline" className="w-full" disabled={userDataLoading}>
+        <Button variant="outline" className="w-full" disabled={userDataLoading || !firestore}>
           Add Funds
         </Button>
       </AddFundsDialog>
@@ -208,3 +208,5 @@ export function GoalCard({ goal }: GoalCardProps) {
     </Card>
   );
 }
+
+    

@@ -74,12 +74,12 @@ export default function WithdrawalPage() {
     const firestore = useFirestore();
 
     const userDocRef = useMemo(() => {
-        if (!user) return null;
+        if (!user || !firestore) return null;
         return doc(firestore, 'users', user.uid);
     }, [user, firestore]);
     const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
-    const pendingWithdrawalQuery = useMemo(() => (user?.uid) ? query(
+    const pendingWithdrawalQuery = useMemo(() => (user?.uid && firestore) ? query(
             collection(firestore, 'users', user.uid, 'transactions'),
             where('status', '==', 'Pending'),
             where('type', '==', 'Withdrawal'),
@@ -131,3 +131,5 @@ export default function WithdrawalPage() {
         </div>
     );
 }
+
+    

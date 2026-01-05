@@ -20,7 +20,7 @@ export function ReferralCodeDialog({ children }: { children: React.ReactNode }) 
     const firestore = useFirestore();
 
     const generateCode = async () => {
-        if (!user) return;
+        if (!user || !firestore) return;
         
         setIsLoading(true);
         setGeneratedCode(null);
@@ -129,3 +129,5 @@ export function ReferralCodeDialog({ children }: { children: React.ReactNode }) 
         </Dialog>
     );
 }
+
+    

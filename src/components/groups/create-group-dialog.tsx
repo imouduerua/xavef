@@ -55,7 +55,7 @@ export function CreateGroupDialog() {
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
@@ -182,3 +182,5 @@ export function CreateGroupDialog() {
     </Dialog>
   );
 }
+
+    

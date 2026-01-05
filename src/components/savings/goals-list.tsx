@@ -26,10 +26,10 @@ function GoalSkeleton() {
 
 
 export function GoalsList() {
-  const { uid } = useUser();
+  const { user } = useUser();
   const firestore = useFirestore();
 
-  const goalsQuery = useMemo(() => (uid) ? query(collection(firestore, `users/${uid}/goals`), orderBy('createdAt', 'desc')) : null, [uid, firestore]);
+  const goalsQuery = useMemo(() => (user?.uid && firestore) ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [user, firestore]);
 
   const { data: goals, loading } = useCollection<SavingGoal>(goalsQuery);
 
@@ -63,3 +63,5 @@ export function GoalsList() {
     </div>
   );
 }
+
+    

@@ -127,13 +127,13 @@ function TransactionsTable({ transactions, isLoading, indexCreationUrl }: { tran
 }
 
 export default function TransactionsPage() {
-  const { uid } = useUser();
+  const { user } = useUser();
   const firestore = useFirestore();
 
-  const transactionsQuery = useMemo(() => (uid && firestore) ? query(
-      collection(firestore, "users", uid, "transactions"),
+  const transactionsQuery = useMemo(() => (user?.uid && firestore) ? query(
+      collection(firestore, "users", user.uid, "transactions"),
       orderBy("date", "desc")
-    ) : null, [uid, firestore]);
+    ) : null, [user?.uid, firestore]);
 
   const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 
@@ -179,3 +179,5 @@ export default function TransactionsPage() {
     </div>
   );
 }
+
+    
