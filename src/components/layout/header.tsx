@@ -6,7 +6,7 @@ import { Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent, Users } from '
 import { useRouter } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '../ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -222,5 +222,3 @@ export function AppHeader() {
     </>
   );
 }
-
-    
