@@ -22,6 +22,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth, useFirestore } from "@/firebase/provider";
 import { Loader2 } from "lucide-react";
 import { createUserProfile } from "../(app)/dashboard/actions";
+import type { User } from "firebase/auth";
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
@@ -39,8 +40,7 @@ export function RegisterForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const auth = useAuth();
-  const firestore = useFirestore();
-
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -51,59 +51,57 @@ export function RegisterForm() {
       referralCode: "",
     },
   });
-  
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // This timeout allows the form submission event to complete before the state update,
-    // preventing the infinite re-render loop.
-    setTimeout(async () => {
-        setIsLoading(true);
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-            const user = userCredential.user;
-            
-            const displayName = `${values.firstName} ${values.lastName}`;
-            await updateProfile(user, { displayName });
-            
-            const profileResult = await createUserProfile(firestore, user, {
-                firstName: values.firstName,
-                lastName: values.lastName,
-                displayName: displayName,
-                email: values.email,
-                referralCode: values.referralCode,
-            });
 
-            if (!profileResult.success) {
-                // This will be caught by the outer catch block
-                throw new Error(profileResult.error || "Failed to create user profile in database.");
-            }
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        const user = userCredential.user;
+        
+        const displayName = `${values.firstName} ${values.lastName}`;
+        await updateProfile(user, { displayName });
 
-            toast({
-                title: "Account Created!",
-                description: "Redirecting to your dashboard...",
-            });
-            
-            router.replace(`/dashboard`);
+        const profileData = {
+            firstName: values.firstName,
+            lastName: values.lastName,
+            displayName: displayName,
+            email: values.email,
+            referralCode: values.referralCode,
+        };
+        
+        const profileResult = await createUserProfile(user.uid, profileData);
 
-        } catch (error: any) {
-            console.error("Registration Error:", error);
-            
-            let errorMessage = "An unknown error occurred during registration.";
-            if (error.code === 'auth/email-already-in-use') {
-                errorMessage = "This email address is already in use. Please log in instead.";
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-
-            toast({
-                variant: "destructive",
-                title: "Registration Failed",
-                description: errorMessage,
-                duration: 10000,
-            });
-        } finally {
-            setIsLoading(false);
+        if (!profileResult.success) {
+            // This will be caught by the outer catch block
+            throw new Error(profileResult.error || "Failed to create user profile in database.");
         }
-    }, 0);
+
+        toast({
+            title: "Account Created!",
+            description: "Redirecting to your dashboard...",
+        });
+        
+        router.replace(`/dashboard`);
+
+    } catch (error: any) {
+        console.error("Registration Error:", error);
+        
+        let errorMessage = "An unknown error occurred during registration.";
+        if (error.code === 'auth/email-already-in-use') {
+            errorMessage = "This email address is already in use. Please log in instead.";
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        toast({
+            variant: "destructive",
+            title: "Registration Failed",
+            description: errorMessage,
+            duration: 9000,
+        });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (

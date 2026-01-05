@@ -6,20 +6,17 @@ import {
     runTransaction, 
     collection, 
     Timestamp,
-    Firestore,
     query,
     where,
     getDocs,
     limit,
-    documentId,
     increment,
-    addDoc,
     writeBatch,
-    DocumentReference,
+    getDoc,
 } from "firebase/firestore";
-import type { User as AuthUser } from "firebase/auth";
 import type { ReferralCode, UserData, BankAccount } from "@/lib/types";
 import { v4 as uuidv4 } from 'uuid';
+import { firestore } from '@/firebase/server-init';
 
 
 interface CreateProfileData {
@@ -31,11 +28,10 @@ interface CreateProfileData {
 }
 
 export async function createUserProfile(
-  firestore: Firestore,
-  user: AuthUser,
+  uid: string,
   data: CreateProfileData
 ): Promise<{ success: boolean; error?: string }> {
-  const userDocRef = doc(firestore, 'users', user.uid);
+  const userDocRef = doc(firestore, 'users', uid);
   let referredBy: string | null = null;
   let referralCodeDocId: string | null = null;
 
@@ -67,7 +63,7 @@ export async function createUserProfile(
     await runTransaction(firestore, async (transaction) => {
       
       const newUserProfile: UserData = {
-        uid: user.uid,
+        uid: uid,
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
@@ -109,7 +105,6 @@ export async function createUserProfile(
 }
 
 export async function transferToAnnual(
-  firestore: Firestore,
   userId: string,
   amount: number
 ): Promise<{ success: boolean; error?: string }> {
@@ -141,7 +136,7 @@ export async function transferToAnnual(
                 date: Timestamp.now(),
                 description: "Transfer to Annual Savings",
                 type: 'Internal Transfer',
-                status: 'Completed', // Set status to Completed directly
+                status: 'Completed',
                 targetAccount: 'annual',
             });
         });
