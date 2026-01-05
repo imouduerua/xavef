@@ -146,5 +146,3 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
     </Dialog>
   );
 }
-
-    

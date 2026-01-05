@@ -208,5 +208,3 @@ export function GoalCard({ goal }: GoalCardProps) {
     </Card>
   );
 }
-
-    

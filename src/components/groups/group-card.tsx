@@ -202,5 +202,3 @@ export function GroupCard({ group, isOwned = false }: GroupCardProps) {
     </Card>
   );
 }
-
-    

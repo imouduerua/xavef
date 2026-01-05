@@ -46,6 +46,14 @@ export function ContributeDialog({ group, children }: ContributeDialogProps) {
       });
       return;
     }
+    if (!firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Database connection not available.',
+      });
+      return;
+    }
 
     setIsContributing(true);
     const result = await contributeToGroupFromSavings(
