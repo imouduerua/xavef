@@ -14,7 +14,6 @@ import {
     documentId,
     increment,
     addDoc,
-    getDoc,
     writeBatch,
     DocumentReference,
 } from "firebase/firestore";
@@ -39,6 +38,7 @@ export async function createUserProfile(
   const userDocRef = doc(firestore, 'users', user.uid);
   let referredBy: string | null = null;
   let referralCodeRef: DocumentReference | null = null;
+  let referralCodeDocId: string | null = null;
 
   try {
     // Perform all read operations BEFORE the transaction
@@ -46,23 +46,20 @@ export async function createUserProfile(
       const codeQuery = query(
         collection(firestore, 'referralCodes'),
         where('code', '==', data.referralCode.trim().toUpperCase()),
+        where('used', '==', false),
         limit(1)
       );
       const codeSnap = await getDocs(codeQuery);
 
       if (codeSnap.empty) {
-        throw new Error('Invalid referral code.');
+        throw new Error('Invalid or already used referral code.');
       }
       
       const codeDoc = codeSnap.docs[0];
       const codeData = codeDoc.data() as ReferralCode;
-
-      if (codeData.used) {
-        throw new Error('This referral code has already been used.');
-      }
       
       referredBy = codeData.creatorUid;
-      referralCodeRef = codeDoc.ref;
+      referralCodeDocId = codeDoc.id; // Get the ID to reference inside the transaction
     }
 
     // Generate the unique ID once, outside the transaction.
@@ -94,8 +91,9 @@ export async function createUserProfile(
       transaction.set(userDocRef, newUserProfile);
 
       // 2. If a referral code was used, mark it as used
-      if (referralCodeRef) {
-        transaction.update(referralCodeRef, { used: true });
+      if (referralCodeDocId) {
+        const codeRef = doc(firestore, 'referralCodes', referralCodeDocId);
+        transaction.update(codeRef, { used: true });
       }
     });
 
