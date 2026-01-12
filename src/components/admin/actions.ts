@@ -48,7 +48,6 @@ export async function updateTransactionStatus(
         } else if (targetAccount === 'annual') {
           transaction.update(userRef, { annualBalance: FieldValue.increment(amount) });
         }
-        // No 'else' needed; if target is missing, no balance change occurs, which is safe.
       }
 
       // If a WITHDRAWAL FAILS, refund the amount to the user's solidara balance.
