@@ -9,6 +9,9 @@ import {
   PiggyBank,
   Settings,
   Users,
+  BrainCircuit,
+  ArrowRightLeft,
+  Wallet,
 } from 'lucide-react';
 
 import { useUser } from '@/firebase';
@@ -32,6 +35,9 @@ const navItems = [
   { href: '/savings', icon: PiggyBank, label: 'Savings' },
   { href: '/groups', icon: Users, label: 'Groups' },
   { href: '/loans', icon: Landmark, label: 'Loans' },
+  { href: '/transactions', icon: ArrowRightLeft, label: 'Transactions' },
+  { href: '/withdrawal', icon: Wallet, label: 'Withdrawal' },
+  { href: '/advice', icon: BrainCircuit, label: 'AI Advisor' },
 ];
 
 
