@@ -7,6 +7,9 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import React from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { doc, runTransaction, collection, query, where, getDocs, limit, Timestamp, setDoc } from "firebase/firestore";
+import type { UserData, ReferralCode } from "@/lib/types";
+import { v4 as uuidv4 } from "uuid";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,10 +22,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase";
 import { Loader2 } from "lucide-react";
-import { createUserProfile } from "../(app)/dashboard/actions";
-import type { User } from "firebase/auth";
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
@@ -33,13 +34,14 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
-  referralCode: z.string().min(1, { message: "A referral code is required." }),
+  referralCode: z.string().optional(),
 });
 
 export function RegisterForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const auth = useAuth();
+  const firestore = useFirestore();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,6 +56,17 @@ export function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    
+    if (!firestore) {
+        toast({
+            variant: "destructive",
+            title: "Registration Error",
+            description: "Database service is not available. Please try again later.",
+        });
+        setIsLoading(false);
+        return;
+    }
+
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         const user = userCredential.user;
@@ -61,33 +74,67 @@ export function RegisterForm() {
         const displayName = `${values.firstName} ${values.lastName}`;
         await updateProfile(user, { displayName });
 
-        const profileData = {
-            firstName: values.firstName,
-            lastName: values.lastName,
-            displayName: displayName,
-            email: values.email,
-            referralCode: values.referralCode,
-        };
-        
-        const profileResult = await createUserProfile(user.uid, profileData);
+        const userDocRef = doc(firestore, 'users', user.uid);
+        let referredBy: string | null = null;
+        let referralCodeDocId: string | null = null;
 
-        if (!profileResult.success) {
-            toast({
-                variant: "destructive",
-                title: "Registration Error",
-                description: profileResult.error || "Failed to create user profile in database. Please contact support.",
-                duration: 9000,
-            });
-             setIsLoading(false);
-             return;
+        // Perform all read operations for referral code check BEFORE the transaction
+        if (values.referralCode) {
+            const codeQuery = query(
+                collection(firestore, 'referralCodes'),
+                where('code', '==', values.referralCode.trim().toUpperCase()),
+                where('used', '==', false),
+                limit(1)
+            );
+            const codeSnap = await getDocs(codeQuery);
+
+            if (codeSnap.empty) {
+                throw new Error('Invalid or already used referral code.');
+            }
+            
+            const codeDoc = codeSnap.docs[0];
+            const codeData = codeDoc.data() as ReferralCode;
+            
+            referredBy = codeData.creatorUid;
+            referralCodeDocId = codeDoc.id;
         }
+
+        const xavefId = uuidv4().substring(0, 6).toUpperCase();
+
+        await runTransaction(firestore, async (transaction) => {
+            const newUserProfile: UserData = {
+                uid: user.uid,
+                email: values.email,
+                firstName: values.firstName,
+                lastName: values.lastName,
+                displayName: displayName,
+                dateOfBirth: null,
+                phoneNumber: null,
+                address: null,
+                state: null,
+                country: null,
+                xavefId,
+                createdAt: Timestamp.now(),
+                referredBy: referredBy,
+                solidaraBalance: 0,
+                annualBalance: 0,
+                bankAccounts: [],
+            };
+
+            transaction.set(userDocRef, newUserProfile);
+
+            if (referralCodeDocId) {
+                const codeRef = doc(firestore, 'referralCodes', referralCodeDocId);
+                transaction.update(codeRef, { used: true });
+            }
+        });
 
         toast({
             title: "Account Created!",
             description: "Redirecting to your dashboard...",
         });
         
-        router.replace(`/dashboard`);
+        // The redirect is handled by the AuthGuard
 
     } catch (error: any) {
         console.error("Registration Error:", error);
@@ -172,7 +219,7 @@ export function RegisterForm() {
             name="referralCode"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Referral Code</FormLabel>
+                    <FormLabel>Referral Code (Optional)</FormLabel>
                     <FormControl>
                         <Input placeholder="Enter referral code" {...field} />
                     </FormControl>
