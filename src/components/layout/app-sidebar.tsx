@@ -38,8 +38,6 @@ const navItems = [
   { href: '/savings', icon: PiggyBank, label: 'Savings' },
   { href: '/groups', icon: Users, label: 'Groups' },
   { href: '/loans', icon: Landmark, label: 'Loans' },
-  { href: '/withdrawal', icon: Wallet, label: 'Withdrawal' },
-  { href: '/advice', icon: BrainCircuit, label: 'AI Advisor' },
 ];
 
 
