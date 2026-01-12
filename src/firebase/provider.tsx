@@ -86,8 +86,17 @@ export function useAuth(): Auth {
   return auth;
 }
 
-export function useFirestore(): Firestore | null {
-  const { firestore } = useFirebaseContext();
+export function useFirestore(): Firestore {
+  const { firestore, loading } = useFirebaseContext();
+  if (loading && !firestore) {
+    // This state can happen during initial load. It's better to throw
+    // or handle it gracefully than to return null and cause downstream errors.
+    // Throwing an error here makes it clear that something is trying to use Firestore too early.
+    throw new Error("useFirestore was called before Firestore has been initialized. Ensure components using this hook are rendered only after Firebase is ready.");
+  }
+  if (!firestore) {
+    throw new Error("Firebase Firestore has not been initialized or is not available.");
+  }
   return firestore;
 }
 
