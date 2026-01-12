@@ -43,7 +43,7 @@ export function AppHeader() {
   const auth = useAuth();
 
   const [isClient, setIsClient] = useState(false);
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState('dark');
 
   const joinRequestsQuery = useMemo(() => (user?.uid && firestore) ? query(
       collection(firestore, 'joinRequests'),
@@ -98,7 +98,7 @@ export function AppHeader() {
 
   useEffect(() => {
     setIsClient(true);
-    const storedTheme = localStorage.getItem('theme') || 'light';
+    const storedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(storedTheme);
     document.documentElement.classList.toggle('dark', storedTheme === 'dark');
   }, []);
