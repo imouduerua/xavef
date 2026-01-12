@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  ArrowDownCircle,
   Landmark,
   LayoutDashboard,
   PiggyBank,
@@ -32,6 +33,7 @@ const navItems = [
   { href: '/savings', icon: PiggyBank, label: 'Savings' },
   { href: '/groups', icon: Users, label: 'Groups' },
   { href: '/loans', icon: Landmark, label: 'Loans' },
+  { href: '/withdrawal', icon: ArrowDownCircle, label: 'Withdrawal' },
 ];
 
 const bottomNavItems = [{ href: '/settings', icon: Settings, label: 'Settings' }];
