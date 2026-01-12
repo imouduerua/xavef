@@ -28,7 +28,7 @@ import { AdminSidebar } from '../admin/admin-sidebar';
 
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { href: '/savings', icon: PiggyBank, label: 'Savings' },
   { href: '/groups', icon: Users, label: 'Groups' },
   { href: '/loans', icon: Landmark, label: 'Loans' },
@@ -51,8 +51,8 @@ export function AppSidebar({ isAdmin, isSuperAdmin }: AppSidebarProps) {
     return <AdminSidebar />;
   }
 
-  const isActive = (href: string) => {
-    return pathname.startsWith(href);
+  const isActive = (href: string, exact = false) => {
+    return exact ? pathname === href : pathname.startsWith(href);
   };
   
   const handleLinkClick = () => {
@@ -72,7 +72,7 @@ export function AppSidebar({ isAdmin, isSuperAdmin }: AppSidebarProps) {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={isActive(item.href)}
+                isActive={isActive(item.href, item.exact)}
                 icon={<item.icon />}
                 tooltip={item.label}
               >
