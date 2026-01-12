@@ -33,9 +33,6 @@ export function AdminHeader() {
     const storedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(storedTheme);
     document.documentElement.classList.toggle('dark', storedTheme === 'dark');
-     if(storedTheme === 'light') {
-        document.documentElement.classList.remove('dark');
-    }
   }, []);
 
   const handleLogout = useCallback(async () => {
@@ -60,9 +57,6 @@ export function AdminHeader() {
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
-    if (newTheme === 'light') {
-      document.documentElement.classList.remove('dark');
-    }
   };
 
   return (
