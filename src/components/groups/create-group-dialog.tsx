@@ -63,7 +63,7 @@ export function CreateGroupDialog({ firestore }: CreateGroupDialogProps) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
-        description: 'You must be logged in to create a group.',
+        description: 'You must be logged in to create a group. Firestore might not be ready.',
       });
       return;
     }
