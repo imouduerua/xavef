@@ -1,8 +1,8 @@
 
 'use server';
 
-import { doc, runTransaction, Firestore, collection, serverTimestamp, increment } from 'firebase/firestore';
-import type { Transaction, TransactionStatus } from '@/lib/types';
+import { doc, runTransaction, increment } from 'firebase/firestore';
+import type { Transaction } from '@/lib/types';
 import { firestore as adminFirestore } from '@/firebase/server-init';
 
 export async function updateTransactionStatus(
@@ -16,15 +16,15 @@ export async function updateTransactionStatus(
     };
   }
 
-  const transactionRef = doc(adminFirestore, transactionPath);
+  const transactionRef = adminFirestore.doc(transactionPath);
   const pathParts = transactionPath.split('/');
   const userId = pathParts[pathParts.indexOf('users') + 1];
-  const userRef = doc(adminFirestore, 'users', userId);
+  const userRef = adminFirestore.doc(`users/${userId}`);
 
   try {
-    await runTransaction(adminFirestore, async (transaction) => {
+    await adminFirestore.runTransaction(async (transaction) => {
       const txDoc = await transaction.get(transactionRef);
-      if (!txDoc.exists()) {
+      if (!txDoc.exists) {
         throw new Error('Transaction not found.');
       }
       
@@ -35,8 +35,7 @@ export async function updateTransactionStatus(
 
       transaction.update(transactionRef, { status: newStatus });
 
-      // If it's a deposit that's completed, credit the user's account.
-      // Withdrawals are debited at the time of request, so we only handle deposit logic here.
+      // If a DEPOSIT is COMPLETED, credit the user's target account.
       if (newStatus === 'Completed' && txData.type === 'Deposit') {
         const amount = txData.amount; 
         const targetAccount = txData.targetAccount;
@@ -46,6 +45,13 @@ export async function updateTransactionStatus(
         } else if (targetAccount === 'annual') {
           transaction.update(userRef, { annualBalance: increment(amount) });
         }
+      }
+
+      // If a WITHDRAWAL FAILS, refund the amount to the user's solidara balance.
+      // The amount was debited from the user's account when the request was made.
+      if (newStatus === 'Failed' && txData.type === 'Withdrawal') {
+        const amountToRefund = Math.abs(txData.amount); // amount is negative for withdrawals
+        transaction.update(userRef, { solidaraBalance: increment(amountToRefund) });
       }
     });
 

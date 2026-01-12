@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import { PendingTransactionsTable } from '@/components/admin/pending-transactions-table';
 import type { Transaction } from '@/lib/types';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
 import {
@@ -30,22 +30,22 @@ export default function AdminPendingTransactionsPage() {
     ) : null, [firestore]);
 
   const {
-    data: transactions,
+    data: initialTransactions,
     loading,
     indexCreationUrl,
   } = useCollection<Transaction>(pendingTxsQuery);
   
-  const [processedTransactionIds, setProcessedTransactionIds] = useState<string[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[] | null>(null);
 
-  const handleTransactionUpdate = (transactionId: string) => {
-    setProcessedTransactionIds(prev => [...prev, transactionId]);
-  }
-  
-  const filteredTransactions = useMemo(() => {
-    if (!transactions) return [];
-    return transactions.filter(tx => !processedTransactionIds.includes(tx.id));
-  }, [transactions, processedTransactionIds]);
+  React.useEffect(() => {
+    if (initialTransactions) {
+      setTransactions(initialTransactions);
+    }
+  }, [initialTransactions]);
 
+  const handleTransactionUpdate = useCallback((transactionId: string) => {
+    setTransactions(prev => prev ? prev.filter(tx => tx.id !== transactionId) : null);
+  }, []);
 
   const renderContent = () => {
     if (indexCreationUrl) {
@@ -54,7 +54,7 @@ export default function AdminPendingTransactionsPage() {
     if (loading && !transactions) {
       return <Skeleton className="h-64 w-full" />;
     }
-    return <PendingTransactionsTable transactions={filteredTransactions || []} onUpdate={handleTransactionUpdate} />;
+    return <PendingTransactionsTable transactions={transactions || []} onUpdate={handleTransactionUpdate} />;
   }
   
   return (

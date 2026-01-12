@@ -62,6 +62,7 @@ export function PendingTransactionsTable({
     }
 
     const processData = async () => {
+      if (!isMounted) return;
       setProcessing(true);
       const userIds = [...new Set(transactions.map(tx => {
         const pathParts = tx.path.split('/');
@@ -112,7 +113,7 @@ export function PendingTransactionsTable({
     processData();
 
     return () => { isMounted = false; };
-  }, [transactionIds, transactions, firestore]);
+  }, [transactionIds, firestore, transactions]);
 
 
   const handleUpdate = async (
@@ -250,7 +251,7 @@ export function PendingTransactionsTable({
                           <span>Approve</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="text-red-500"
+                          className="text-red-500 focus:text-red-500"
                           onClick={() => handleUpdate(tx.id, tx.path, 'Failed')}
                         >
                           <XCircle className="mr-2 h-4 w-4" />
