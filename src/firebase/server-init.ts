@@ -9,11 +9,10 @@ import 'server-only';
 // this variable should be set in a .env file to point to your service account JSON file.
 // Example: GOOGLE_APPLICATION_CREDENTIALS="/Users/you/Downloads/my-project-firebase-adminsdk.json"
 
-let app: App | undefined;
-let firestore: Firestore | undefined;
+let app: App;
 
 // Per best practice, we only initialize the app once.
-if (!getApps().length) {
+if (getApps().length === 0) {
     // This will throw an error during server startup if GOOGLE_APPLICATION_CREDENTIALS
     // is not set, which is the desired "fail-fast" behavior. This prevents the server
     // from running in a misconfigured state.
@@ -22,6 +21,6 @@ if (!getApps().length) {
     app = getApp();
 }
 
-firestore = getFirestore(app);
+const firestore: Firestore = getFirestore(app);
 
 export { app, firestore };
