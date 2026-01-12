@@ -20,7 +20,15 @@ export function ReferralCodeDialog({ children }: { children: React.ReactNode }) 
     const firestore = useFirestore();
 
     const generateCode = async () => {
-        if (!user || !firestore) return;
+        if (!user || !firestore) {
+             toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Cannot generate code. User or database not ready.",
+            });
+            setIsOpen(false);
+            return;
+        };
         
         setIsLoading(true);
         setGeneratedCode(null);
@@ -129,5 +137,3 @@ export function ReferralCodeDialog({ children }: { children: React.ReactNode }) 
         </Dialog>
     );
 }
-
-    
