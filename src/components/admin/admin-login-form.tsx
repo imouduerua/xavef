@@ -1,11 +1,13 @@
+
 'use client';
 
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
 import React from 'react';
-import {signInWithEmailAndPassword} from 'firebase/auth';
+import {signInWithEmailAndPassword, signOut} from 'firebase/auth';
 import {useRouter} from 'next/navigation';
+import { doc, getDoc } from 'firebase/firestore';
 
 import {Button} from '@/components/ui/button';
 import {
@@ -18,8 +20,8 @@ import {
 } from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {toast} from '@/hooks/use-toast';
-import {useAuth} from '@/firebase';
-import {useAdminStatus} from '@/hooks/use-admin-status';
+import {useAuth, useFirestore} from '@/firebase';
+
 
 const formSchema = z.object({
   email: z.string().email({
@@ -34,7 +36,7 @@ export function AdminLoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const auth = useAuth();
-  const {isAdmin} = useAdminStatus();
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,19 +48,44 @@ export function AdminLoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    if (!firestore) {
+        toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: "Database service is not available."
+        });
+        setIsLoading(false);
+        return;
+    }
+
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
+      const user = userCredential.user;
 
-      // The AuthGuard will handle redirection based on admin status.
-      // We just need to wait a moment for the admin status to be confirmed after login.
-      toast({
-        title: 'Login Successful',
-        description: 'Verifying admin access and redirecting...',
-      });
+      // Direct check for admin status
+      const adminDocRef = doc(firestore, 'admins', user.uid);
+      const adminDocSnap = await getDoc(adminDocRef);
+
+      if (adminDocSnap.exists() || user.email === 'admin@xavef.com') {
+         toast({
+            title: 'Login Successful',
+            description: 'Redirecting to the admin dashboard...',
+        });
+        router.replace('/admin');
+      } else {
+        await signOut(auth);
+        toast({
+            variant: 'destructive',
+            title: 'Access Denied',
+            description: 'This account does not have administrative privileges.',
+        });
+        setIsLoading(false);
+      }
+
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -67,7 +94,6 @@ export function AdminLoginForm() {
       });
       setIsLoading(false);
     }
-    // Don't set loading to false on success, as the page will redirect.
   }
 
   return (
