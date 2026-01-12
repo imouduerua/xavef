@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent, Users } from 'lucide-react';
+import { Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent, Users, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -25,6 +25,7 @@ import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import type { GroupJoinRequest, Notification } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
+import { useAdminStatus } from '@/hooks/use-admin-status';
 
 const formatDate = (date: any) => {
     if (!date) return '';
@@ -37,6 +38,7 @@ const formatDate = (date: any) => {
 export function AppHeader() {
   const router = useRouter();
   const { user } = useUser();
+  const { isAdmin } = useAdminStatus();
   const firestore = useFirestore();
   const auth = useAuth();
 
@@ -195,6 +197,14 @@ export function AppHeader() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                 {isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">
+                      <Shield className="mr-2 h-4 w-4" />
+                      <span>Go to Admin</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <Link href="/settings">
                     <UserIcon className="mr-2 h-4 w-4" />
