@@ -133,7 +133,7 @@ function AllTransactionsPageContent() {
     return () => {
       isMounted = false;
     };
-  }, [rawTransactionsKey, rawLoading, firestore]);
+  }, [rawTransactionsKey, firestore]);
 
 
   const renderContent = () => {
@@ -167,5 +167,3 @@ export default function AllTransactionsPage() {
     // This page is protected by the admin layout's super admin check
     return <AllTransactionsPageContent />;
 }
-
-    
