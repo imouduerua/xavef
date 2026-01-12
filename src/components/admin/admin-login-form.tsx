@@ -1,14 +1,13 @@
+'use client';
 
-"use client";
+import {zodResolver} from '@hookform/resolvers/zod';
+import {useForm} from 'react-hook-form';
+import * as z from 'zod';
+import React from 'react';
+import {signInWithEmailAndPassword} from 'firebase/auth';
+import {useRouter} from 'next/navigation';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import React from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { useRouter } from "next/navigation";
-
-import { Button } from "@/components/ui/button";
+import {Button} from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -16,17 +15,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/firebase";
+} from '@/components/ui/form';
+import {Input} from '@/components/ui/input';
+import {toast} from '@/hooks/use-toast';
+import {useAuth} from '@/firebase';
+import {useAdminStatus} from '@/hooks/use-admin-status';
 
 const formSchema = z.object({
   email: z.string().email({
-    message: "Please enter a valid email address.",
+    message: 'Please enter a valid email address.',
   }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
+  password: z.string().min(1, {
+    message: 'Password is required.',
   }),
 });
 
@@ -34,35 +34,40 @@ export function AdminLoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const auth = useAuth();
+  const {isAdmin} = useAdminStatus();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: '',
+      password: '',
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      
-      toast({
-        title: "Login Successful",
-        description: "Redirecting to the admin dashboard...",
-      });
-      router.push("/admin");
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
+      );
 
+      // The AuthGuard will handle redirection based on admin status.
+      // We just need to wait a moment for the admin status to be confirmed after login.
+      toast({
+        title: 'Login Successful',
+        description: 'Verifying admin access and redirecting...',
+      });
     } catch (error: any) {
       toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Invalid email or password. Please try again.',
       });
-    } finally {
       setIsLoading(false);
     }
+    // Don't set loading to false on success, as the page will redirect.
   }
 
   return (
@@ -71,7 +76,7 @@ export function AdminLoginForm() {
         <FormField
           control={form.control}
           name="email"
-          render={({ field }) => (
+          render={({field}) => (
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
@@ -84,7 +89,7 @@ export function AdminLoginForm() {
         <FormField
           control={form.control}
           name="password"
-          render={({ field }) => (
+          render={({field}) => (
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
@@ -95,7 +100,7 @@ export function AdminLoginForm() {
           )}
         />
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Signing In..." : "Sign In"}
+          {isLoading ? 'Signing In...' : 'Sign In'}
         </Button>
       </form>
     </Form>

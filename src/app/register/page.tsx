@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { RegisterForm } from "@/app/auth/register-form";
+import { RegisterForm } from "@/components/auth/register-form";
 import { XavefLogo } from "@/components/icons";
 import { AuthBanner } from "@/components/layout/auth-banner";
 
