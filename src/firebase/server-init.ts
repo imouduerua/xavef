@@ -13,7 +13,6 @@ let app: App | undefined;
 let firestore: Firestore | undefined;
 
 // Per best practice, we only initialize the app once.
-// In this environment, server credentials are not available, so we will not initialize the admin app.
 if (!getApps().length) {
     // This will throw an error during server startup if GOOGLE_APPLICATION_CREDENTIALS
     // is not set, which is the desired "fail-fast" behavior. This prevents the server
@@ -26,4 +25,3 @@ if (!getApps().length) {
 firestore = getFirestore(app);
 
 export { app, firestore };
-
