@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -29,6 +30,7 @@ import {
 } from '@/components/ui/sidebar';
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AdminSidebar } from '../admin/admin-sidebar';
 
 
 const navItems = [
@@ -40,13 +42,6 @@ const navItems = [
   { href: '/advice', icon: BrainCircuit, label: 'AI Advisor' },
 ];
 
-const adminNavItems = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-  { href: '/admin/users', icon: Users, label: 'User Management' },
-  { href: '/admin/groups', icon: Users, label: 'Group Management' },
-  { href: '/admin/pending-transactions', icon: Clock, label: 'Pending Transactions' },
-  { href: '/admin/transactions', icon: History, label: 'All Transactions', superAdminOnly: true },
-];
 
 const bottomNavItems = [{ href: '/settings', icon: Settings, label: 'Settings' }];
 
@@ -59,23 +54,13 @@ export function AppSidebar({ isAdmin, isSuperAdmin }: AppSidebarProps) {
   const pathname = usePathname();
   const { user } = useUser();
   const { isMobile, setOpenMobile } = useSidebar();
-
   const isInsideAdmin = pathname.startsWith('/admin');
 
-  const currentNavItems = isInsideAdmin
-    ? adminNavItems.filter(item => !item.superAdminOnly || isSuperAdmin)
-    : navItems;
+  if (isAdmin) {
+    return <AdminSidebar />;
+  }
 
-  const isActive = (href: string, exact = false) => {
-    if (exact) {
-      return pathname === href;
-    }
-     if (href === '/admin/groups') {
-        return pathname.startsWith('/admin/groups') || pathname.startsWith('/admin/group-details');
-    }
-    if (href === '/admin/users') {
-        return pathname.startsWith('/admin/users');
-    }
+  const isActive = (href: string) => {
     return pathname.startsWith(href);
   };
   
@@ -92,11 +77,11 @@ export function AppSidebar({ isAdmin, isSuperAdmin }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {currentNavItems.map((item) => (
+          {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={isActive(item.href, (item as any).exact)}
+                isActive={isActive(item.href)}
                 icon={<item.icon />}
                 tooltip={item.label}
               >
@@ -104,18 +89,6 @@ export function AppSidebar({ isAdmin, isSuperAdmin }: AppSidebarProps) {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
-           {!isInsideAdmin && isAdmin && (
-             <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/admin')}
-                    icon={<Shield />}
-                    tooltip="Admin Panel"
-                >
-                    <Link href="/admin" onClick={handleLinkClick}>Admin Panel</Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="flex-col !items-start !gap-0">
