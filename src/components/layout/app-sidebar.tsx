@@ -54,7 +54,6 @@ export function AppSidebar({ isAdmin, isSuperAdmin }: AppSidebarProps) {
   const pathname = usePathname();
   const { user } = useUser();
   const { isMobile, setOpenMobile } = useSidebar();
-  const isInsideAdmin = pathname.startsWith('/admin');
 
   if (isAdmin) {
     return <AdminSidebar />;
