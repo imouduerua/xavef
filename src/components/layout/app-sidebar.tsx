@@ -9,9 +9,6 @@ import {
   PiggyBank,
   Settings,
   Users,
-  BrainCircuit,
-  ArrowRightLeft,
-  Wallet,
 } from 'lucide-react';
 
 import { useUser } from '@/firebase';
@@ -29,17 +26,13 @@ import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AdminSidebar } from '../admin/admin-sidebar';
 
-
+// Navigation items for regular users
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { href: '/savings', icon: PiggyBank, label: 'Savings' },
   { href: '/groups', icon: Users, label: 'Groups' },
   { href: '/loans', icon: Landmark, label: 'Loans' },
-  { href: '/transactions', icon: ArrowRightLeft, label: 'Transactions' },
-  { href: '/withdrawal', icon: Wallet, label: 'Withdrawal' },
-  { href: '/advice', icon: BrainCircuit, label: 'AI Advisor' },
 ];
-
 
 const bottomNavItems = [{ href: '/settings', icon: Settings, label: 'Settings' }];
 
@@ -53,10 +46,12 @@ export function AppSidebar({ isAdmin, isSuperAdmin }: AppSidebarProps) {
   const { user } = useUser();
   const { isMobile, setOpenMobile } = useSidebar();
 
+  // If the user is an admin, render the dedicated AdminSidebar component and stop.
   if (isAdmin) {
     return <AdminSidebar />;
   }
 
+  // Otherwise, render the regular user sidebar.
   const isActive = (href: string, exact = false) => {
     return exact ? pathname === href : pathname.startsWith(href);
   };
