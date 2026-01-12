@@ -8,8 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/header";
-import { AdminHeader } from "@/components/admin/admin-header";
-import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { SidebarInset } from "@/components/ui/sidebar";
 import { useAdminStatus } from '@/hooks/use-admin-status';
 
@@ -43,6 +41,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       else if (isInsideAdmin && !isAdmin) {
         router.replace('/dashboard');
       }
+      // If an admin is on a user page, redirect to the admin dashboard.
+      else if (!isInsideAdmin && isAdmin) {
+        router.replace('/admin');
+      }
     }
   }, [user, authLoading, isAdmin, adminLoading, router, pathname, isAuthPage, isInsideAdmin]);
 
@@ -66,7 +68,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   
   // Render nothing while redirecting to prevent flicker.
   if ((!user && !isAuthPage) || (user && isAuthPage)) return null;
-  if (isInsideAdmin && !isAdmin && !isLoading) return null; // also check for loading
+  if ((isInsideAdmin && !isAdmin && !isLoading) || (!isInsideAdmin && isAdmin && !isLoading)) return null;
+
 
   // If all checks pass, render the children.
   return <>{children}</>;
@@ -76,17 +79,16 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname === '/' || pathname === '/register' || pathname === '/admin-login';
-  const { isAdmin } = useAdminStatus();
-
+  
   return (
     <AuthGuard>
       {isAuthPage ? (
         children
       ) : (
         <>
-          {isAdmin ? <AdminSidebar /> : <AppSidebar />}
+          <AppSidebar />
           <SidebarInset>
-            {isAdmin ? <AdminHeader /> : <AppHeader />}
+            <AppHeader />
             <main className="flex-1 overflow-y-auto">{children}</main>
           </SidebarInset>
         </>
