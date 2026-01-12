@@ -34,7 +34,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     
     // If a user is logged in...
     if (user) {
-      // If on an auth page, redirect away. Admins go to /admin, others to /dashboard.
+        // If on an auth page, redirect away. Admins go to /admin, others to /dashboard.
       if (isAuthPage) {
           router.replace(isAdmin ? '/admin' : '/dashboard');
       } 
