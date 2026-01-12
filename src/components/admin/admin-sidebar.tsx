@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Users,
   Clock,
-  PanelLeft,
   History,
   Shield,
 } from 'lucide-react';
@@ -20,6 +19,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -38,9 +38,16 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
   const { isSuperAdmin } = useAdminStatus();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const isActive = (href: string, exact = false) => {
     return exact ? pathname === href : pathname.startsWith(href);
+  };
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
   return (
@@ -58,7 +65,7 @@ export function AdminSidebar() {
                 icon={<item.icon />}
                 tooltip={item.label}
               >
-                <Link href={item.href}>{item.label}</Link>
+                <Link href={item.href} onClick={handleLinkClick}>{item.label}</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
@@ -70,7 +77,7 @@ export function AdminSidebar() {
                 icon={<History />}
                 tooltip="All Transactions"
               >
-                <Link href="/admin/transactions">All Transactions</Link>
+                <Link href="/admin/transactions" onClick={handleLinkClick}>All Transactions</Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
            )}
