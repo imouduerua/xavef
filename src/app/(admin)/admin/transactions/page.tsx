@@ -36,7 +36,7 @@ function AllTransactionsPageContent() {
   const [processing, setProcessing] = useState(true);
   const firestore = useFirestore();
 
-  const allTxsQuery = firestore ? query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc')) : null;
+  const allTxsQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc')) : null, [firestore]);
 
   const {
     data: rawTransactions,
@@ -133,7 +133,7 @@ function AllTransactionsPageContent() {
     return () => {
       isMounted = false;
     };
-  }, [rawTransactionsKey, firestore]);
+  }, [rawTransactionsKey, firestore, rawLoading]);
 
 
   const renderContent = () => {

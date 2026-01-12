@@ -4,7 +4,7 @@
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore } from '@/firebase/provider';
 import { collection, query, where, orderBy } from 'firebase/firestore';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import { Card } from '../ui/card';
 import { Users } from 'lucide-react';
@@ -32,11 +32,11 @@ function GroupSkeleton() {
 
 export function AdminGroupsList() {
   const firestore = useFirestore();
-  const groupsQuery = firestore ? query(
+  const groupsQuery = useMemo(() => firestore ? query(
         collection(firestore, `groups`), 
         where('status', 'in', ['forming', 'active']),
         orderBy('createdAt', 'desc')
-    ) : null;
+    ) : null, [firestore]);
 
   const { data: groups, loading, indexCreationUrl } = useCollection<Group>(groupsQuery);
 
@@ -74,5 +74,3 @@ export function AdminGroupsList() {
     </div>
   );
 }
-
-    

@@ -4,7 +4,7 @@
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useUser } from '@/firebase/provider';
 import { collection, query, where, orderBy } from 'firebase/firestore';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import type { Group, GroupJoinRequest } from '@/lib/types';
 import { MissingIndexAlert } from '../admin/missing-index-alert';
@@ -34,18 +34,18 @@ export function MyGroupsSection() {
   const firestore = useFirestore();
   const uid = user?.uid;
 
-  const myGroupsQuery = (uid && firestore) ? query(
+  const myGroupsQuery = useMemo(() => (uid && firestore) ? query(
         collection(firestore, `groups`), 
         where('members', 'array-contains', uid),
         orderBy('createdAt', 'desc')
-    ) : null;
+    ) : null, [uid, firestore]);
 
-  const joinRequestsQuery = (uid && firestore) ? query(
+  const joinRequestsQuery = useMemo(() => (uid && firestore) ? query(
           collection(firestore, 'joinRequests'),
           where('groupCreatorUid', '==', uid),
           where('status', '==', 'pending'),
           orderBy('createdAt', 'desc')
-      ) : null;
+      ) : null, [uid, firestore]);
 
   const { data: groups, loading: groupsLoading, indexCreationUrl: groupsIndexUrl } = useCollection<Group>(myGroupsQuery);
   const { data: joinRequests, loading: requestsLoading, indexCreationUrl: requestsIndexUrl } = useCollection<GroupJoinRequest>(joinRequestsQuery);
@@ -93,7 +93,3 @@ export function MyGroupsSection() {
     </div>
   );
 }
-
-    
-
-    

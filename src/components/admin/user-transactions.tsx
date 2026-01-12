@@ -5,7 +5,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore } from '@/firebase';
 import { Transaction, TransactionStatus } from '@/lib/types';
 import { collection, orderBy, query } from 'firebase/firestore';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -49,12 +49,12 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const firestore = useFirestore();
 
-  const transactionsQuery = (userId && firestore)
+  const transactionsQuery = useMemo(() => (userId && firestore)
     ? query(
         collection(firestore, 'users', userId, 'transactions'),
         orderBy('date', 'desc')
       )
-    : null;
+    : null, [userId, firestore]);
 
   const { data: transactions, loading } =
     useCollection<Transaction>(transactionsQuery);
@@ -180,5 +180,3 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
     </Table>
   );
 }
-
-    

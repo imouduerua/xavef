@@ -17,7 +17,7 @@ export function useAdminStatus() {
   // Memoized to prevent re-creating the reference on every render.
   const adminDocRef = useMemo(() => {
     // Don't bother checking if the user isn't logged in, or if they're already a super admin.
-    if (!user?.uid || isSuperAdmin) return null;
+    if (!user?.uid || isSuperAdmin || !firestore) return null;
     return doc(firestore, 'admins', user.uid);
   }, [user?.uid, isSuperAdmin, firestore]);
 

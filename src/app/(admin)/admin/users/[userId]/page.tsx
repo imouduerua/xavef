@@ -46,7 +46,7 @@ function UserDetailsContent({ userData, adminUser, isSuperAdmin }: { userData: U
   const [isUpdatingPermission, setIsUpdatingPermission] = React.useState(false);
   const firestore = useFirestore();
   
-  const adminDocRef = firestore && userId ? doc(firestore, 'admins', userId) : null;
+  const adminDocRef = useMemo(() => firestore && userId ? doc(firestore, 'admins', userId) : null, [firestore, userId]);
   const { data: adminStatusData, loading: adminStatusLoading } = useDoc(adminDocRef);
   const isUserAdmin = !!adminStatusData;
 
@@ -174,7 +174,7 @@ export default function UserDetailPage() {
   const { isSuperAdmin } = useAdminStatus();
   const firestore = useFirestore();
 
-  const userDocRef = firestore && userId ? doc(firestore, 'users', userId) : null;
+  const userDocRef = useMemo(() => firestore && userId ? doc(firestore, 'users', userId) : null, [firestore, userId]);
   const { data: userData, loading: userLoading } = useDoc<UserData>(userDocRef);
 
   if (userLoading) {

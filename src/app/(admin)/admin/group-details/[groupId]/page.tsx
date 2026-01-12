@@ -232,13 +232,13 @@ function GroupDetailsContent({ group: serializableGroup, user }: { group: Group,
     return [Timestamp.fromDate(start), Timestamp.fromDate(end)];
   }, [serializableGroup]);
 
-  const groupTransactionsQuery = (serializableGroup.id && firestore)
+  const groupTransactionsQuery = useMemo(() => (serializableGroup.id && firestore)
         ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', serializableGroup.id),
             orderBy('date', 'desc')
           )
-        : null;
+        : null, [serializableGroup.id, firestore]);
 
   const {
     data: allGroupTransactions,
@@ -399,7 +399,7 @@ export default function GroupDetailsPage() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const groupRef = firestore && groupId ? doc(firestore, 'groups', groupId) : null;
+  const groupRef = useMemo(() => firestore && groupId ? doc(firestore, 'groups', groupId) : null, [firestore, groupId]);
   const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
   
   // Convert Firestore Timestamps to JS Date objects for serialization

@@ -129,10 +129,10 @@ export default function TransactionsPage() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const transactionsQuery = (user?.uid && firestore) ? query(
+  const transactionsQuery = useMemo(() => (user?.uid && firestore) ? query(
       collection(firestore, "users", user.uid, "transactions"),
       orderBy("date", "desc")
-    ) : null;
+    ) : null, [user?.uid, firestore]);
 
   const { data: transactions, loading, indexCreationUrl } = useCollection<Transaction>(transactionsQuery);
 
@@ -178,5 +178,3 @@ export default function TransactionsPage() {
     </div>
   );
 }
-
-    

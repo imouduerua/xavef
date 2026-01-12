@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -43,17 +43,17 @@ export function AppHeader() {
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('light');
 
-  const joinRequestsQuery = (user?.uid && firestore) ? query(
+  const joinRequestsQuery = useMemo(() => (user?.uid && firestore) ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
-    ) : null;
+    ) : null, [user?.uid, firestore]);
   
-  const notificationsQuery = (user?.uid && firestore) ? query(
+  const notificationsQuery = useMemo(() => (user?.uid && firestore) ? query(
       collection(firestore, `users/${user.uid}/notifications`),
       orderBy('createdAt', 'desc'),
       limit(10)
-    ) : null;
+    ) : null, [user?.uid, firestore]);
 
   const { data: joinRequests, loading: joinRequestsLoading } = useCollection<GroupJoinRequest>(joinRequestsQuery);
   const { data: notifications, loading: notificationsLoading } = useCollection<Notification>(notificationsQuery);
