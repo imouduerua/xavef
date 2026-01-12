@@ -4,12 +4,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  ArrowDownCircle,
-  Landmark,
   LayoutDashboard,
   PiggyBank,
-  Settings,
   Users,
+  Landmark,
+  ArrowDownCircle,
+  Settings,
 } from 'lucide-react';
 
 import { useUser } from '@/firebase';
@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/sidebar';
 import { XavefLogoText } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AdminSidebar } from '../admin/admin-sidebar';
 
 // Navigation items for regular users
 const navItems = [
@@ -38,22 +37,12 @@ const navItems = [
 
 const bottomNavItems = [{ href: '/settings', icon: Settings, label: 'Settings' }];
 
-interface AppSidebarProps {
-    isAdmin: boolean;
-    isSuperAdmin: boolean;
-}
 
-export function AppSidebar({ isAdmin, isSuperAdmin }: AppSidebarProps) {
+export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
   const { isMobile, setOpenMobile } = useSidebar();
 
-  // If the user is an admin, render the dedicated AdminSidebar component and stop.
-  if (isAdmin) {
-    return <AdminSidebar />;
-  }
-
-  // Otherwise, render the regular user sidebar.
   const isActive = (href: string, exact = false) => {
     return exact ? pathname === href : pathname.startsWith(href);
   };
@@ -122,3 +111,4 @@ export function AppSidebar({ isAdmin, isSuperAdmin }: AppSidebarProps) {
     </Sidebar>
   );
 }
+

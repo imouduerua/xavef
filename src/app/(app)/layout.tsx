@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/header";
 import { AdminHeader } from "@/components/admin/admin-header";
+import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { SidebarInset } from "@/components/ui/sidebar";
 import { useAdminStatus } from '@/hooks/use-admin-status';
 
@@ -75,7 +76,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname === '/' || pathname === '/register' || pathname === '/admin-login';
-  const { isAdmin, isSuperAdmin } = useAdminStatus();
+  const { isAdmin } = useAdminStatus();
 
   return (
     <AuthGuard>
@@ -83,7 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         children
       ) : (
         <>
-          <AppSidebar isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} />
+          {isAdmin ? <AdminSidebar /> : <AppSidebar />}
           <SidebarInset>
             {isAdmin ? <AdminHeader /> : <AppHeader />}
             <main className="flex-1 overflow-y-auto">{children}</main>
