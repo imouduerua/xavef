@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import { PendingTransactionsTable } from '@/components/admin/pending-transactions-table';
 import type { Transaction } from '@/lib/types';
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
 import {
@@ -23,6 +23,7 @@ import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 
 export default function AdminPendingTransactionsPage() {
   const firestore = useFirestore();
+  
   const pendingTxsQuery = useMemo(() => firestore ? query(
       collectionGroup(firestore, 'transactions'),
       where('status', '==', 'Pending'),
@@ -37,7 +38,7 @@ export default function AdminPendingTransactionsPage() {
   
   const [transactions, setTransactions] = useState<Transaction[] | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialTransactions) {
       setTransactions(initialTransactions);
     }

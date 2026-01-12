@@ -6,7 +6,7 @@ import { Loader2, Wallet } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { serverTimestamp, writeBatch, doc, collection } from 'firebase/firestore';
+import { serverTimestamp, setDoc, doc, collection } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -102,7 +102,7 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
       
       const newTransaction = {
         date: serverTimestamp(),
-        amount: finalAmount, // Store withdrawal amount as a positive number for clarity
+        amount: finalAmount, 
         fee: finalFee,
         payoutAmount: finalPayout, 
         description: `Withdrawal to ${selectedAccount.bankName}`,
@@ -114,11 +114,9 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
         destinationAccountNumber: selectedAccount.bankAccountNumber,
       };
 
-      // Only create the pending transaction document. Do not debit the balance yet.
-      // The balance will be debited by an admin upon approval.
-      const batch = writeBatch(firestore);
-      batch.set(transactionRef, newTransaction);
-      await batch.commit();
+      // Create the pending transaction document. Balance is NOT debited here.
+      // The balance will only be debited by an admin upon approval.
+      await setDoc(transactionRef, newTransaction);
       
       toast({
         title: 'Withdrawal Request Submitted',
@@ -126,7 +124,8 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
       });
       form.reset();
 
-    } catch (error: any) {
+    } catch (error: any)
+       {
       console.error('Error requesting withdrawal:', error);
       toast({
         variant: 'destructive',

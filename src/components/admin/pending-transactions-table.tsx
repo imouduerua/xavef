@@ -152,8 +152,10 @@ export function PendingTransactionsTable({
   const formatCurrency = (amount?: number) => {
     if (amount === undefined || amount === null) return 'N/A';
     const sign = amount >= 0 ? '+' : '-';
-    const colorClass = amount >= 0 ? 'text-green-600' : 'text-red-600';
-    return <span className={colorClass}>{`${sign}₦${Math.abs(amount).toFixed(2)}`}</span>;
+    // For pending table, withdrawals are shown as positive for clarity of amount requested
+    const displayAmount = Math.abs(amount);
+    const colorClass = amount >= 0 && sign === '+' ? 'text-green-600' : '';
+    return <span className={colorClass}>{`₦${displayAmount.toFixed(2)}`}</span>;
   };
   
   if (processing) {

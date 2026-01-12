@@ -3,7 +3,7 @@
 
 import { FieldValue } from 'firebase-admin/firestore';
 import { firestore as adminFirestore } from '@/firebase/server-init';
-import type { Transaction, UserData } from '@/lib/types';
+import type { Transaction } from '@/lib/types';
 
 export async function updateTransactionStatus(
   transactionPath: string,
@@ -12,7 +12,7 @@ export async function updateTransactionStatus(
   if (!adminFirestore) {
     return {
       success: false,
-      error: 'Server is not configured for database access. Please contact support.',
+      error: 'Server is not configured for database access.',
     };
   }
 
@@ -34,16 +34,16 @@ export async function updateTransactionStatus(
       }
       
       const txData = txDoc.data() as Transaction;
-      const userData = userDoc.data() as UserData;
 
       if (txData.status !== 'Pending') {
         throw new Error('This transaction has already been processed.');
       }
 
-      // --- Update transaction status ---
+      // 1. Update the transaction status
       t.update(transactionRef, { status: newStatus });
 
-      // --- Handle balance changes based on transaction type and new status ---
+      // 2. If the transaction is completed, update user balance.
+      // If it failed, no balance change is needed.
       if (newStatus === 'Completed') {
         if (txData.type === 'Deposit') {
           const amount = txData.amount;
@@ -53,23 +53,17 @@ export async function updateTransactionStatus(
             t.update(userRef, { annualBalance: FieldValue.increment(amount) });
           }
         } else if (txData.type === 'Withdrawal') {
+          // On withdrawal approval, debit the user's balance.
           const amountToDebit = txData.amount;
-          // Ensure the user still has enough funds before debiting
-          if (userData.solidaraBalance < amountToDebit) {
-            throw new Error('User has insufficient funds for this withdrawal.');
-          }
           t.update(userRef, { solidaraBalance: FieldValue.increment(-amountToDebit) });
         }
       }
-      // Note: If a withdrawal is 'Failed', no balance change is needed as the
-      // funds were never debited in the first place.
-      // If a deposit is 'Failed', no balance change is needed.
     });
 
     return { success: true };
 
   } catch (error: any) {
-    console.error('Error updating transaction status:', error);
-    return { success: false, error: error.message || 'An unknown error occurred.' };
+    console.error('Error in updateTransactionStatus server action:', error);
+    return { success: false, error: error.message || 'An unknown error occurred on the server.' };
   }
 }
