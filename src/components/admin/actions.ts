@@ -33,8 +33,11 @@ export async function updateTransactionStatus(
         throw new Error('This transaction has already been processed.');
       }
 
+      // 1. Update the transaction status
       transaction.update(transactionRef, { status: newStatus });
 
+      // 2. Adjust user balances based on the outcome
+      
       // If a DEPOSIT is COMPLETED, credit the user's target account.
       if (newStatus === 'Completed' && txData.type === 'Deposit') {
         const amount = txData.amount; 
@@ -45,14 +48,19 @@ export async function updateTransactionStatus(
         } else if (targetAccount === 'annual') {
           transaction.update(userRef, { annualBalance: FieldValue.increment(amount) });
         }
+        // No 'else' needed; if target is missing, no balance change occurs, which is safe.
       }
 
       // If a WITHDRAWAL FAILS, refund the amount to the user's solidara balance.
       // The amount was debited from the user's account when the request was made.
       if (newStatus === 'Failed' && txData.type === 'Withdrawal') {
-        const amountToRefund = Math.abs(txData.amount); // amount is negative for withdrawals
+        // Amount is negative for withdrawals, so we use its absolute value for the increment.
+        const amountToRefund = Math.abs(txData.amount);
         transaction.update(userRef, { solidaraBalance: FieldValue.increment(amountToRefund) });
       }
+
+      // Note: If a withdrawal is 'Completed', no balance change is needed here because
+      // the funds were already debited when the user made the request.
     });
 
     return { success: true };
