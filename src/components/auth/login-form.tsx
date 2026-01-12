@@ -51,7 +51,7 @@ export function LoginForm() {
         title: 'Login Successful',
         description: 'Redirecting to your dashboard...',
       });
-      // The redirect will be handled by the AuthGuard in the layout
+      router.replace('/dashboard');
     } catch (error: any) {
       toast({
         variant: 'destructive',
