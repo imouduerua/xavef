@@ -6,15 +6,9 @@ import { usePathname } from 'next/navigation';
 import {
   Landmark,
   LayoutDashboard,
-  LogOut,
   PiggyBank,
   Settings,
   Users,
-  Wallet,
-  BrainCircuit,
-  Shield,
-  History,
-  Clock,
 } from 'lucide-react';
 
 import { useUser } from '@/firebase';
