@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -63,7 +64,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   
   // Render nothing while redirecting to prevent flicker.
   if ((!user && !isAuthPage) || (user && isAuthPage)) return null;
-  if (isInsideAdmin && !isAdmin) return null;
+  if (isInsideAdmin && !isAdmin && !isLoading) return null; // also check for loading
 
   // If all checks pass, render the children.
   return <>{children}</>;
