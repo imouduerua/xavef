@@ -11,15 +11,18 @@ import {
   DocumentSnapshot,
 } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
+import { useUser } from '@/firebase';
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
+  const { user, loading: authLoading } = useUser();
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!query) {
+    // Don't run the query if auth is loading, the user is null, or the query is null
+    if (authLoading || !user || !query) {
       setLoading(false);
       setData(null);
       return;
@@ -48,21 +51,26 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setLoading(false);
       },
       (err: FirestoreError) => {
-        console.error(`[useCollection] Error fetching collection:`, err.message);
+        // Only log errors if the user is still logged in.
+        // This prevents permission errors on logout.
+        if (user) {
+            console.error(`[useCollection] Error fetching collection:`, err.message);
 
-        if (
-          err.code === 'failed-precondition' &&
-          err.message.includes('requires an index')
-        ) {
-          const urlMatch = err.message.match(
-            /https?:\/\/console\.firebase\.google\.com\S+/
-          );
-          if (urlMatch) {
-            setIndexCreationUrl(urlMatch[0]);
-          }
+            if (
+              err.code === 'failed-precondition' &&
+              err.message.includes('requires an index')
+            ) {
+              const urlMatch = err.message.match(
+                /https?:\/\/console\.firebase\.google\.com\S+/
+              );
+              if (urlMatch) {
+                setIndexCreationUrl(urlMatch[0]);
+              }
+            }
+            
+            setError(err);
         }
         
-        setError(err);
         setData(null);
         setLoading(false);
       }
@@ -70,18 +78,19 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
 
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, user, authLoading]);
 
   return { data, loading, error, indexCreationUrl };
 }
 
 export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
+  const { user, loading: authLoading } = useUser();
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   
   useEffect(() => {
-    if (!ref) {
+    if (authLoading || !user || !ref) {
       setLoading(false);
       setData(null);
       return;
@@ -107,8 +116,10 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
         setLoading(false);
       },
       (err: FirestoreError) => {
-        console.error(`[useDoc] Error fetching document:`, err);
-        setError(err);
+         if (user) {
+            console.error(`[useDoc] Error fetching document:`, err);
+            setError(err);
+         }
         setData(null);
         setLoading(false);
       }
@@ -116,7 +127,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
 
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ref]);
+  }, [ref, user, authLoading]);
 
   return { data, loading, error };
 }
