@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/header";
+import { AdminHeader } from "@/components/admin/admin-header";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { useAdminStatus } from '@/hooks/use-admin-status';
 
@@ -84,7 +85,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <>
           <AppSidebar isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} />
           <SidebarInset>
-            <AppHeader />
+            {isAdmin ? <AdminHeader /> : <AppHeader />}
             <main className="flex-1 overflow-y-auto">{children}</main>
           </SidebarInset>
         </>
