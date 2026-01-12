@@ -9,7 +9,6 @@ import React from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, runTransaction, collection, query, where, getDocs, limit, Timestamp, setDoc } from "firebase/firestore";
 import type { UserData, ReferralCode } from "@/lib/types";
-import { v4 as uuidv4 } from "uuid";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -98,7 +97,7 @@ export function RegisterForm() {
             referralCodeDocId = codeDoc.id;
         }
 
-        const xavefId = uuidv4().substring(0, 6).toUpperCase();
+        const xavefId = Math.floor(100000 + Math.random() * 900000).toString();
 
         await runTransaction(firestore, async (transaction) => {
             const newUserProfile: UserData = {
