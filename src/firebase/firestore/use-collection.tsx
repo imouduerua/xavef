@@ -38,7 +38,13 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           path: doc.ref.path,
         } as T & { id: string; path: string; }));
         
-        setData(resultData);
+        setData(currentData => {
+            if (JSON.stringify(currentData) !== JSON.stringify(resultData)) {
+                return resultData;
+            }
+            return currentData;
+        });
+
         setLoading(false);
       },
       (err: FirestoreError) => {
@@ -63,6 +69,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     );
 
     return () => unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
   return { data, loading, error, indexCreationUrl };
@@ -87,7 +94,13 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
       ref,
       (snapshot: DocumentSnapshot<T>) => {
         if (snapshot.exists()) {
-          setData({ ...snapshot.data(), id: snapshot.id, path: snapshot.ref.path } as T & { id: string; path: string });
+          const resultData = { ...snapshot.data(), id: snapshot.id, path: snapshot.ref.path } as T & { id: string; path: string };
+           setData(currentData => {
+            if (JSON.stringify(currentData) !== JSON.stringify(resultData)) {
+                return resultData;
+            }
+            return currentData;
+           });
         } else {
           setData(null);
         }
@@ -102,6 +115,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
     );
 
     return () => unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref]);
 
   return { data, loading, error };
