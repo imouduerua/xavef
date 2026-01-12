@@ -1,9 +1,9 @@
 
 'use server';
 
-import { doc, runTransaction, increment } from 'firebase/firestore';
-import type { Transaction } from '@/lib/types';
+import { FieldValue } from 'firebase-admin/firestore';
 import { firestore as adminFirestore } from '@/firebase/server-init';
+import type { Transaction } from '@/lib/types';
 
 export async function updateTransactionStatus(
   transactionPath: string,
@@ -41,9 +41,9 @@ export async function updateTransactionStatus(
         const targetAccount = txData.targetAccount;
 
         if (targetAccount === 'solidara') {
-          transaction.update(userRef, { solidaraBalance: increment(amount) });
+          transaction.update(userRef, { solidaraBalance: FieldValue.increment(amount) });
         } else if (targetAccount === 'annual') {
-          transaction.update(userRef, { annualBalance: increment(amount) });
+          transaction.update(userRef, { annualBalance: FieldValue.increment(amount) });
         }
       }
 
@@ -51,7 +51,7 @@ export async function updateTransactionStatus(
       // The amount was debited from the user's account when the request was made.
       if (newStatus === 'Failed' && txData.type === 'Withdrawal') {
         const amountToRefund = Math.abs(txData.amount); // amount is negative for withdrawals
-        transaction.update(userRef, { solidaraBalance: increment(amountToRefund) });
+        transaction.update(userRef, { solidaraBalance: FieldValue.increment(amountToRefund) });
       }
     });
 
