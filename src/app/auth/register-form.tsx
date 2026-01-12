@@ -78,7 +78,6 @@ export function RegisterForm() {
         let referredBy: string | null = null;
         let referralCodeDocId: string | null = null;
 
-        // Perform all read operations for referral code check BEFORE the transaction
         if (values.referralCode) {
             const codeQuery = query(
                 collection(firestore, 'referralCodes'),
@@ -134,7 +133,7 @@ export function RegisterForm() {
             description: "Redirecting to your dashboard...",
         });
         
-        // The redirect is handled by the AuthGuard
+        router.push('/dashboard');
 
     } catch (error: any) {
         console.error("Registration Error:", error);
