@@ -6,7 +6,7 @@ import { Loader2, Wallet } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { serverTimestamp, writeBatch, doc } from 'firebase/firestore';
+import { serverTimestamp, writeBatch, doc, collection } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -98,13 +98,11 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
 
 
     try {
-      const batch = writeBatch(firestore);
-      const userRef = doc(firestore, 'users', user.uid);
       const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
       
       const newTransaction = {
         date: serverTimestamp(),
-        amount: -finalAmount, 
+        amount: finalAmount, // Store withdrawal amount as a positive number for clarity
         fee: finalFee,
         payoutAmount: finalPayout, 
         description: `Withdrawal to ${selectedAccount.bankName}`,
@@ -116,12 +114,10 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
         destinationAccountNumber: selectedAccount.bankAccountNumber,
       };
 
-      // 1. Create the pending transaction document
+      // Only create the pending transaction document. Do not debit the balance yet.
+      // The balance will be debited by an admin upon approval.
+      const batch = writeBatch(firestore);
       batch.set(transactionRef, newTransaction);
-      
-      // 2. Debit the user's balance immediately
-      batch.update(userRef, { solidaraBalance: solidaraBalance - finalAmount });
-
       await batch.commit();
       
       toast({

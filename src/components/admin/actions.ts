@@ -3,7 +3,7 @@
 
 import { FieldValue } from 'firebase-admin/firestore';
 import { firestore as adminFirestore } from '@/firebase/server-init';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, UserData } from '@/lib/types';
 
 export async function updateTransactionStatus(
   transactionPath: string,
@@ -22,44 +22,48 @@ export async function updateTransactionStatus(
   const userRef = adminFirestore.doc(`users/${userId}`);
 
   try {
-    await adminFirestore.runTransaction(async (transaction) => {
-      const txDoc = await transaction.get(transactionRef);
+    await adminFirestore.runTransaction(async (t) => {
+      const txDoc = await t.get(transactionRef);
+      const userDoc = await t.get(userRef);
+
       if (!txDoc.exists) {
         throw new Error('Transaction not found.');
       }
+      if (!userDoc.exists) {
+        throw new Error('User not found.');
+      }
       
       const txData = txDoc.data() as Transaction;
+      const userData = userDoc.data() as UserData;
+
       if (txData.status !== 'Pending') {
         throw new Error('This transaction has already been processed.');
       }
 
-      // 1. Update the transaction status
-      transaction.update(transactionRef, { status: newStatus });
+      // --- Update transaction status ---
+      t.update(transactionRef, { status: newStatus });
 
-      // 2. Adjust user balances based on the outcome
-      
-      // If a DEPOSIT is COMPLETED, credit the user's target account.
-      if (newStatus === 'Completed' && txData.type === 'Deposit') {
-        const amount = txData.amount; 
-        const targetAccount = txData.targetAccount;
-
-        if (targetAccount === 'solidara') {
-          transaction.update(userRef, { solidaraBalance: FieldValue.increment(amount) });
-        } else if (targetAccount === 'annual') {
-          transaction.update(userRef, { annualBalance: FieldValue.increment(amount) });
+      // --- Handle balance changes based on transaction type and new status ---
+      if (newStatus === 'Completed') {
+        if (txData.type === 'Deposit') {
+          const amount = txData.amount;
+          if (txData.targetAccount === 'solidara') {
+            t.update(userRef, { solidaraBalance: FieldValue.increment(amount) });
+          } else if (txData.targetAccount === 'annual') {
+            t.update(userRef, { annualBalance: FieldValue.increment(amount) });
+          }
+        } else if (txData.type === 'Withdrawal') {
+          const amountToDebit = txData.amount;
+          // Ensure the user still has enough funds before debiting
+          if (userData.solidaraBalance < amountToDebit) {
+            throw new Error('User has insufficient funds for this withdrawal.');
+          }
+          t.update(userRef, { solidaraBalance: FieldValue.increment(-amountToDebit) });
         }
       }
-
-      // If a WITHDRAWAL FAILS, refund the amount to the user's solidara balance.
-      // The amount was debited from the user's account when the request was made.
-      if (newStatus === 'Failed' && txData.type === 'Withdrawal') {
-        // Amount is negative for withdrawals, so we use its absolute value for the increment.
-        const amountToRefund = Math.abs(txData.amount);
-        transaction.update(userRef, { solidaraBalance: FieldValue.increment(amountToRefund) });
-      }
-
-      // Note: If a withdrawal is 'Completed', no balance change is needed here because
-      // the funds were already debited when the user made the request.
+      // Note: If a withdrawal is 'Failed', no balance change is needed as the
+      // funds were never debited in the first place.
+      // If a deposit is 'Failed', no balance change is needed.
     });
 
     return { success: true };
