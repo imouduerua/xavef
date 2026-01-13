@@ -18,22 +18,23 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const isAuthPage = pathname === '/' || pathname === '/register' || pathname === '/admin-login';
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/admin-login';
+  const isLandingPage = pathname === '/';
   const isInsideAdmin = pathname.startsWith('/admin');
   
   useEffect(() => {
     // Wait for auth to be resolved.
     if (authLoading || adminLoading) return;
 
-    // If no user and not on a public auth page, redirect to login.
-    if (!user && !isAuthPage) {
-      router.replace('/');
+    // If no user and not on a public auth page or landing page, redirect to login.
+    if (!user && !isAuthPage && !isLandingPage) {
+      router.replace('/login');
       return;
     }
     
     // If a user is logged in...
     if (user) {
-        // If on an auth page, redirect away. Admins go to /admin, others to /dashboard.
+        // If on an auth page (but not the main landing page), redirect away. Admins go to /admin, others to /dashboard.
       if (isAuthPage) {
           router.replace(isAdmin ? '/admin' : '/dashboard');
       } 
@@ -42,12 +43,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         router.replace('/dashboard');
       }
     }
-  }, [user, authLoading, isAdmin, adminLoading, router, pathname, isAuthPage, isInsideAdmin]);
+  }, [user, authLoading, isAdmin, adminLoading, router, pathname, isAuthPage, isInsideAdmin, isLandingPage]);
 
   const isLoading = authLoading || adminLoading;
 
   // While loading, show a skeleton on protected pages.
-  if (isLoading && !isAuthPage) {
+  if (isLoading && !isAuthPage && !isLandingPage) {
      return (
       <div className="flex min-h-screen w-full items-center justify-center bg-background">
         <Card>
@@ -63,7 +64,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
   
   // Render nothing while redirecting to prevent flicker.
-  if ((!user && !isAuthPage) || (user && isAuthPage)) return null;
+  if ((!user && !isAuthPage && !isLandingPage) || (user && isAuthPage)) return null;
   if ((isInsideAdmin && !isAdmin && !isLoading)) return null;
 
 
@@ -74,10 +75,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage = pathname === '/' || pathname === '/register' || pathname === '/admin-login';
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/admin-login';
+  const isLandingPage = pathname === '/';
   const isInsideAdmin = pathname.startsWith('/admin');
 
-  if (isAuthPage) {
+  if (isAuthPage || isLandingPage) {
     return <AuthGuard>{children}</AuthGuard>;
   }
 

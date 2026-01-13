@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { RegisterForm } from "@/components/auth/register-form";
 import { XavefLogo } from "@/components/icons";
@@ -24,7 +25,7 @@ export default function RegisterPage() {
             <p className="text-center text-sm text-muted-foreground">
                 Already have an account?{" "}
                 <Link
-                    href="/"
+                    href="/login"
                     className="font-semibold text-primary underline-offset-4 hover:underline"
                 >
                     Log in
