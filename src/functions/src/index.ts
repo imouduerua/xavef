@@ -7,9 +7,9 @@ const firestore = admin.firestore();
 
 interface Transaction {
   status: 'Pending' | 'Completed' | 'Failed';
-  type: 'Deposit' | 'Withdrawal';
+  type: 'Deposit' | 'Withdrawal' | string; // Loosen for other types
   amount: number;
-  targetAccount?: 'solidara' | 'annual';
+  targetAccount?: 'solidara' | 'annual' | string;
 }
 
 export const updateTransactionStatus = functions.https.onCall(async (data, context) => {
@@ -24,39 +24,42 @@ export const updateTransactionStatus = functions.https.onCall(async (data, conte
 
   // 2. Input Validation
   const { transactionPath, newStatus } = data;
-  if (!transactionPath || typeof transactionPath !== 'string' || !newStatus || !['Completed', 'Failed'].includes(newStatus)) {
+  if (!transactionPath || typeof transactionPath !== 'string' || !['Completed', 'Failed'].includes(newStatus)) {
       throw new functions.https.HttpsError('invalid-argument', 'The function must be called with a valid "transactionPath" and "newStatus".');
   }
 
   const transactionRef = firestore.doc(transactionPath);
-  const userRef = transactionRef.parent.parent;
+  // The path is expected to be 'users/{userId}/transactions/{transactionId}'
+  const userRef = transactionRef.parent.parent; 
 
   if (!userRef || userRef.parent.id !== 'users') {
-      throw new functions.https.HttpsError('invalid-argument', 'Could not determine a valid user from the transaction path.');
+      throw new functions.https.HttpsError('invalid-argument', `Could not determine a valid user from the transaction path: ${transactionPath}`);
   }
 
   // 3. Firestore Transaction
   try {
     await firestore.runTransaction(async (t) => {
       const txDoc = await t.get(transactionRef);
-      const userDoc = await t.get(userRef);
-
+      
       if (!txDoc.exists) {
-        throw new functions.https.HttpsError('not-found', 'Transaction document not found.');
+        // Throw an error that will be caught by the outer catch block
+        throw new functions.https.HttpsError('not-found', `Transaction document not found at path: ${transactionPath}`);
       }
+      
+      const txData = txDoc.data() as Transaction;
+
+      // Idempotency check: If transaction is already processed, do not continue.
+      if (txData.status !== 'Pending') {
+        console.log(`Transaction ${transactionRef.id} has already been processed with status: ${txData.status}. No action taken.`);
+        // By not throwing an error here, the transaction simply concludes successfully.
+        return; 
+      }
+      
+      const userDoc = await t.get(userRef);
       if (!userDoc.exists) {
         throw new functions.https.HttpsError('not-found', `User document not found for user ID: ${userRef.id}`);
       }
 
-      const txData = txDoc.data() as Transaction;
-
-      if (txData.status !== 'Pending') {
-        // This transaction has already been processed, so we can just stop.
-        // It's not an error, just a duplicate request.
-        console.log(`Transaction ${transactionRef.id} has already been processed. Current status: ${txData.status}`);
-        return; 
-      }
-      
       // Action 1: Always update the transaction status.
       t.update(transactionRef, { status: newStatus });
 
@@ -65,18 +68,18 @@ export const updateTransactionStatus = functions.https.onCall(async (data, conte
         const amount = txData.amount;
         
         if (txData.type === 'Deposit') {
-          const targetBalanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
-          // Use explicit if/else to avoid dynamic keys unsupported in this context
-          if (targetBalanceField === 'annualBalance') {
+          if (txData.targetAccount === 'annual') {
               t.update(userRef, { annualBalance: admin.firestore.FieldValue.increment(amount) });
           } else {
+              // Default to solidaraBalance if targetAccount is not 'annual' or is undefined
               t.update(userRef, { solidaraBalance: admin.firestore.FieldValue.increment(amount) });
           }
         } else if (txData.type === 'Withdrawal') {
-          // On withdrawal, the transaction `amount` is positive. We debit the account, so we increment by a negative value.
+          // For withdrawals, the amount is positive, so we must debit the account by incrementing by a negative value.
           t.update(userRef, { solidaraBalance: admin.firestore.FieldValue.increment(-amount) });
         }
       }
+      // If newStatus is 'Failed', we only update the transaction status and do nothing to the user's balance.
     });
 
     return { success: true };
@@ -84,7 +87,8 @@ export const updateTransactionStatus = functions.https.onCall(async (data, conte
     // 4. Detailed Error Logging and Response
     console.error("Error in updateTransactionStatus callable function:", {
         errorMessage: error.message,
-        errorCode: error.code,
+        errorCode: error.code || 'UNKNOWN',
+        details: error.details,
         transactionPath: transactionPath,
         newStatus: newStatus,
         adminUid: context.auth.uid
@@ -94,6 +98,6 @@ export const updateTransactionStatus = functions.https.onCall(async (data, conte
     if (error instanceof functions.https.HttpsError) {
         throw error;
     }
-    throw new functions.https.HttpsError('internal', error.message || "An unknown server error occurred during the transaction.");
+    throw new functions.https.HttpsError('internal', error.message || "An unknown server error occurred during the transaction.", error);
   }
 });
