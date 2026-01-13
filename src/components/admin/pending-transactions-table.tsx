@@ -23,7 +23,7 @@ import { Button } from '../ui/button';
 import { MoreHorizontal, CheckCircle, XCircle, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
-import { updateTransactionStatus } from './actions';
+import { updateTransactionStatus } from '@/app/(admin)/admin/pending-transactions/actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import Image from 'next/image';
 import { collection, getDocs, query, where, documentId } from 'firebase/firestore';

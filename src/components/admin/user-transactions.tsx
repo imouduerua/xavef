@@ -30,7 +30,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { updateTransactionStatus } from './actions';
+import { updateTransactionStatus } from '@/app/(admin)/admin/pending-transactions/actions';
 
 const statusVariant: Record<
   TransactionStatus,
