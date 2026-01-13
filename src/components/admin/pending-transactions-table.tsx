@@ -14,7 +14,7 @@ import {
 import Link from 'next/link';
 import { Button } from '../ui/button';
 import { CheckCircle, XCircle, Loader2, Image as ImageIcon } from 'lucide-react';
-import { useFirestore } from '@/firebase';
+import { useFirebaseApp, useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { updateTransactionStatus } from '@/app/(admin)/admin/pending-transactions/actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
@@ -35,6 +35,7 @@ export function PendingTransactionsTable({
   const [processedTransactions, setProcessedTransactions] = useState<TransactionWithUserDetails[]>([]);
   const [processing, setProcessing] = useState(true);
   const firestore = useFirestore();
+  const app = useFirebaseApp();
 
   const transactionIds = useMemo(() => transactions.map(t => t.id).join(','), [transactions]);
 
@@ -107,7 +108,7 @@ export function PendingTransactionsTable({
     newStatus: 'Completed' | 'Failed'
   ) => {
     setUpdatingId(transactionId);
-    const result = await updateTransactionStatus(transactionPath, newStatus);
+    const result = await updateTransactionStatus(app, transactionPath, newStatus);
     if (result.success) {
       toast({
         title: 'Transaction Updated',
