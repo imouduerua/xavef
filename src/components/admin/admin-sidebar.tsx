@@ -8,6 +8,7 @@ import {
   Users,
   History,
   Activity,
+  Hourglass,
 } from 'lucide-react';
 
 import {
@@ -27,6 +28,7 @@ import { useAdminStatus } from '@/hooks/use-admin-status';
 
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+  { href: '/admin/pending-transactions', icon: Hourglass, label: 'Pending Transactions' },
   { href: '/admin/users', icon: Users, label: 'User Management' },
   { href: '/admin/groups', icon: Activity, label: 'Group Management' },
 ];
