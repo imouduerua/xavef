@@ -26,6 +26,7 @@ export async function updateTransactionStatus(
   }
 
   const transactionRef = adminFirestore.doc(transactionPath);
+  // Get the parent user document reference directly, which is more robust than parsing strings.
   const userRef = transactionRef.parent.parent;
 
   if (!userRef) {
@@ -66,9 +67,16 @@ export async function updateTransactionStatus(
         console.log(`[ACTION INFO] Status is "Completed". Amount: ${amount}`);
         
         if (txData.type === 'Deposit') {
-          const targetBalanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
-          console.log(`[ACTION INFO] Processing Deposit for target: ${targetBalanceField}`);
-          t.update(userRef, { [targetBalanceField]: FieldValue.increment(amount) });
+            const targetBalanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
+            console.log(`[ACTION INFO] Processing Deposit for target: ${targetBalanceField}`);
+
+            // Firestore transactions do not support dynamic keys in update calls.
+            // We must use explicit if/else blocks.
+            if (targetBalanceField === 'annualBalance') {
+                 t.update(userRef, { annualBalance: FieldValue.increment(amount) });
+            } else {
+                 t.update(userRef, { solidaraBalance: FieldValue.increment(amount) });
+            }
         
         } else if (txData.type === 'Withdrawal') {
           // On withdrawal approval, the requested amount is debited from the balance.
@@ -88,4 +96,3 @@ export async function updateTransactionStatus(
     return { success: false, error: error.message || 'An unknown error occurred on the server.' };
   }
 }
-
