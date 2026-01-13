@@ -6,9 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
-  Clock,
   History,
-  Shield,
   Activity,
 } from 'lucide-react';
 
@@ -31,7 +29,6 @@ const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { href: '/admin/users', icon: Users, label: 'User Management' },
   { href: '/admin/groups', icon: Activity, label: 'Group Management' },
-  { href: '/admin/pending-transactions', icon: Clock, label: 'Pending Transactions' },
 ];
 
 

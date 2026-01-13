@@ -15,7 +15,6 @@ import type { Group, Transaction, UserData } from '@/lib/types';
 import { collection, collectionGroup, query, where } from 'firebase/firestore';
 import {
   Users,
-  Clock,
   PiggyBank,
   ArrowDownCircle,
   ArrowUpCircle,
@@ -72,18 +71,14 @@ export default function AdminDashboardPage() {
   const usersQuery = useMemo(() => firestore ? query(collection(firestore, 'users')) : null, [firestore]);
   const groupsQuery = useMemo(() => firestore ? query(collection(firestore, 'groups'), where('status', '==', 'active')) : null, [firestore]);
   const transactionsQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Completed')) : null, [firestore]);
-  const pendingTxsQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Pending')) : null, [firestore]);
-
 
   const { data: users, loading: usersLoading } = useCollection<UserData>(usersQuery);
   const { data: activeGroups, loading: groupsLoading } = useCollection<Group>(groupsQuery);
   const { data: transactions, loading: txsLoading } = useCollection<Transaction>(transactionsQuery);
-  const { data: pendingTxs, loading: pendingTxsLoading } = useCollection<Transaction>(pendingTxsQuery);
 
   const stats = useMemo(() => {
     const totalUsers = users?.length ?? 0;
     const totalActiveGroups = activeGroups?.length ?? 0;
-    const pendingTransactions = pendingTxs?.length ?? 0;
 
     const totalSavings =
       users?.reduce(
@@ -107,11 +102,10 @@ export default function AdminDashboardPage() {
       totalSavings,
       totalDeposits,
       totalWithdrawals: Math.abs(totalWithdrawals),
-      pendingTransactions,
     };
-  }, [users, activeGroups, transactions, pendingTxs]);
+  }, [users, activeGroups, transactions]);
 
-  const isLoading = usersLoading || groupsLoading || txsLoading || pendingTxsLoading;
+  const isLoading = usersLoading || groupsLoading || txsLoading;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -155,13 +149,6 @@ export default function AdminDashboardPage() {
             description="Number of currently active savings groups."
             icon={Activity}
             link="/admin/groups"
-        />
-        <StatCard
-            title="Pending Transactions"
-            value={isLoading ? '...' : stats.pendingTransactions.toString()}
-            description="Deposits and withdrawals to be reviewed."
-            icon={Clock}
-            link="/admin/pending-transactions"
         />
       </div>
        <Card>
