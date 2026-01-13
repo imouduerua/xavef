@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent, Users, Shield } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
@@ -37,6 +37,7 @@ const formatDate = (date: any) => {
 
 export function AppHeader() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useUser();
   const { isAdmin } = useAdminStatus();
   const firestore = useFirestore();
@@ -127,6 +128,8 @@ export function AppHeader() {
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
+  const isInsideAdmin = pathname.startsWith('/admin');
+
   return (
     <>
       <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background px-4">
@@ -199,9 +202,15 @@ export function AppHeader() {
                 <DropdownMenuSeparator />
                  {isAdmin && (
                   <DropdownMenuItem asChild>
-                    <Link href="/admin">
-                      <Shield className="mr-2 h-4 w-4" />
-                      <span>Go to Admin</span>
+                     <Link href={isInsideAdmin ? "/dashboard" : "/admin"}>
+                      {isInsideAdmin ? (
+                        <Users className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Shield className="mr-2 h-4 w-4" />
+                      )}
+                      <span>
+                        Switch to {isInsideAdmin ? "User" : "Admin"} View
+                      </span>
                     </Link>
                   </DropdownMenuItem>
                 )}

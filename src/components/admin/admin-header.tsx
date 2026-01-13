@@ -2,8 +2,9 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { LogOut, Moon, Sun, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -93,6 +94,12 @@ export function AdminHeader() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+               <DropdownMenuItem asChild>
+                <Link href="/dashboard">
+                  <Users className="mr-2 h-4 w-4" />
+                  <span>Switch to User View</span>
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
