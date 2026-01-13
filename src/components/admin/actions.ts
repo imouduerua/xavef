@@ -53,7 +53,7 @@ export async function updateTransactionStatus(
             t.update(userRef, { annualBalance: FieldValue.increment(amount) });
           }
         } else if (txData.type === 'Withdrawal') {
-          // On withdrawal approval, debit the user's balance.
+          // On withdrawal approval, the full requested amount is debited.
           const amountToDebit = txData.amount;
           t.update(userRef, { solidaraBalance: FieldValue.increment(-amountToDebit) });
         }
