@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Share_Tech } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,12 @@ import { FirebaseClientProvider } from "@/firebase/client-provider";
 const fontSans = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
+});
+
+const fontShareTech = Share_Tech({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-share-tech',
 });
 
 
@@ -27,7 +33,8 @@ export default function RootLayout({
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
-          fontSans.variable
+          fontSans.variable,
+          fontShareTech.variable
         )}
       >
         <FirebaseClientProvider>

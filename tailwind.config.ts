@@ -10,6 +10,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        sans: ['var(--font-share-tech)', 'sans-serif'],
         body: ['var(--font-share-tech)', 'sans-serif'],
         headline: ['var(--font-share-tech)', 'sans-serif'],
         code: ['monospace'],
