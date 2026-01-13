@@ -1,3 +1,4 @@
+
 'use server';
 
 import { FieldValue } from 'firebase-admin/firestore';
@@ -36,10 +37,16 @@ export async function updateTransactionStatus(
   try {
     await adminFirestore.runTransaction(async (t) => {
       console.log('[ACTION INFO] Starting Firestore transaction.');
-      const txDoc = await t.get(transactionRef);
+      const [txDoc, userDoc] = await Promise.all([
+        t.get(transactionRef),
+        t.get(userRef),
+      ]);
       
       if (!txDoc.exists) {
         throw new Error(`Transaction document not found at path: ${transactionPath}`);
+      }
+      if (!userDoc.exists) {
+        throw new Error(`User document not found for this transaction.`);
       }
       
       const txData = txDoc.data() as Transaction;
@@ -81,3 +88,4 @@ export async function updateTransactionStatus(
     return { success: false, error: error.message || 'An unknown error occurred on the server.' };
   }
 }
+
