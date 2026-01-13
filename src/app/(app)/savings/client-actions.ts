@@ -153,7 +153,7 @@ export async function withdrawCompletedGoal(
         throw new Error('Nothing to withdraw.');
       }
       
-      // Add funds back to solidara balance
+      // Add funds back to Olidara balance
       transaction.update(userDocRef, { solidaraBalance: increment(amountToWithdraw) });
       // Reset the goal's current amount to 0 instead of deleting it.
       transaction.update(goalDocRef, { currentAmount: 0 });
