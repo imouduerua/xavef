@@ -3,7 +3,7 @@
 
 import { FieldValue } from 'firebase-admin/firestore';
 import { firestore as adminFirestore } from '@/firebase/server-init';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, UserData } from '@/lib/types';
 
 export async function updateTransactionStatus(
   transactionPath: string,
@@ -12,19 +12,24 @@ export async function updateTransactionStatus(
   console.log(`[ACTION START] updateTransactionStatus: path=${transactionPath}, newStatus=${newStatus}`);
 
   if (!adminFirestore) {
-    console.error('[ACTION ERROR] adminFirestore is not initialized.');
-    return {
-      success: false,
-      error: 'Server is not configured for database access.',
-    };
+    const errorMsg = 'Server is not configured for database access.';
+    console.error(`[ACTION CRASH] ${errorMsg}`);
+    return { success: false, error: errorMsg };
   }
 
   const transactionRef = adminFirestore.doc(transactionPath);
-  const pathParts = transactionPath.split('/');
-  const userId = pathParts[pathParts.indexOf('users') + 1];
-  const userRef = adminFirestore.doc(`users/${userId}`);
+  
+  // A more robust way to get the parent user reference, instead of splitting the path string.
+  // The path is users/{userId}/transactions/{transactionId}, so the user doc is two levels up.
+  const userRef = transactionRef.parent.parent;
 
-  console.log(`[ACTION INFO] Parsed userId: ${userId}`);
+  if (!userRef) {
+      const errorMsg = 'Could not determine the user document from the transaction path.';
+      console.error(`[ACTION CRASH] ${errorMsg}`);
+      return { success: false, error: errorMsg };
+  }
+  
+  console.log(`[ACTION INFO] User Ref Path: ${userRef.path}`);
 
   try {
     await adminFirestore.runTransaction(async (t) => {
@@ -33,32 +38,33 @@ export async function updateTransactionStatus(
       const userDoc = await t.get(userRef);
 
       if (!txDoc.exists) {
-        throw new Error('Transaction document not found.');
+        throw new Error(`Transaction document not found at path: ${transactionPath}`);
       }
       if (!userDoc.exists) {
-        throw new Error(`User document not found for userId: ${userId}`);
+        throw new Error(`User document not found at path: ${userRef.path}`);
       }
       
       const txData = txDoc.data() as Transaction;
       console.log('[ACTION INFO] Fetched transaction data:', txData);
 
       if (txData.status !== 'Pending') {
+        console.warn(`[ACTION WARN] Transaction ${txDoc.id} is already processed with status: ${txData.status}.`);
         throw new Error('This transaction has already been processed.');
       }
 
       // 1. Update the transaction status
-      console.log(`[ACTION INFO] Updating transaction status to ${newStatus}.`);
+      console.log(`[ACTION INFO] Updating transaction ${txDoc.id} status to ${newStatus}.`);
       t.update(transactionRef, { status: newStatus });
 
       // 2. If it failed, do nothing to balances.
       if (newStatus === 'Failed') {
         console.log('[ACTION INFO] Status is "Failed". No balance changes needed.');
-        return;
+        return; // End of transaction logic
       }
       
       // 3. If it completed, update user balance.
       if (newStatus === 'Completed') {
-        const amount = txData.amount;
+        const amount = txData.amount; // For both deposits and withdrawals, amount is positive
         console.log(`[ACTION INFO] Status is "Completed". Amount: ${amount}`);
         
         if (txData.type === 'Deposit') {
@@ -69,11 +75,13 @@ export async function updateTransactionStatus(
           } else if (txData.targetAccount === 'annual') {
             t.update(userRef, { annualBalance: FieldValue.increment(amount) });
             console.log(`[ACTION INFO] Incremented annualBalance by ${amount}.`);
+          } else {
+             console.warn(`[ACTION WARN] Unknown target account for deposit: ${txData.targetAccount}`);
           }
         } else if (txData.type === 'Withdrawal') {
           // On withdrawal approval, the requested amount is debited from the balance.
           // The amount is stored as a positive number, so we must make it negative here.
-          console.log(`[ACTION INFO] Processing Withdrawal.`);
+          console.log(`[ACTION INFO] Processing Withdrawal from solidara account.`);
           t.update(userRef, { solidaraBalance: FieldValue.increment(-amount) });
           console.log(`[ACTION INFO] Decremented solidaraBalance by ${amount}.`);
         }
