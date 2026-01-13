@@ -43,19 +43,20 @@ export async function updateTransactionStatus(
       t.update(transactionRef, { status: newStatus });
 
       // 2. If the transaction is completed, update user balance.
-      // If it failed, no balance change is needed.
+      // If it failed, no balance change is needed as it was never debited.
       if (newStatus === 'Completed') {
+        const amount = txData.amount;
+        
         if (txData.type === 'Deposit') {
-          const amount = txData.amount;
           if (txData.targetAccount === 'solidara') {
             t.update(userRef, { solidaraBalance: FieldValue.increment(amount) });
           } else if (txData.targetAccount === 'annual') {
             t.update(userRef, { annualBalance: FieldValue.increment(amount) });
           }
         } else if (txData.type === 'Withdrawal') {
-          // On withdrawal approval, the full requested amount is debited.
-          const amountToDebit = txData.amount;
-          t.update(userRef, { solidaraBalance: FieldValue.increment(-amountToDebit) });
+          // On withdrawal approval, the requested amount is debited from the balance.
+          // The amount is stored as a positive number, so we must make it negative here.
+          t.update(userRef, { solidaraBalance: FieldValue.increment(-amount) });
         }
       }
     });
