@@ -2,11 +2,8 @@
 'use server';
 
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { app } from '@/firebase/client-provider'; // Corrected import
+import { app } from '@/firebase/client-provider'; 
 
-// This is a server action, so it's safe to use server-side Firebase logic.
-const functions = getFunctions(app);
-const updateTransactionStatusFn = httpsCallable(functions, 'updateTransactionStatus');
 
 export async function handleTransactionUpdate(
   transactionPath: string,
@@ -14,6 +11,10 @@ export async function handleTransactionUpdate(
 ): Promise<{ success: boolean; error?: string }> {
 
   try {
+    // Moved initialization inside the function to ensure app is ready.
+    const functions = getFunctions(app);
+    const updateTransactionStatusFn = httpsCallable(functions, 'updateTransactionStatus');
+    
     const result = await updateTransactionStatusFn({ transactionPath, newStatus });
     const data = result.data as { success: boolean; error?: string; message?: string };
 
