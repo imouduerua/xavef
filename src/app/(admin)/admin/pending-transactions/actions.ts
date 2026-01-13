@@ -20,6 +20,7 @@ export async function updateTransactionStatus(
 ): Promise<{ success: boolean; error?: string }> {
   
   const functions = getFunctions(app);
+  // Ensure the function name here exactly matches the exported name in `functions/src/index.ts`
   const updateStatusCallable = httpsCallable(functions, 'updateTransactionStatus');
 
   try {
@@ -28,11 +29,14 @@ export async function updateTransactionStatus(
     if (result.data.success) {
       return { success: true };
     } else {
+      // The callable function returned a structured error
       console.error('[ACTION FAILED] Callable function returned an error:', result.data.error);
-      return { success: false, error: result.data.error };
+      return { success: false, error: result.data.error || 'The backend function reported an error.' };
     }
   } catch (error: any) {
+    // The callable function itself threw an exception (e.g., permission denied, crash)
     console.error('[ACTION CRASH] Error calling updateTransactionStatus function:', error);
+    // The 'error.message' from the client SDK is usually informative
     return { success: false, error: error.message || 'An unknown error occurred when calling the backend function.' };
   }
 }

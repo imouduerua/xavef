@@ -67,7 +67,7 @@ export const updateTransactionStatus = functions.https.onCall(async (data, conte
         
         if (txData.type === 'Deposit') {
           const targetBalanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
-          // Use explicit if/else to avoid dynamic keys which are not supported
+          // Use explicit if/else to avoid dynamic keys unsupported in this context
           if (targetBalanceField === 'annualBalance') {
               t.update(userRef, { annualBalance: admin.firestore.FieldValue.increment(amount) });
           } else {

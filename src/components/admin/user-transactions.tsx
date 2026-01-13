@@ -86,6 +86,7 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
         title: 'Transaction Updated',
         description: `The transaction has been marked as ${newStatus}.`,
       });
+      // The `useCollection` hook will automatically update the UI.
     } else {
       toast({
         variant: 'destructive',
@@ -135,7 +136,7 @@ export function UserTransactions({ userId }: UserTransactionsProps) {
               <TableCell>{formatDate(tx.date)}</TableCell>
               <TableCell
                 className={`text-right font-semibold ${
-                  amount > 0 ? 'text-green-600' : 'text-red-600'
+                  amount > 0 ? 'text-green-600' : 'text-destructive'
                 }`}
               >
                 {amount > 0
