@@ -2,18 +2,19 @@
 'use client';
 
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { useFirebaseApp } from "@/firebase/client-provider";
+import type { FirebaseApp } from "firebase/app";
 
 /**
  * Calls a Firebase Callable Function to update the status of a transaction.
  * This is a client-side function.
  *
+ * @param app The Firebase App instance.
  * @param transactionPath The full path to the transaction document in Firestore.
  * @param newStatus The new status to set for the transaction ('Completed' or 'Failed').
  * @returns An object indicating success or failure with an optional error message.
  */
 export async function updateTransactionStatus(
-  app: any,
+  app: FirebaseApp,
   transactionPath: string,
   newStatus: 'Completed' | 'Failed'
 ): Promise<{ success: boolean; error?: string }> {
@@ -25,7 +26,6 @@ export async function updateTransactionStatus(
     const result: any = await updateStatusCallable({ transactionPath, newStatus });
     
     if (result.data.success) {
-      console.log('[ACTION SUCCESS] Callable function executed successfully.');
       return { success: true };
     } else {
       console.error('[ACTION FAILED] Callable function returned an error:', result.data.error);
