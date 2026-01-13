@@ -13,7 +13,7 @@ interface Transaction {
 }
 
 export const updateTransactionStatus = functions.https.onCall(async (data, context) => {
-  // Check if the user is an admin
+  // 1. Authentication and Admin Check
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
   }
@@ -22,47 +22,58 @@ export const updateTransactionStatus = functions.https.onCall(async (data, conte
       throw new functions.https.HttpsError('permission-denied', 'This function can only be called by an admin.');
   }
 
+  // 2. Input Validation
   const { transactionPath, newStatus } = data;
-  if (!transactionPath || !newStatus || !['Completed', 'Failed'].includes(newStatus)) {
-      throw new functions.https.HttpsError('invalid-argument', 'The function must be called with "transactionPath" and "newStatus" arguments.');
+  if (!transactionPath || typeof transactionPath !== 'string' || !newStatus || !['Completed', 'Failed'].includes(newStatus)) {
+      throw new functions.https.HttpsError('invalid-argument', 'The function must be called with a valid "transactionPath" and "newStatus".');
   }
 
   const transactionRef = firestore.doc(transactionPath);
   const userRef = transactionRef.parent.parent;
 
-  if (!userRef) {
-      throw new functions.https.HttpsError('internal', 'Could not determine user from transaction path.');
+  if (!userRef || userRef.parent.id !== 'users') {
+      throw new functions.https.HttpsError('invalid-argument', 'Could not determine a valid user from the transaction path.');
   }
 
+  // 3. Firestore Transaction
   try {
     await firestore.runTransaction(async (t) => {
       const txDoc = await t.get(transactionRef);
+      const userDoc = await t.get(userRef);
 
       if (!txDoc.exists) {
         throw new functions.https.HttpsError('not-found', 'Transaction document not found.');
       }
+      if (!userDoc.exists) {
+        throw new functions.https.HttpsError('not-found', `User document not found for user ID: ${userRef.id}`);
+      }
 
       const txData = txDoc.data() as Transaction;
+
       if (txData.status !== 'Pending') {
-        throw new functions.https.HttpsError('failed-precondition', 'Transaction has already been processed.');
+        // This transaction has already been processed, so we can just stop.
+        // It's not an error, just a duplicate request.
+        console.log(`Transaction ${transactionRef.id} has already been processed. Current status: ${txData.status}`);
+        return; 
       }
       
-      // Update transaction status
+      // Action 1: Always update the transaction status.
       t.update(transactionRef, { status: newStatus });
 
-      // Update balances if completed
+      // Action 2: If approved ('Completed'), update the user's balance.
       if (newStatus === 'Completed') {
         const amount = txData.amount;
         
         if (txData.type === 'Deposit') {
           const targetBalanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
+          // Use explicit if/else to avoid dynamic keys unsupported in this context
           if (targetBalanceField === 'annualBalance') {
               t.update(userRef, { annualBalance: admin.firestore.FieldValue.increment(amount) });
           } else {
               t.update(userRef, { solidaraBalance: admin.firestore.FieldValue.increment(amount) });
           }
         } else if (txData.type === 'Withdrawal') {
-          // On withdrawal, the amount is positive, so we make it negative for the increment.
+          // On withdrawal, the transaction `amount` is positive. We debit the account, so we increment by a negative value.
           t.update(userRef, { solidaraBalance: admin.firestore.FieldValue.increment(-amount) });
         }
       }
@@ -70,11 +81,19 @@ export const updateTransactionStatus = functions.https.onCall(async (data, conte
 
     return { success: true };
   } catch (error: any) {
-    console.error("Error in updateTransactionStatus callable function:", error);
+    // 4. Detailed Error Logging and Response
+    console.error("Error in updateTransactionStatus callable function:", {
+        errorMessage: error.message,
+        errorCode: error.code,
+        transactionPath: transactionPath,
+        newStatus: newStatus,
+        adminUid: context.auth.uid
+    });
+    
     // Re-throw as an HttpsError to be caught by the client
     if (error instanceof functions.https.HttpsError) {
         throw error;
     }
-    throw new functions.https.HttpsError('internal', error.message || "An unknown error occurred during the transaction.");
+    throw new functions.https.HttpsError('internal', error.message || "An unknown server error occurred during the transaction.");
   }
 });
