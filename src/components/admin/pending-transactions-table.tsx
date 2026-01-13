@@ -11,16 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table';
-import { Badge } from '../ui/badge';
 import Link from 'next/link';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
-import { MoreHorizontal, CheckCircle, XCircle, Loader2, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { updateTransactionStatus } from '@/app/(admin)/admin/pending-transactions/actions';
@@ -33,14 +26,6 @@ interface PendingTransactionsTableProps {
   transactions: Transaction[];
   onUpdate: (transactionId: string) => void;
 }
-
-const transactionTypeVariant: Record<
-  string,
-  'default' | 'secondary' | 'destructive' | 'outline' | null
-> = {
-  Deposit: 'default',
-  Withdrawal: 'destructive',
-};
 
 export function PendingTransactionsTable({
   transactions,
@@ -151,11 +136,8 @@ export function PendingTransactionsTable({
 
   const formatCurrency = (amount?: number) => {
     if (amount === undefined || amount === null) return 'N/A';
-    const sign = amount >= 0 ? '+' : '-';
-    // For pending table, withdrawals are shown as positive for clarity of amount requested
     const displayAmount = Math.abs(amount);
-    const colorClass = amount >= 0 && sign === '+' ? 'text-green-600' : '';
-    return <span className={colorClass}>{`₦${displayAmount.toFixed(2)}`}</span>;
+    return `₦${displayAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   
   if (processing) {
@@ -177,17 +159,19 @@ export function PendingTransactionsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>User</TableHead>
+            <TableHead>User Email</TableHead>
+            <TableHead>Xavef ID</TableHead>
             <TableHead>Date</TableHead>
-            <TableHead>Description</TableHead>
             <TableHead>Type</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Payout</TableHead>
             <TableHead>Proof</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {processedTransactions.map((tx) => {
+            const isWithdrawal = tx.type === 'Withdrawal';
             return (
               <TableRow key={tx.id}>
                 <TableCell className="font-medium">
@@ -197,18 +181,15 @@ export function PendingTransactionsTable({
                   >
                     {tx.userEmail}
                   </Link>
-                  <div className="text-xs text-muted-foreground">
-                    ID: {tx.xavefId}
-                  </div>
                 </TableCell>
+                <TableCell>{tx.xavefId}</TableCell>
                 <TableCell>{formatDate(tx.date)}</TableCell>
-                <TableCell>{tx.description}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={transactionTypeVariant[tx.type] || 'secondary'}
-                  >
-                    {tx.type}
-                  </Badge>
+                <TableCell>{tx.type}</TableCell>
+                <TableCell className={`font-semibold ${tx.type === 'Deposit' ? 'text-green-500' : ''}`}>
+                  {formatCurrency(tx.amount)}
+                </TableCell>
+                <TableCell className="font-semibold">
+                  {isWithdrawal ? formatCurrency(tx.payoutAmount) : 'N/A'}
                 </TableCell>
                 <TableCell>
                   {tx.proofOfPaymentUrl ? (
@@ -228,39 +209,33 @@ export function PendingTransactionsTable({
                           </DialogContent>
                       </Dialog>
                   ) : (
-                      <span className="text-xs text-muted-foreground">None</span>
+                      <span className="text-xs text-muted-foreground">N/A</span>
                   )}
                 </TableCell>
-                <TableCell className="text-right font-semibold">
-                  {formatCurrency(tx.amount)}
-                </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-center">
                   {updatingId === tx.id ? (
-                    <Loader2 className="h-5 w-5 animate-spin ml-auto" />
+                    <Loader2 className="h-5 w-5 animate-spin mx-auto" />
                   ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleUpdate(tx.id, tx.path, 'Completed')}
-                        >
-                          <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                          <span>Approve</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-500 focus:text-red-500"
-                          onClick={() => handleUpdate(tx.id, tx.path, 'Failed')}
-                        >
-                          <XCircle className="mr-2 h-4 w-4" />
-                          <span>Decline</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex justify-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-green-500 text-green-500 hover:bg-green-500/10 hover:text-green-600"
+                        onClick={() => handleUpdate(tx.id, tx.path, 'Completed')}
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Approve
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-red-500 text-red-500 hover:bg-red-500/10 hover:text-red-600"
+                        onClick={() => handleUpdate(tx.id, tx.path, 'Failed')}
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Decline
+                      </Button>
+                    </div>
                   )}
                 </TableCell>
               </TableRow>
