@@ -2,7 +2,7 @@
 'use server';
 
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { app } from '@/firebase/server-init';
+import { app } from '@/firebase/client-provider'; // Corrected import
 
 // This is a server action, so it's safe to use server-side Firebase logic.
 const functions = getFunctions(app);

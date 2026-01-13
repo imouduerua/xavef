@@ -8,7 +8,7 @@ import { firebaseConfig } from './config';
 import { FirebaseProvider } from './provider';
 
 // This ensures Firebase is initialized only once.
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 // Firestore is initialized with memory cache for a cleaner state between page loads in dev.
 const firestore = initializeFirestore(app, {
