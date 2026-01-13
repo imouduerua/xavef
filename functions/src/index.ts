@@ -18,7 +18,6 @@ export const updateTransactionStatus = functions.https.onCall(async (data, conte
     throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
   }
   const adminDoc = await firestore.collection('admins').doc(context.auth.uid).get();
-  // Allow the hardcoded super admin email to bypass the DB check
   if (!adminDoc.exists && context.auth.token.email !== 'admin@xavef.com') {
       throw new functions.https.HttpsError('permission-denied', 'This function can only be called by an admin.');
   }
@@ -30,7 +29,6 @@ export const updateTransactionStatus = functions.https.onCall(async (data, conte
   }
 
   const transactionRef = firestore.doc(transactionPath);
-  // Get the parent user document reference from the transaction reference
   const userRef = transactionRef.parent.parent;
 
   if (!userRef || userRef.parent.id !== 'users') {
