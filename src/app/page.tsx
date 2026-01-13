@@ -26,7 +26,7 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode, titl
 
 export default function LandingPage() {
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen light">
             <header className="px-4 lg:px-6 h-16 flex items-center border-b">
                 <Link href="#" className="flex items-center justify-center" prefetch={false}>
                     <XavefLogo className="h-6 w-6 text-primary" />
