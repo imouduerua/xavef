@@ -20,7 +20,7 @@ export async function handleTransactionUpdate(
     
     // Correctly check for admin privileges
     const adminDoc = await firestore.collection('admins').doc(user.uid).get();
-    if (!adminDoc.exists && user.email !== 'admin@xavef.com') {
+    if (!adminDoc.exists() && user.email !== 'admin@xavef.com') {
       throw new Error('Permission denied. This action is for admins only.');
     }
 
