@@ -5,7 +5,7 @@ import { firestore } from '@/firebase/server-init';
 import { FieldValue } from 'firebase-admin/firestore';
 
 // This server action uses the Admin SDK to securely update transactions.
-// It contains the full logic previously in the Cloud Function.
+// It contains the full logic for approving/declining transactions and notifying users.
 
 export async function handleTransactionUpdate(
   transactionPath: string,
