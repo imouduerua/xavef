@@ -56,7 +56,7 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     
-    if (!firestore) {
+    if (!auth || !firestore) {
         toast({
             variant: "destructive",
             title: "Registration Error",
@@ -129,10 +129,10 @@ export function RegisterForm() {
 
         toast({
             title: "Account Created!",
-            description: "Redirecting to your dashboard...",
+            description: "You can now log in.",
         });
         
-        router.push('/dashboard');
+        router.push('/login');
 
     } catch (error: any) {
         console.error("Registration Error:", error);
