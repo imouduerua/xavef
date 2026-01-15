@@ -10,7 +10,7 @@ import {
   DocumentReference,
   DocumentSnapshot,
 } from 'firebase/firestore';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useUser } from '@/firebase';
 
 export function useCollection<T = DocumentData>(query: Query<T> | null) {
@@ -41,13 +41,7 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           path: doc.ref.path,
         } as T & { id: string; path: string; }));
         
-        setData(currentData => {
-            if (JSON.stringify(currentData) !== JSON.stringify(resultData)) {
-                return resultData;
-            }
-            return currentData;
-        });
-
+        setData(resultData);
         setLoading(false);
       },
       (err: FirestoreError) => {
@@ -104,12 +98,7 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null) {
       (snapshot: DocumentSnapshot<T>) => {
         if (snapshot.exists()) {
           const resultData = { ...snapshot.data(), id: snapshot.id, path: snapshot.ref.path } as T & { id: string; path: string };
-           setData(currentData => {
-            if (JSON.stringify(currentData) !== JSON.stringify(resultData)) {
-                return resultData;
-            }
-            return currentData;
-           });
+           setData(resultData);
         } else {
           setData(null);
         }
