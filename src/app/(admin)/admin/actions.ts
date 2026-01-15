@@ -19,12 +19,9 @@ export async function handleTransactionUpdate(
         throw new Error('Authentication failed. You must be logged in to perform this action.');
     }
     
-    // Correctly check for admin privileges
     const adminDoc = await firestore.collection('admins').doc(adminUser.uid).get();
-    const isAdminInDB = adminDoc.exists;
-    const isSuperAdminEmail = adminUser.email === 'admin@xavef.com';
     
-    if (!isAdminInDB && !isSuperAdminEmail) {
+    if (!adminDoc.exists && adminUser.email !== 'admin@xavef.com') {
       throw new Error('Permission denied. You must be an authenticated admin to perform this action.');
     }
 
@@ -42,7 +39,6 @@ export async function handleTransactionUpdate(
       }
       const txData = txDoc.data();
       if (!txData || txData.status !== 'Pending') {
-        // Idempotency check: If transaction is already processed, do nothing.
         console.log('Transaction already processed.');
         return;
       }
@@ -52,7 +48,6 @@ export async function handleTransactionUpdate(
       const userDoc = await t.get(userRef);
       const userName = userDoc.data()?.firstName || 'there';
 
-      // Create notification for the user
       const notificationRef = userRef.collection('notifications').doc();
       const notificationTitle = newStatus === 'Completed' ? 'Transaction Approved' : 'Transaction Declined';
       const notificationDesc = `Hi ${userName}, your ${txData.type.toLowerCase()} of ₦${txData.amount.toFixed(2)} has been ${newStatus.toLowerCase()}.`;
@@ -66,13 +61,11 @@ export async function handleTransactionUpdate(
         actionUrl: '/transactions'
       });
 
-      // If the transaction is approved, update the user's balance.
       if (newStatus === 'Completed') {
         if (txData.type === 'Deposit') {
           const balanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
           t.update(userRef, { [balanceField]: FieldValue.increment(txData.amount) });
         } else if (txData.type === 'Withdrawal') {
-          // On withdrawal, the transaction amount is positive. We need to debit the account.
           t.update(userRef, { solidaraBalance: FieldValue.increment(-txData.amount) });
         }
       }
