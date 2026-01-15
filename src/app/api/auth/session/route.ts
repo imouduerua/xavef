@@ -1,4 +1,3 @@
-
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
@@ -6,7 +5,6 @@ import { app } from '@/firebase/server-init';
 
 // This is the endpoint that creates the session cookie.
 export async function POST(request: NextRequest) {
-  // Initialize Firebase Admin Auth inside the handler for reliability.
   const auth = getAuth(app);
   try {
     const { idToken } = await request.json();
@@ -33,7 +31,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: 'success' });
   } catch (error: any) {
     console.error('Error creating session cookie:', error);
-    return NextResponse.json({ error: 'Failed to create session.', details: error.message }, { status: 401 });
+    // Provide a more detailed error message for debugging
+    const errorMessage = error.message || 'An unknown error occurred.';
+    const errorCode = error.code || 'UNKNOWN_CODE';
+    return NextResponse.json({ error: `Failed to create session. Reason: ${errorMessage} (Code: ${errorCode})` }, { status: 401 });
   }
 }
 
