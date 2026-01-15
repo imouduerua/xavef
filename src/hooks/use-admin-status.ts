@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { collection, getDoc, orderBy, query, limit } from 'firebase/firestore';
+import { collection, getDoc, orderBy, query, limit, getDocs } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/use-memo-firebase';
 
 export function useAdminStatus() {
@@ -11,34 +11,23 @@ export function useAdminStatus() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Memoize the query for the first user
-  const firstUserQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'users'), orderBy('createdAt', 'asc'), limit(1));
-  }, [firestore]);
-
-  const { data: firstUser, loading: firstUserLoading } = useCollection(firstUserQuery);
-
   useEffect(() => {
     const checkAdminStatus = async () => {
-      // Don't proceed until both auth and the first user query have settled.
-      if (authLoading || firstUserLoading) {
-        setLoading(true);
-        return;
-      }
+      setLoading(true);
       
-      // If there's no logged-in user, they are not an admin.
+      if (authLoading) {
+        return; // Wait for auth to resolve
+      }
+
       if (!user || !firestore) {
         setIsAdmin(false);
         setLoading(false);
         return;
       }
 
-      setLoading(true);
-
       try {
         // 1. Check if the user has a specific document in the 'admins' collection.
-        const adminDocRef = (await import('firebase/firestore')).doc(firestore, 'admins', user.uid);
+        const adminDocRef = doc(firestore, 'admins', user.uid);
         const adminDoc = await getDoc(adminDocRef);
         if (adminDoc.exists() && adminDoc.data()?.isAdmin === true) {
           setIsAdmin(true);
@@ -47,14 +36,20 @@ export function useAdminStatus() {
         }
 
         // 2. If not, check if the 'admins' collection is empty.
-        const adminsCollectionRef = (await import('firebase/firestore')).collection(firestore, 'admins');
-        const adminsSnapshot = await (await import('firebase/firestore')).getDocs(query(adminsCollectionRef, limit(1)));
+        const adminsCollectionRef = collection(firestore, 'admins');
+        const adminsSnapshot = await getDocs(query(adminsCollectionRef, limit(1)));
         
-        // 3. If it's empty, apply the bootstrap logic: the first registered user is the admin.
-        if (adminsSnapshot.empty && firstUser && firstUser.length > 0 && firstUser[0].id === user.uid) {
-           setIsAdmin(true);
+        // 3. If the admins collection is empty, check if the current user is the first user ever created.
+        if (adminsSnapshot.empty) {
+          const firstUserQuery = query(collection(firestore, 'users'), orderBy('createdAt', 'asc'), limit(1));
+          const firstUserSnapshot = await getDocs(firstUserQuery);
+          if (!firstUserSnapshot.empty && firstUserSnapshot.docs[0].id === user.uid) {
+             setIsAdmin(true);
+          } else {
+             setIsAdmin(false);
+          }
         } else {
-           // Otherwise, they are not an admin.
+           // If admins collection is not empty and user is not in it, they are not an admin.
            setIsAdmin(false);
         }
 
@@ -67,7 +62,7 @@ export function useAdminStatus() {
     };
 
     checkAdminStatus();
-  }, [user, authLoading, firestore, firstUser, firstUserLoading]);
+  }, [user, authLoading, firestore]);
 
   return { isAdmin, loading };
 }

@@ -14,8 +14,7 @@ async function isAdmin(uid: string): Promise<boolean> {
     }
 
     // BOOTSTRAP LOGIC: If no admins exist, treat the first user ever created as the admin.
-    // This is a temporary measure to allow the first user to log in and create other admins.
-    const adminsQuery = query(firestore.collection('admins'), limit(1));
+    // This allows the first user to log in and create other admins.
     const adminsSnapshot = await firestore.collection('admins').limit(1).get();
 
     if (adminsSnapshot.empty) {

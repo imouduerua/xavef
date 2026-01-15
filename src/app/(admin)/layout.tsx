@@ -19,22 +19,22 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = pathname === '/admin-login';
   
-  // useEffect(() => {
-  //   if (authLoading || adminLoading) return;
+  useEffect(() => {
+    if (authLoading || adminLoading) return;
 
-  //   if (!user && !isAuthPage) {
-  //     router.replace('/admin-login');
-  //     return;
-  //   }
+    if (!user && !isAuthPage) {
+      router.replace('/admin-login');
+      return;
+    }
 
-  //   if (user) {
-  //     if (isAuthPage) {
-  //       router.replace(isAdmin ? '/admin' : '/dashboard');
-  //     } else if (!isAdmin) {
-  //       router.replace('/dashboard');
-  //     }
-  //   }
-  // }, [user, authLoading, isAdmin, adminLoading, router, pathname, isAuthPage]);
+    if (user) {
+      if (isAuthPage) {
+        router.replace(isAdmin ? '/admin' : '/dashboard');
+      } else if (!isAdmin) {
+        router.replace('/dashboard');
+      }
+    }
+  }, [user, authLoading, isAdmin, adminLoading, router, pathname, isAuthPage]);
 
   const isLoading = authLoading || adminLoading;
 
@@ -54,9 +54,9 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Prevent flicker
-  // if ((!user && !isAuthPage) || (user && isAuthPage) || (user && !isAdmin && !isAuthPage)) {
-  //   return null;
-  // }
+  if ((!user && !isAuthPage) || (user && isAuthPage) || (user && !isAdmin && !isAuthPage)) {
+    return null;
+  }
   
   return <>{children}</>;
 }
