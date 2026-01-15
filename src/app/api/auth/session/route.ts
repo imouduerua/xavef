@@ -4,11 +4,10 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { app } from '@/firebase/server-init';
 
-// Initialize Firebase Admin Auth
-const auth = getAuth(app);
-
 // This is the endpoint that creates the session cookie.
 export async function POST(request: NextRequest) {
+  // Initialize Firebase Admin Auth inside the handler for reliability.
+  const auth = getAuth(app);
   try {
     const { idToken } = await request.json();
 
