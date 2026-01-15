@@ -3,6 +3,7 @@
 
 import { firestore } from '@/firebase/server-init';
 import { FieldValue } from 'firebase-admin/firestore';
+import { getAuthenticatedUser } from '@/firebase/server-auth';
 
 // This server action uses the Admin SDK to securely update transactions.
 // It contains the full logic for approving/declining transactions and notifying users.
@@ -12,7 +13,6 @@ export async function handleTransactionUpdate(
   newStatus: 'Completed' | 'Failed'
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { getAuthenticatedUser } = await import('@/firebase/server-auth');
     const adminUser = await getAuthenticatedUser();
     
     if (!adminUser) {
