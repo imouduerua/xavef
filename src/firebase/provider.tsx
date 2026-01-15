@@ -78,32 +78,34 @@ export function useUser() {
     return { user, uid: user?.uid ?? null, loading };
 }
 
-export function useAuth(): Auth {
-  const { auth } = useFirebaseContext();
+export function useAuth(): Auth | null {
+  const { auth, loading } = useFirebaseContext();
+  // Return null if auth is not yet available, instead of throwing an error.
+  if (loading) return null;
   if (!auth) {
-    throw new Error("Firebase Auth has not been initialized.");
+    console.warn("Firebase Auth has not been initialized.");
+    return null;
   }
   return auth;
 }
 
-export function useFirestore(): Firestore {
+export function useFirestore(): Firestore | null {
   const { firestore, loading } = useFirebaseContext();
-  if (loading && !firestore) {
-    // This state can happen during initial load. It's better to throw
-    // or handle it gracefully than to return null and cause downstream errors.
-    // Throwing an error here makes it clear that something is trying to use Firestore too early.
-    throw new Error("useFirestore was called before Firestore has been initialized. Ensure components using this hook are rendered only after Firebase is ready.");
-  }
+  // Return null if firestore is not yet available, instead of throwing an error.
+  if (loading) return null;
   if (!firestore) {
-    throw new Error("Firebase Firestore has not been initialized or is not available.");
+    console.warn("Firebase Firestore has not been initialized or is not available.");
+    return null;
   }
   return firestore;
 }
 
-export function useFirebaseApp(): FirebaseApp {
-  const { app } = useFirebaseContext();
+export function useFirebaseApp(): FirebaseApp | null {
+  const { app, loading } = useFirebaseContext();
+  if (loading) return null;
   if (!app) {
-    throw new Error("Firebase App has not been initialized.");
+    console.warn("Firebase App has not been initialized.");
+    return null;
   }
   return app;
 }
