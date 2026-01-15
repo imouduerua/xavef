@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { collection, doc, getDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 export function useAdminStatus() {
   const { user, loading: authLoading } = useUser();
@@ -12,52 +12,41 @@ export function useAdminStatus() {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (authLoading) return;
+      if (authLoading) {
+          setLoading(true);
+          return;
+      };
+      
       if (!user || !firestore) {
         setIsAdmin(false);
         setLoading(false);
         return;
       }
 
-      // First, check if the user is in the `admins` collection, which is the standard way.
+      setLoading(true);
       const adminDocRef = doc(firestore, 'admins', user.uid);
       try {
         const adminDoc = await getDoc(adminDocRef);
         if (adminDoc.exists() && adminDoc.data()?.isAdmin === true) {
           setIsAdmin(true);
-          setLoading(false);
-          return;
+        } else {
+            // Fallback for the temporary first-user admin logic handled by the server.
+            // This is a client-side guess that will be corrected upon page load/navigation
+            // but the server session check is the real source of truth.
+            // A more robust solution involves a dedicated claim or API endpoint.
+            // For now, we assume the session check on navigation will handle redirects.
+            setIsAdmin(false); 
         }
-
-        // TEMPORARY BOOTSTRAP LOGIC: If no admins exist, treat the first-ever user as the admin.
-        // This is a temporary measure to grant initial access.
-        const adminsQuery = query(collection(firestore, 'admins'), limit(1));
-        const adminsSnapshot = await getDocs(adminsQuery);
-        
-        if (adminsSnapshot.empty) {
-          const usersQuery = query(collection(firestore, 'users'), orderBy('createdAt', 'asc'), limit(1));
-          const usersSnapshot = await getDocs(usersQuery);
-          if (!usersSnapshot.empty && usersSnapshot.docs[0].id === user.uid) {
-            console.warn("Temporary admin access granted to first user.");
-            setIsAdmin(true);
-            setLoading(false);
-            return;
-          }
-        }
-        
       } catch (error) {
         console.error("Error checking admin status:", error);
         setIsAdmin(false);
       } finally {
-        if (!isAdmin) {
-          setIsAdmin(false);
-        }
         setLoading(false);
       }
     };
 
     checkAdminStatus();
-  }, [user, authLoading, firestore, isAdmin]);
+  }, [user, authLoading, firestore]);
 
   return { isAdmin, loading };
 }

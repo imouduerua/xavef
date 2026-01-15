@@ -3,15 +3,31 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { app, firestore } from '@/firebase/server-init';
 import { cookies } from 'next/headers';
+import { collection, query, orderBy, limit, getDocs } from 'firebase-admin/firestore';
 
 async function isAdmin(uid: string): Promise<boolean> {
-  const superAdminUid = process.env.FIREBASE_SUPER_ADMIN_UID;
-  if (superAdminUid && uid === superAdminUid) {
-    return true;
-  }
   try {
+    // Standard check: Is the user in the 'admins' collection?
     const adminDoc = await firestore.collection('admins').doc(uid).get();
-    return adminDoc.exists && adminDoc.data()?.isAdmin === true;
+    if (adminDoc.exists && adminDoc.data()?.isAdmin === true) {
+      return true;
+    }
+
+    // BOOTSTRAP LOGIC: If no admins exist, treat the first user ever created as the admin.
+    // This is a temporary measure to allow the first user to log in and create other admins.
+    const adminsQuery = query(firestore.collection('admins'), limit(1));
+    const adminsSnapshot = await firestore.collection('admins').limit(1).get();
+
+    if (adminsSnapshot.empty) {
+      const usersQuery = query(firestore.collection('users'), orderBy('createdAt', 'asc'), limit(1));
+      const usersSnapshot = await usersQuery.get();
+      if (!usersSnapshot.empty && usersSnapshot.docs[0].id === uid) {
+        console.warn(`TEMPORARY ADMIN ACCESS: Granting admin access to first registered user: ${uid}`);
+        return true;
+      }
+    }
+
+    return false;
   } catch (error) {
     console.error('Error checking admin status:', error);
     return false;
@@ -26,7 +42,7 @@ export async function POST(request: NextRequest) {
     const userIsAdmin = await isAdmin(decodedToken.uid);
 
     if (!userIsAdmin) {
-      return NextResponse.json({ success: false, error: 'Permission denied.' }, { status: 403 });
+      return NextResponse.json({ success: false, error: 'Permission denied. You are not an administrator.' }, { status: 403 });
     }
 
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
@@ -42,7 +58,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
     console.error('Session Login Error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to create session.' }, { status: 401 });
+    const errorMessage = error.code === 'auth/id-token-expired' 
+      ? 'Login session has expired. Please try again.'
+      : 'Failed to create session due to a server error.';
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 401 });
   }
 }
 
