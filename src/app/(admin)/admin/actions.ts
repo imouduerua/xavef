@@ -65,11 +65,11 @@ export async function handleTransactionUpdate(
       // If the transaction is approved, update the user's balance.
       if (newStatus === 'Completed') {
         if (txData.type === 'Deposit') {
-          const balanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
+          const balanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'olidaraBalance';
           t.update(userRef, { [balanceField]: firestore.FieldValue.increment(txData.amount) });
         } else if (txData.type === 'Withdrawal') {
           // On withdrawal, the transaction amount is positive. We need to debit the account.
-          t.update(userRef, { solidaraBalance: firestore.FieldValue.increment(-txData.amount) });
+          t.update(userRef, { olidaraBalance: firestore.FieldValue.increment(-txData.amount) });
         }
       }
     });
