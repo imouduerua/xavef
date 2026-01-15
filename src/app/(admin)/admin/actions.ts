@@ -1,9 +1,10 @@
 
 'use server';
 
-import { firestore } from '@/firebase/server-init';
+import { firestore, app } from '@/firebase/server-init';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getAuthenticatedUser } from '@/firebase/server-auth';
+import { getAuth } from 'firebase-admin/auth';
+import { cookies } from 'next/headers';
 
 // This server action uses the Admin SDK to securely update transactions.
 // It contains the full logic for approving/declining transactions and notifying users.
@@ -13,8 +14,16 @@ export async function handleTransactionUpdate(
   newStatus: 'Completed' | 'Failed'
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const adminUser = await getAuthenticatedUser();
+    const auth = getAuth(app);
+    const sessionCookie = cookies().get('session')?.value;
     
+    if (!sessionCookie) {
+      throw new Error('Authentication failed. You must be logged in to perform this action.');
+    }
+
+    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+    const adminUser = await auth.getUser(decodedClaims.uid);
+
     if (!adminUser) {
         throw new Error('Authentication failed. You must be logged in to perform this action.');
     }
