@@ -7,7 +7,6 @@ import * as z from 'zod';
 import React from 'react';
 import {signInWithEmailAndPassword, getIdToken, signOut} from 'firebase/auth';
 import {useRouter} from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
 
 import {Button} from '@/components/ui/button';
 import {
@@ -20,7 +19,7 @@ import {
 } from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {toast} from '@/hooks/use-toast';
-import {useAuth, useFirestore} from '@/firebase';
+import {useAuth} from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
 
@@ -34,10 +33,8 @@ const formSchema = z.object({
 });
 
 export function AdminLoginForm() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const auth = useAuth();
-  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,68 +46,52 @@ export function AdminLoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!firestore) {
-        toast({
-            variant: "destructive",
-            title: "Login Failed",
-            description: "Database service is not available."
-        });
-        setIsLoading(false);
-        return;
-    }
+    let userCredential;
 
     try {
-      // Step 1: Sign in the user on the client-side.
-      const userCredential = await signInWithEmailAndPassword(
+      // Step 1: Attempt to sign in the user on the client-side.
+      userCredential = await signInWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
-      const user = userCredential.user;
 
-      // Step 2: Check for admin privileges on the server-side via Firestore.
-      const adminDocRef = doc(firestore, 'admins', user.uid);
-      const adminDocSnap = await getDoc(adminDocRef);
+      // Step 2: If client-side login is successful, get the ID token.
+      const idToken = await getIdToken(userCredential.user);
 
-      const isSuperAdmin = user.email === 'admin@xavef.com';
-      const isDbAdmin = adminDocSnap.exists();
-
-      if (!isSuperAdmin && !isDbAdmin) {
-        // If not an admin, sign out immediately and throw an error.
-        await signOut(auth);
-        throw new Error('Permission denied. This account does not have administrative privileges.');
-      }
-      
-      // Step 3: If admin check passes, get ID token and create the server-side session.
-      const idToken = await getIdToken(user);
+      // Step 3: Call the API route to verify admin status and create the session cookie.
       const response = await fetch('/api/auth/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ idToken }),
       });
 
+      // The server will verify the token, check for admin privileges, and set the cookie.
+      // If the user is not an admin, the server-side check within the API route will fail.
+      // We check if the response from our API route is OK.
       if (!response.ok) {
           const errorData = await response.json();
-          // This will catch server-side session creation errors.
+          // This will catch server-side session creation errors, including permission denied.
           throw new Error(errorData.error || "Session creation failed on the server.");
       }
-
+      
       // Step 4: Success! Redirect to the admin dashboard.
       toast({
           title: 'Login Successful',
           description: 'Redirecting to the admin dashboard...',
       });
       
-      // Use window.location.href for a full page reload to ensure the server recognizes the new cookie.
+      // A full page reload is crucial to ensure the server recognizes the new session cookie.
       window.location.href = '/admin';
 
     } catch (error: any) {
+      // This is the crucial error handling part.
       let errorMessage = 'An unknown error occurred. Please try again.';
       
-      // Provide clear, user-friendly error messages.
       if (error.code === 'auth/invalid-credential') {
           errorMessage = 'Invalid email or password. Please try again.';
       } else if (error.message) {
+          // This will catch the custom error from our API route (e.g., for permission denied).
           errorMessage = error.message;
       }
       
@@ -119,6 +100,12 @@ export function AdminLoginForm() {
         title: 'Login Failed',
         description: errorMessage,
       });
+
+      // If a user was partially logged in but failed server validation, sign them out.
+      if (auth.currentUser) {
+        await signOut(auth);
+      }
+
     } finally {
         setIsLoading(false);
     }
