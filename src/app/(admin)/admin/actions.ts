@@ -16,7 +16,7 @@ export async function handleTransactionUpdate(
     const adminUser = await getAuthenticatedUser();
     
     if (!adminUser) {
-        throw new Error('Authentication failed. You must be an authenticated admin to perform this action.');
+        throw new Error('Authentication failed. You must be logged in to perform this action.');
     }
     
     // Correctly check for admin privileges
