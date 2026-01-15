@@ -79,9 +79,7 @@ export function useUser() {
 }
 
 export function useAuth(): Auth | null {
-  const { auth, loading } = useFirebaseContext();
-  // Return null if auth is not yet available, instead of throwing an error.
-  if (loading) return null;
+  const { auth } = useFirebaseContext();
   if (!auth) {
     // This warning can be noisy, but it's useful for debugging.
     // console.warn("Firebase Auth has not been initialized.");
@@ -91,9 +89,7 @@ export function useAuth(): Auth | null {
 }
 
 export function useFirestore(): Firestore | null {
-  const { firestore, loading } = useFirebaseContext();
-  // Return null if firestore is not yet available.
-  if (loading) return null;
+  const { firestore } = useFirebaseContext();
   if (!firestore) {
     // console.warn("Firebase Firestore has not been initialized or is not available.");
     return null;
@@ -102,8 +98,7 @@ export function useFirestore(): Firestore | null {
 }
 
 export function useFirebaseApp(): FirebaseApp | null {
-  const { app, loading } = useFirebaseContext();
-  if (loading) return null;
+  const { app } = useFirebaseContext();
   if (!app) {
     // console.warn("Firebase App has not been initialized.");
     return null;
