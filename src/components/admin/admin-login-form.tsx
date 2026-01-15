@@ -90,8 +90,7 @@ export function AdminLoginForm() {
             title: 'Login Successful',
             description: 'Redirecting to the admin dashboard...',
         });
-        // We use router.replace to avoid the login page being in the browser history.
-        // We now use window.location.href to ensure a full page reload, which is crucial
+        // We use window.location.href to ensure a full page reload, which is crucial
         // for the server to recognize the newly set session cookie.
         window.location.href = '/admin';
       } else {
