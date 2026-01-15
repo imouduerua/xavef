@@ -1,3 +1,4 @@
+
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the ID token first. This will throw an error if the token is invalid.
-    const decodedClaims = await auth.verifyIdToken(idToken);
+    const decodedClaims = await auth.verifyIdToken(idToken, true);
     
     // Now, check if the user is an admin on the server side.
     const adminDocRef = firestore.collection('admins').doc(decodedClaims.uid);

@@ -5,31 +5,24 @@ import { firestore, app } from '@/firebase/server-init';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
+import { getAuthenticatedUser } from '@/firebase/server-auth';
 
 export async function handleTransactionUpdate(
   transactionPath: string,
   newStatus: 'Completed' | 'Failed'
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const sessionCookie = cookies().get('session')?.value;
-    if (!sessionCookie) {
+    const adminUserRecord = await getAuthenticatedUser();
+    
+    // This is the crucial admin check.
+    if (!adminUserRecord) {
       throw new Error('Authentication failed. You must be logged in to perform this action.');
     }
 
-    const auth = getAuth(app);
-    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
-    
-    if (!decodedClaims) {
-      throw new Error('Authentication failed. Could not verify session.');
-    }
-
-    const adminUserRecord = await auth.getUser(decodedClaims.uid);
     const adminDoc = await firestore.collection('admins').doc(adminUserRecord.uid).get();
-
     const isDbAdmin = adminDoc.exists;
     const isSuperAdmin = adminUserRecord.email === 'admin@xavef.com';
 
-    // This is the crucial admin check.
     if (!isDbAdmin && !isSuperAdmin) {
       throw new Error('Permission denied. You must be an authenticated admin to perform this action.');
     }
