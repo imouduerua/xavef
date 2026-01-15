@@ -59,7 +59,7 @@ export function AdminLoginForm() {
     }
 
     try {
-      // 1. Sign in the user on the client-side first.
+      // 1. Sign in the user on the client-side first. This is where the invalid-credential error occurs.
       const userCredential = await signInWithEmailAndPassword(
         auth,
         values.email,
@@ -68,8 +68,6 @@ export function AdminLoginForm() {
       const user = userCredential.user;
 
       // 2. Now check if the user is an admin on the server.
-      // This is a client-side check just to provide a fast failure message.
-      // The authoritative check is on the server action / API route.
       const adminDocRef = doc(firestore, 'admins', user.uid);
       const adminDocSnap = await getDoc(adminDocRef);
 
@@ -95,11 +93,12 @@ export function AdminLoginForm() {
           title: 'Login Successful',
           description: 'Redirecting to the admin dashboard...',
       });
-      // Use window.location.href for a full page reload to ensure the server recognizes the session cookie.
+      
       window.location.href = '/admin';
 
     } catch (error: any) {
       let errorMessage = 'An unknown error occurred.';
+      // This is the crucial part: correctly identify the invalid credential error.
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
           errorMessage = 'Invalid email or password. Please try again.';
       } else if (error.message) {
@@ -111,7 +110,8 @@ export function AdminLoginForm() {
         title: 'Login Failed',
         description: errorMessage,
       });
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   }
 
