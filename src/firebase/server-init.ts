@@ -1,5 +1,5 @@
-import { initializeApp, getApps, getApp, type App, type AppOptions } from 'firebase-admin/app';
-import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, getApp, App as AdminApp, AppOptions, cert } from 'firebase-admin/app';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import 'server-only';
 
 // This is the project ID from your firebaseConfig. It MUST match the client-side config.
@@ -9,12 +9,10 @@ const adminConfig: AppOptions = {
     projectId: projectId,
 };
 
-let app: App;
+let app: AdminApp;
 if (getApps().length === 0) {
-  // If no app is initialized, create a new one.
   app = initializeApp(adminConfig);
 } else {
-  // Otherwise, use the existing app.
   app = getApp();
 }
 
