@@ -1,8 +1,9 @@
 
+
 'use client';
 import React from 'react';
 import { collectionGroup, query, where, orderBy, limit } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useMemoFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { TransactionWithUserDetails } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -25,7 +26,7 @@ const formatDate = (date: any) => {
 
 export function PendingWithdrawals() {
   const firestore = useFirestore();
-  const transactionsQuery = React.useMemo(() => {
+  const transactionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
         collectionGroup(firestore, 'transactions'),

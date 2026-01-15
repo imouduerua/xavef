@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Clock } from "lucide-react";
 import Link from "next/link";
@@ -75,7 +76,7 @@ export default function WithdrawalPage() {
     const userDocRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'users', user.uid) : null, [firestore, user?.uid]);
     const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
-    const pendingWithdrawalQuery = useMemo(() => firestore && user?.uid ? query(
+    const pendingWithdrawalQuery = useMemoFirebase(() => firestore && user?.uid ? query(
             collection(firestore, 'users', user.uid, 'transactions'),
             where('status', '==', 'Pending'),
             where('type', '==', 'Withdrawal'),

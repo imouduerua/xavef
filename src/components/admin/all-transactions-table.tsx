@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import React, { useMemo } from 'react';
 import { collectionGroup, query, orderBy, limit, startAfter, endBefore, limitToLast, DocumentData } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useMemoFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { TransactionWithUserDetails, UserData } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -49,41 +50,52 @@ function TableSkeleton() {
 
 export function AllTransactionsTable() {
   const firestore = useFirestore();
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [pageDocs, setPageDocs] = React.useState<(DocumentData | null)[]>([null]); // doc snapshots for pagination
-  const [paginationDirection, setPaginationDirection] = React.useState<'next' | 'prev' | null>(null);
+  const [lastVisible, setLastVisible] = React.useState<DocumentData | null>(null);
+  const [firstVisible, setFirstVisible] = React.useState<DocumentData | null>(null);
+  const [page, setPage] = React.useState(1);
 
-  const transactionsQuery = useMemo(() => {
+
+  const transactionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    const baseQuery = query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc'));
-    
-    if (paginationDirection === 'next' && pageDocs[currentPage - 1]) {
-      return query(baseQuery, startAfter(pageDocs[currentPage - 1]), limit(PAGE_SIZE));
-    }
-    if (paginationDirection === 'prev' && pageDocs[currentPage]) {
-        // Firestore doesn't have a simple "previous" cursor, so we reverse the query and then the results.
-        const reversedQuery = query(collectionGroup(firestore, 'transactions'), orderBy('date', 'asc'));
-        return query(reversedQuery, startAfter(pageDocs[currentPage-1]), limit(PAGE_SIZE));
-    }
+    return query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc'), limit(PAGE_SIZE));
+  }, [firestore]);
 
-    return query(baseQuery, limit(PAGE_SIZE));
-  }, [firestore, currentPage, pageDocs, paginationDirection]);
+  const nextPageQuery = useMemoFirebase(() => {
+    if (!firestore || !lastVisible) return null;
+    return query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc'), startAfter(lastVisible), limit(PAGE_SIZE));
+  }, [firestore, lastVisible]);
+  
+  const prevPageQuery = useMemoFirebase(() => {
+      if (!firestore || !firstVisible) return null;
+      return query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc'), endBefore(firstVisible), limitToLast(PAGE_SIZE));
+  }, [firestore, firstVisible]);
 
+  const [currentQuery, setCurrentQuery] = React.useState(transactionsQuery);
 
-  const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(transactionsQuery);
+  const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(currentQuery);
+
+  React.useEffect(() => {
+      if (transactions && transactions.length > 0) {
+        // @ts-ignore
+          setFirstVisible(transactions[0].__snapshot);
+          // @ts-ignore
+          setLastVisible(transactions[transactions.length - 1].__snapshot);
+      }
+  }, [transactions]);
+
 
   const handleNextPage = () => {
-    if (!transactions || transactions.length < PAGE_SIZE) return;
-    setPaginationDirection('next');
-    // @ts-ignore
-    setPageDocs(prev => [...prev, transactions[transactions.length - 1].__snapshot]);
-    setCurrentPage(prev => prev + 1);
+    if (nextPageQuery) {
+        setCurrentQuery(nextPageQuery);
+        setPage(page + 1);
+    }
   };
   
   const handlePrevPage = () => {
-    if (currentPage === 1) return;
-    setPaginationDirection('prev');
-     setCurrentPage(prev => prev - 1);
+    if (prevPageQuery) {
+        setCurrentQuery(prevPageQuery);
+        setPage(page - 1);
+    }
   };
 
   if (indexCreationUrl) {
@@ -149,7 +161,7 @@ export function AllTransactionsTable() {
                 variant="outline"
                 size="sm"
                 onClick={handlePrevPage}
-                disabled={currentPage === 1}
+                disabled={page === 1}
             >
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Previous

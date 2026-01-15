@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore, useUser } from '@/firebase/provider';
+import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import React, { useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
@@ -34,13 +35,13 @@ export function MyGroupsSection() {
   const firestore = useFirestore();
   const uid = user?.uid;
 
-  const myGroupsQuery = useMemo(() => (uid && firestore) ? query(
+  const myGroupsQuery = useMemoFirebase(() => (uid && firestore) ? query(
         collection(firestore, `groups`), 
         where('members', 'array-contains', uid),
         orderBy('createdAt', 'desc')
     ) : null, [uid, firestore]);
 
-  const joinRequestsQuery = useMemo(() => (uid && firestore) ? query(
+  const joinRequestsQuery = useMemoFirebase(() => (uid && firestore) ? query(
           collection(firestore, 'joinRequests'),
           where('groupCreatorUid', '==', uid),
           where('status', '==', 'pending'),

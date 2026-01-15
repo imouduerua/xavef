@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useDoc, useCollection, useUser, useFirestore } from '@/firebase';
+import { useDoc, useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import type { Group, Transaction, UserData } from '@/lib/types';
 import { doc, collection, getDocs, query, where, documentId, collectionGroup, Timestamp, orderBy } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
@@ -60,7 +61,7 @@ export default function GroupDetailsPage() {
     const [membersData, setMembersData] = useState<UserData[]>([]);
     const [loadingMembers, setLoadingMembers] = useState(true);
 
-    const groupRef = useMemo(() => firestore && groupId ? doc(firestore, 'groups', groupId) : null, [firestore, groupId]);
+    const groupRef = useMemoFirebase(() => firestore && groupId ? doc(firestore, 'groups', groupId) : null, [firestore, groupId]);
     const { data: group, loading: groupLoading } = useDoc<Group>(groupRef);
     
     // Convert Firestore Timestamps to JS Date objects for serialization
@@ -91,7 +92,7 @@ export default function GroupDetailsPage() {
     }, [serializableGroup]);
 
 
-    const weeklyContributionsQuery = useMemo(() => (firestore && serializableGroup && weekStart && weekEnd) ? query(
+    const weeklyContributionsQuery = useMemoFirebase(() => (firestore && serializableGroup && weekStart && weekEnd) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             where('type', '==', 'Group Contribution'),
@@ -99,7 +100,7 @@ export default function GroupDetailsPage() {
             where('date', '<', weekEnd)
         ) : null, [firestore, serializableGroup, weekStart, weekEnd, groupId]);
     
-    const groupTransactionsQuery = useMemo(() => (firestore && groupId) ? query(
+    const groupTransactionsQuery = useMemoFirebase(() => (firestore && groupId) ? query(
             collectionGroup(firestore, 'transactions'),
             where('groupId', '==', groupId),
             orderBy('date', 'desc')

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import {
@@ -13,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Transaction, TransactionStatus } from "@/lib/types";
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from "firebase/firestore";
 import React, { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -129,7 +130,7 @@ export default function TransactionsPage() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const transactionsQuery = useMemo(() => (user?.uid && firestore) ? query(
+  const transactionsQuery = useMemoFirebase(() => (user?.uid && firestore) ? query(
       collection(firestore, "users", user.uid, "transactions"),
       orderBy("date", "desc")
     ) : null, [user?.uid, firestore]);

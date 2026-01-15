@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import type { SavingGoal } from '@/lib/types';
 import { collection, query, orderBy } from 'firebase/firestore';
 import React, { useMemo } from 'react';
@@ -29,7 +30,7 @@ export function GoalsList() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const goalsQuery = useMemo(() => user?.uid && firestore ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [user?.uid, firestore]);
+  const goalsQuery = useMemoFirebase(() => user?.uid && firestore ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [user?.uid, firestore]);
 
   const { data: goals, loading } = useCollection<SavingGoal>(goalsQuery);
 

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from "next/link";
@@ -15,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Transaction, TransactionStatus } from "@/lib/types";
 import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, limit, query, where, orderBy } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 
@@ -30,12 +31,12 @@ export function RecentTransactions() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const transactionsQuery = (user?.uid && firestore) ? query(
+  const transactionsQuery = useMemoFirebase(() => (user?.uid && firestore) ? query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "in", ["Completed", "Failed"]),
       orderBy("date", "desc"),
       limit(5)
-    ) : null;
+    ) : null, [user?.uid, firestore]);
 
   const { data: transactions, loading } = useCollection<Transaction>(transactionsQuery);
 
