@@ -73,6 +73,7 @@ export interface Transaction {
 export interface TransactionWithUserDetails extends Transaction {
   userId: string;
   userEmail: string;
+  userDisplayName: string;
   xavefId: string;
 }
 
