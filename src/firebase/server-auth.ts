@@ -17,7 +17,9 @@ export async function getAuthenticatedUser() {
 
   try {
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
-    return decodedClaims;
+    // Fetch the full user record to ensure all properties like email are present.
+    const userRecord = await auth.getUser(decodedClaims.uid);
+    return userRecord;
   } catch (error) {
     console.error('Error verifying session cookie:', error);
     return null;

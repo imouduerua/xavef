@@ -2,6 +2,7 @@
 'use server';
 
 import { firestore } from '@/firebase/server-init';
+import { FieldValue } from 'firebase-admin/firestore';
 
 // This server action uses the Admin SDK to securely update transactions.
 // It contains the full logic previously in the Cloud Function.
@@ -20,7 +21,10 @@ export async function handleTransactionUpdate(
     
     // Correctly check for admin privileges
     const adminDoc = await firestore.collection('admins').doc(user.uid).get();
-    if (!adminDoc.exists() && user.email !== 'admin@xavef.com') {
+    const isAdminInDB = adminDoc.exists;
+    const isSuperAdminEmail = user.email === 'admin@xavef.com';
+    
+    if (!isAdminInDB && !isSuperAdminEmail) {
       throw new Error('Permission denied. This action is for admins only.');
     }
 
@@ -57,7 +61,7 @@ export async function handleTransactionUpdate(
         userId: userRef.id,
         title: notificationTitle,
         description: notificationDesc,
-        createdAt: new Date(),
+        createdAt: FieldValue.serverTimestamp(),
         read: false,
         actionUrl: '/transactions'
       });
@@ -66,10 +70,10 @@ export async function handleTransactionUpdate(
       if (newStatus === 'Completed') {
         if (txData.type === 'Deposit') {
           const balanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
-          t.update(userRef, { [balanceField]: firestore.FieldValue.increment(txData.amount) });
+          t.update(userRef, { [balanceField]: FieldValue.increment(txData.amount) });
         } else if (txData.type === 'Withdrawal') {
           // On withdrawal, the transaction amount is positive. We need to debit the account.
-          t.update(userRef, { solidaraBalance: firestore.FieldValue.increment(-txData.amount) });
+          t.update(userRef, { solidaraBalance: FieldValue.increment(-txData.amount) });
         }
       }
     });
