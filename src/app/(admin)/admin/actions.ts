@@ -14,23 +14,25 @@ export async function handleTransactionUpdate(
   newStatus: 'Completed' | 'Failed'
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const auth = getAuth(app);
     const sessionCookie = cookies().get('session')?.value;
-    
     if (!sessionCookie) {
       throw new Error('Authentication failed. You must be logged in to perform this action.');
     }
 
+    const auth = getAuth(app);
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
-    const adminUser = await auth.getUser(decodedClaims.uid);
-
-    if (!adminUser) {
-        throw new Error('Authentication failed. You must be logged in to perform this action.');
+    
+    if (!decodedClaims) {
+      throw new Error('Authentication failed. Could not verify session.');
     }
-    
+
+    const adminUser = await auth.getUser(decodedClaims.uid);
     const adminDoc = await firestore.collection('admins').doc(adminUser.uid).get();
-    
-    if (!adminDoc.exists && adminUser.email !== 'admin@xavef.com') {
+
+    const isDbAdmin = adminDoc.exists;
+    const isSuperAdmin = adminUser.email === 'admin@xavef.com';
+
+    if (!isDbAdmin && !isSuperAdmin) {
       throw new Error('Permission denied. You must be an authenticated admin to perform this action.');
     }
 
