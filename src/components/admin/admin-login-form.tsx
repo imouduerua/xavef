@@ -6,7 +6,6 @@ import {useForm} from 'react-hook-form';
 import * as z from 'zod';
 import React from 'react';
 import {signInWithEmailAndPassword, getIdToken, signOut} from 'firebase/auth';
-import {useRouter} from 'next/navigation';
 
 import {Button} from '@/components/ui/button';
 import {
@@ -35,7 +34,6 @@ const formSchema = z.object({
 export function AdminLoginForm() {
   const [isLoading, setIsLoading] = React.useState(false);
   const auth = useAuth();
-  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -69,7 +67,8 @@ export function AdminLoginForm() {
       // Step 2: If client-side login is successful, get the ID token.
       const idToken = await getIdToken(userCredential.user);
 
-      // Step 3: Call the API route to verify admin status and create the session cookie.
+      // Step 3: Call the API route to create the session cookie.
+      // This route will also verify that the user is an admin on the server.
       const response = await fetch('/api/auth/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -94,10 +93,10 @@ export function AdminLoginForm() {
     } catch (error: any) {
       let errorMessage = 'An unknown error occurred. Please try again.';
       
-      // This is the crucial part for providing clear feedback.
       if (error.code === 'auth/invalid-credential') {
           errorMessage = 'Invalid email or password. Please try again.';
       } else if (error.message) {
+          // This will catch the permission error from our API route.
           errorMessage = error.message;
       }
       

@@ -3,7 +3,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { LogOut, Moon, Sun, Users } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -22,7 +21,6 @@ import { toast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
 
 export function AdminHeader() {
-  const router = useRouter();
   const { user } = useUser();
   const auth = useAuth();
 
@@ -42,7 +40,11 @@ export function AdminHeader() {
       await signOut(auth);
       
       // Then, call our API endpoint to clear the server-side session cookie
-      await fetch('/api/auth/session', { method: 'DELETE' });
+      const response = await fetch('/api/auth/session', { method: 'DELETE' });
+
+      if (!response.ok) {
+        throw new Error('Failed to clear server session.');
+      }
 
       toast({
         title: 'Logged Out',
@@ -52,6 +54,7 @@ export function AdminHeader() {
       // Use window.location.href for a full page reload to ensure server state is cleared
       window.location.href = '/admin-login';
     } catch (error) {
+      console.error('Logout failed:', error);
       toast({
         variant: 'destructive',
         title: 'Logout Failed',
