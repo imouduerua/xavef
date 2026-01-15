@@ -25,7 +25,7 @@ export async function handleTransactionUpdate(
     const isSuperAdminEmail = adminUser.email === 'admin@xavef.com';
     
     if (!isAdminInDB && !isSuperAdminEmail) {
-      throw new Error('Permission denied. This action is for admins only.');
+      throw new Error('Permission denied. You must be an authenticated admin to perform this action.');
     }
 
     const txRef = firestore.doc(transactionPath);
