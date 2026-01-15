@@ -4,7 +4,7 @@
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {signInWithEmailAndPassword, getIdToken, signOut} from 'firebase/auth';
 
 import {Button} from '@/components/ui/button';
@@ -33,7 +33,13 @@ const formSchema = z.object({
 
 export function AdminLoginForm() {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isClient, setIsClient] = useState(false);
   const auth = useAuth();
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -144,7 +150,7 @@ export function AdminLoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isLoading || !auth}>
+        <Button type="submit" className="w-full" disabled={!isClient || isLoading || !auth}>
           {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing In...</> : 'Sign In'}
         </Button>
       </form>
