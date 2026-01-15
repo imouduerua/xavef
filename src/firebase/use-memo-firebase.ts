@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import * as React from 'react';
 import type { Query, DocumentReference } from 'firebase/firestore';
 
 // Helper function to compare arrays of dependencies
