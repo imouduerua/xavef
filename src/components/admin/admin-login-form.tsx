@@ -59,7 +59,7 @@ export function AdminLoginForm() {
     }
 
     try {
-      // 1. Sign in the user on the client-side first. This is where the invalid-credential error occurs.
+      // 1. Sign in the user on the client-side first.
       const userCredential = await signInWithEmailAndPassword(
         auth,
         values.email,
@@ -94,14 +94,17 @@ export function AdminLoginForm() {
           description: 'Redirecting to the admin dashboard...',
       });
       
+      // Use window.location.href for a full page reload to ensure server state is cleared
       window.location.href = '/admin';
 
     } catch (error: any) {
-      let errorMessage = 'An unknown error occurred.';
+      let errorMessage = 'An unknown error occurred. Please try again.';
+      
       // This is the crucial part: correctly identify the invalid credential error.
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+      if (error.code === 'auth/invalid-credential') {
           errorMessage = 'Invalid email or password. Please try again.';
       } else if (error.message) {
+          // This will catch our custom "does not have administrative privileges" error
           errorMessage = error.message;
       }
       
