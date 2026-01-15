@@ -13,16 +13,16 @@ export async function handleTransactionUpdate(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { getAuthenticatedUser } = await import('@/firebase/server-auth');
-    const user = await getAuthenticatedUser();
+    const adminUser = await getAuthenticatedUser();
     
-    if (!user) {
-        throw new Error('You must be an authenticated admin to perform this action.');
+    if (!adminUser) {
+        throw new Error('Authentication failed. You must be an authenticated admin to perform this action.');
     }
     
     // Correctly check for admin privileges
-    const adminDoc = await firestore.collection('admins').doc(user.uid).get();
+    const adminDoc = await firestore.collection('admins').doc(adminUser.uid).get();
     const isAdminInDB = adminDoc.exists;
-    const isSuperAdminEmail = user.email === 'admin@xavef.com';
+    const isSuperAdminEmail = adminUser.email === 'admin@xavef.com';
     
     if (!isAdminInDB && !isSuperAdminEmail) {
       throw new Error('Permission denied. This action is for admins only.');
