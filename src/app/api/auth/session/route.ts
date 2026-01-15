@@ -6,6 +6,7 @@ import { app, firestore } from '@/firebase/server-init';
 
 // This is the endpoint that creates the session cookie.
 export async function POST(request: NextRequest) {
+  // getAuth() must be called with the initialized 'app' instance
   const auth = getAuth(app);
   try {
     const { idToken } = await request.json();
