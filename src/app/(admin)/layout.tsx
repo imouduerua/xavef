@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
+import React, 'react';
 import { useUser } from '@/firebase';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
@@ -16,11 +16,10 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useUser();
   const { isAdmin, loading: adminLoading } = useAdminStatus();
   const router = useRouter();
-  const pathname = usePathname();
 
   const isLoading = authLoading || adminLoading;
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (isLoading) return;
 
     if (!user) {
@@ -32,7 +31,7 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
       router.replace('/dashboard');
     }
 
-  }, [user, isAdmin, isLoading, router, pathname]);
+  }, [user, isAdmin, isLoading, router]);
 
   if (isLoading || !user || !isAdmin) {
      return (

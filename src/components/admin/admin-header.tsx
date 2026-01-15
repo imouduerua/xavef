@@ -16,14 +16,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '../ui/sidebar';
-import { useAuth, useUser } from '@/firebase';
+import { useUser } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
-import { signOut } from 'firebase/auth';
 
 export function AdminHeader() {
   const { user } = useUser();
-  const auth = useAuth();
-
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('dark');
 
@@ -36,10 +33,6 @@ export function AdminHeader() {
 
   const handleLogout = useCallback(async () => {
     try {
-      // First, sign out from the client-side Firebase Auth
-      await signOut(auth);
-      
-      // Then, call our API endpoint to clear the server-side session cookie
       const response = await fetch('/api/auth/session', { method: 'DELETE' });
 
       if (!response.ok) {
@@ -51,7 +44,6 @@ export function AdminHeader() {
         description: 'You have been successfully logged out.',
       });
 
-      // Use window.location.href for a full page reload to ensure server state is cleared
       window.location.href = '/admin-login';
     } catch (error) {
       console.error('Logout failed:', error);
@@ -61,7 +53,7 @@ export function AdminHeader() {
         description: 'There was an error logging you out. Please try again.',
       });
     }
-  }, [auth]);
+  }, []);
   
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';

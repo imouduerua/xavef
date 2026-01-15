@@ -1,10 +1,8 @@
 
 'use server';
 
-import { firestore, app } from '@/firebase/server-init';
+import { firestore } from '@/firebase/server-init';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
-import { cookies } from 'next/headers';
 import { getAuthenticatedUser } from '@/firebase/server-auth';
 
 export async function handleTransactionUpdate(
@@ -14,7 +12,6 @@ export async function handleTransactionUpdate(
   try {
     const adminUserRecord = await getAuthenticatedUser();
     
-    // This is the crucial admin check.
     if (!adminUserRecord) {
       throw new Error('Authentication failed. You must be logged in to perform this action.');
     }
@@ -68,8 +65,6 @@ export async function handleTransactionUpdate(
           const balanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
           t.update(userRef, { [balanceField]: FieldValue.increment(txData.amount) });
         } else if (txData.type === 'Withdrawal') {
-          // On withdrawal, the transaction `amount` is the total requested by user.
-          // We debit this amount from their balance.
           t.update(userRef, { solidaraBalance: FieldValue.increment(-txData.amount) });
         }
       }

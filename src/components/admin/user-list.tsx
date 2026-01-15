@@ -80,5 +80,3 @@ export function UserList({ users, loading }: UserListProps) {
     </Table>
   );
 }
-
-    

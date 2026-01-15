@@ -5,7 +5,6 @@ import type { TransactionWithUserDetails, UserData } from '@/lib/types';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
 import {
-  collection,
   collectionGroup,
   doc,
   documentId,
