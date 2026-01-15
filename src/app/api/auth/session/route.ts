@@ -4,8 +4,9 @@ import { getAuth } from 'firebase-admin/auth';
 import { app, firestore } from '@/firebase/server-init';
 import { cookies } from 'next/headers';
 
-async function isAdmin(uid: string, superAdminUid: string): Promise<boolean> {
-  if (uid === superAdminUid) {
+async function isAdmin(uid: string): Promise<boolean> {
+  const superAdminUid = process.env.FIREBASE_SUPER_ADMIN_UID;
+  if (superAdminUid && uid === superAdminUid) {
     return true;
   }
   try {
@@ -19,16 +20,10 @@ async function isAdmin(uid: string, superAdminUid: string): Promise<boolean> {
 
 export async function POST(request: NextRequest) {
   const { idToken } = await request.json();
-  const superAdminUid = process.env.FIREBASE_SUPER_ADMIN_UID;
-
-  if (!superAdminUid) {
-    console.error('FIREBASE_SUPER_ADMIN_UID is not set.');
-    return NextResponse.json({ success: false, error: 'Server configuration error.' }, { status: 500 });
-  }
 
   try {
     const decodedToken = await getAuth(app).verifyIdToken(idToken);
-    const userIsAdmin = await isAdmin(decodedToken.uid, superAdminUid);
+    const userIsAdmin = await isAdmin(decodedToken.uid);
 
     if (!userIsAdmin) {
       return NextResponse.json({ success: false, error: 'Permission denied.' }, { status: 403 });
