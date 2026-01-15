@@ -59,6 +59,7 @@ export function AdminLoginForm() {
     }
 
     try {
+      // 1. Sign in the user on the client-side first.
       const userCredential = await signInWithEmailAndPassword(
         auth,
         values.email,
@@ -66,48 +67,49 @@ export function AdminLoginForm() {
       );
       const user = userCredential.user;
 
-      // Direct check for admin status
+      // 2. Now check if the user is an admin on the server.
+      // This is a client-side check just to provide a fast failure message.
+      // The authoritative check is on the server action / API route.
       const adminDocRef = doc(firestore, 'admins', user.uid);
       const adminDocSnap = await getDoc(adminDocRef);
 
-      if (adminDocSnap.exists() || user.email === 'admin@xavef.com') {
-         // Get the ID token from the user.
-        const idToken = await getIdToken(user);
+      if (!adminDocSnap.exists() && user.email !== 'admin@xavef.com') {
+          await auth.signOut(); // Important: Sign out the non-admin user.
+          throw new Error('This account does not have administrative privileges.');
+      }
+      
+      // 3. Get the ID token and create the server-side session.
+      const idToken = await getIdToken(user);
+      const response = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken }),
+      });
 
-        // Call the API route to create the session cookie.
-        const response = await fetch('/api/auth/session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to create session.");
-        }
-
-         toast({
-            title: 'Login Successful',
-            description: 'Redirecting to the admin dashboard...',
-        });
-        // We use window.location.href to ensure a full page reload, which is crucial
-        // for the server to recognize the newly set session cookie.
-        window.location.href = '/admin';
-      } else {
-        await auth.signOut(); // Sign out the non-admin user
-        toast({
-            variant: 'destructive',
-            title: 'Access Denied',
-            description: 'This account does not have administrative privileges.',
-        });
-        setIsLoading(false);
+      if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Session creation failed on the server.");
       }
 
+      toast({
+          title: 'Login Successful',
+          description: 'Redirecting to the admin dashboard...',
+      });
+      // Use window.location.href for a full page reload to ensure the server recognizes the session cookie.
+      window.location.href = '/admin';
+
     } catch (error: any) {
+      let errorMessage = 'An unknown error occurred.';
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+          errorMessage = 'Invalid email or password. Please try again.';
+      } else if (error.message) {
+          errorMessage = error.message;
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message || 'Invalid email or password. Please try again.',
+        description: errorMessage,
       });
       setIsLoading(false);
     }
