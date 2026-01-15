@@ -5,7 +5,7 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
 import React from 'react';
-import {signInWithEmailAndPassword, signOut} from 'firebase/auth';
+import {signInWithEmailAndPassword, getIdToken } from 'firebase/auth';
 import {useRouter} from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -71,13 +71,31 @@ export function AdminLoginForm() {
       const adminDocSnap = await getDoc(adminDocRef);
 
       if (adminDocSnap.exists() || user.email === 'admin@xavef.com') {
+         // Get the ID token from the user.
+        const idToken = await getIdToken(user);
+
+        // Call the API route to create the session cookie.
+        const response = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to create session.");
+        }
+
          toast({
             title: 'Login Successful',
             description: 'Redirecting to the admin dashboard...',
         });
-        router.replace('/admin');
+        // We use router.replace to avoid the login page being in the browser history.
+        // We now use window.location.href to ensure a full page reload, which is crucial
+        // for the server to recognize the newly set session cookie.
+        window.location.href = '/admin';
       } else {
-        await signOut(auth);
+        await auth.signOut(); // Sign out the non-admin user
         toast({
             variant: 'destructive',
             title: 'Access Denied',
@@ -90,7 +108,7 @@ export function AdminLoginForm() {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: 'Invalid email or password. Please try again.',
+        description: error.message || 'Invalid email or password. Please try again.',
       });
       setIsLoading(false);
     }

@@ -38,12 +38,19 @@ export function AdminHeader() {
 
   const handleLogout = useCallback(async () => {
     try {
+      // First, sign out from the client-side Firebase Auth
       await signOut(auth);
+      
+      // Then, call our API endpoint to clear the server-side session cookie
+      await fetch('/api/auth/session', { method: 'DELETE' });
+
       toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
       });
-      router.push('/admin-login');
+
+      // Use window.location.href for a full page reload to ensure server state is cleared
+      window.location.href = '/admin-login';
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -51,7 +58,7 @@ export function AdminHeader() {
         description: 'There was an error logging you out. Please try again.',
       });
     }
-  }, [router, auth]);
+  }, [auth]);
   
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';

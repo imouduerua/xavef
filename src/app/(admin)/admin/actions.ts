@@ -6,9 +6,6 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 
-// This server action uses the Admin SDK to securely update transactions.
-// It contains the full logic for approving/declining transactions and notifying users.
-
 export async function handleTransactionUpdate(
   transactionPath: string,
   newStatus: 'Completed' | 'Failed'
@@ -26,12 +23,13 @@ export async function handleTransactionUpdate(
       throw new Error('Authentication failed. Could not verify session.');
     }
 
-    const adminUser = await auth.getUser(decodedClaims.uid);
-    const adminDoc = await firestore.collection('admins').doc(adminUser.uid).get();
+    const adminUserRecord = await auth.getUser(decodedClaims.uid);
+    const adminDoc = await firestore.collection('admins').doc(adminUserRecord.uid).get();
 
     const isDbAdmin = adminDoc.exists;
-    const isSuperAdmin = adminUser.email === 'admin@xavef.com';
+    const isSuperAdmin = adminUserRecord.email === 'admin@xavef.com';
 
+    // This is the crucial admin check.
     if (!isDbAdmin && !isSuperAdmin) {
       throw new Error('Permission denied. You must be an authenticated admin to perform this action.');
     }
@@ -77,6 +75,8 @@ export async function handleTransactionUpdate(
           const balanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
           t.update(userRef, { [balanceField]: FieldValue.increment(txData.amount) });
         } else if (txData.type === 'Withdrawal') {
+          // On withdrawal, the transaction `amount` is the total requested by user.
+          // We debit this amount from their balance.
           t.update(userRef, { solidaraBalance: FieldValue.increment(-txData.amount) });
         }
       }
