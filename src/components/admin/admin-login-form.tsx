@@ -100,11 +100,9 @@ export function AdminLoginForm() {
     } catch (error: any) {
       let errorMessage = 'An unknown error occurred. Please try again.';
       
-      // This is the crucial part: correctly identify the invalid credential error.
       if (error.code === 'auth/invalid-credential') {
           errorMessage = 'Invalid email or password. Please try again.';
       } else if (error.message) {
-          // This will catch our custom "does not have administrative privileges" error
           errorMessage = error.message;
       }
       
