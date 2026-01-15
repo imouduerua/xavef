@@ -19,4 +19,3 @@ interface Transaction {
 export const updateTransactionStatus = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unimplemented', 'This function is deprecated. Please use the new server action.');
 });
-
