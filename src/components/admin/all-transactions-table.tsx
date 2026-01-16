@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { collectionGroup, query, orderBy, limit, startAfter, endBefore, limitToLast, DocumentData, Query, where } from 'firebase/firestore';
-import { useFirestore, useMemoFirebase } from '@/firebase';
+import React from 'react';
+import { collectionGroup, query, orderBy, limit, startAfter, endBefore, limitToLast, DocumentData, Query, where, Firestore } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { TransactionWithUserDetails } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -50,41 +50,33 @@ type AllTransactionsTableProps = {
     status?: 'Pending' | 'Completed' | 'Failed';
 }
 
+const buildQuery = (db: Firestore, status?: 'Pending' | 'Completed' | 'Failed', constraints: any[] = []) => {
+    let q = query(collectionGroup(db, 'transactions'), orderBy('date', 'desc'));
+    if (status) {
+        q = query(q, where('status', '==', status));
+    }
+    return query(q, ...constraints);
+}
+
+
 export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
   const firestore = useFirestore();
   const [lastVisible, setLastVisible] = React.useState<DocumentData | null>(null);
   const [firstVisible, setFirstVisible] = React.useState<DocumentData | null>(null);
   const [page, setPage] = React.useState(1);
+  
   const [currentQuery, setCurrentQuery] = React.useState<Query | null>(null);
-
-  const getQuery = (constraints: any[] = []) => {
-      let q = query(collectionGroup(firestore!, 'transactions'), orderBy('date', 'desc'));
-      if (status) {
-          q = query(q, where('status', '==', status));
+  
+  React.useEffect(() => {
+      if (firestore) {
+          const initialQuery = buildQuery(firestore, status, [limit(PAGE_SIZE)]);
+          setCurrentQuery(initialQuery);
+          setPage(1);
+          setFirstVisible(null);
+          setLastVisible(null);
       }
-      return query(q, ...constraints);
-  }
-
-  const transactionsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return getQuery([limit(PAGE_SIZE)])
   }, [firestore, status]);
 
-  const nextPageQuery = useMemoFirebase(() => {
-    if (!firestore || !lastVisible) return null;
-    return getQuery([startAfter(lastVisible), limit(PAGE_SIZE)])
-  }, [firestore, status, lastVisible]);
-  
-  const prevPageQuery = useMemoFirebase(() => {
-    if (!firestore || !firstVisible) return null;
-    return getQuery([endBefore(firstVisible), limitToLast(PAGE_SIZE)])
-  }, [firestore, status, firstVisible]);
-
-  React.useEffect(() => {
-      setCurrentQuery(transactionsQuery);
-      setPage(1);
-  }, [transactionsQuery]);
-  
   const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(currentQuery);
 
   React.useEffect(() => {
@@ -93,23 +85,22 @@ export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
           setFirstVisible(transactions[0].__snapshot);
           // @ts-ignore
           setLastVisible(transactions[transactions.length - 1].__snapshot);
-      } else {
-          setFirstVisible(null);
-          setLastVisible(null);
       }
   }, [transactions]);
 
 
   const handleNextPage = () => {
-    if (nextPageQuery) {
-        setCurrentQuery(nextPageQuery);
+    if (firestore && lastVisible) {
+        const nextQuery = buildQuery(firestore, status, [startAfter(lastVisible), limit(PAGE_SIZE)]);
+        setCurrentQuery(nextQuery);
         setPage(page + 1);
     }
   };
   
   const handlePrevPage = () => {
-    if (prevPageQuery) {
-        setCurrentQuery(prevPageQuery);
+    if (firestore && firstVisible) {
+        const prevQuery = buildQuery(firestore, status, [endBefore(firstVisible), limitToLast(PAGE_SIZE)]);
+        setCurrentQuery(prevQuery);
         setPage(page - 1);
     }
   };
@@ -118,7 +109,7 @@ export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
     return <MissingIndexAlert url={indexCreationUrl} />;
   }
 
-  if (loading) {
+  if (loading && page === 1) { // Only show skeleton on initial load
     return <TableSkeleton />;
   }
 
