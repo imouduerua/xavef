@@ -1,9 +1,8 @@
-
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { collectionGroup, query, orderBy, limit, where, FirestoreError, onSnapshot } from 'firebase/firestore';
-import { useFirestore, useUser } from '@/firebase';
+import React from 'react';
+import { collectionGroup, query, orderBy, limit, where } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { TransactionWithUserDetails } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,61 +49,18 @@ type AllTransactionsTableProps = {
 
 export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
   const firestore = useFirestore();
-  const { user, loading: authLoading } = useUser();
-  const [transactions, setTransactions] = useState<TransactionWithUserDetails[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (authLoading || !firestore || !user) {
-        if (!authLoading) {
-            setLoading(false);
-        }
-        return;
-    }
-
-    setLoading(true);
-    setIndexCreationUrl(null);
+  const transactionsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
 
     const baseQuery = collectionGroup(firestore, 'transactions');
-    let q;
-
     if (status) {
-        q = query(baseQuery, where('status', '==', status), orderBy('date', 'desc'), limit(PAGE_SIZE));
-    } else {
-        q = query(baseQuery, orderBy('date', 'desc'), limit(PAGE_SIZE));
+        return query(baseQuery, where('status', '==', status), orderBy('date', 'desc'), limit(PAGE_SIZE));
     }
+    return query(baseQuery, orderBy('date', 'desc'), limit(PAGE_SIZE));
+  }, [firestore, status]);
 
-    const unsubscribe = onSnapshot(q, 
-        (snapshot) => {
-            const results = snapshot.docs.map(doc => ({
-                ...doc.data(),
-                id: doc.id,
-                path: doc.ref.path,
-            } as TransactionWithUserDetails));
-            setTransactions(results);
-            setIndexCreationUrl(null);
-            setLoading(false);
-        }, 
-        (error: FirestoreError) => {
-            let handled = false;
-            if (error.code === 'failed-precondition') {
-                const urlMatch = error.message.match(/https?:\/\/console\.firebase\.google\.com\S+/);
-                if (urlMatch) {
-                    setIndexCreationUrl(urlMatch[0]);
-                    handled = true;
-                }
-            }
-            if (!handled) {
-                console.error("Error fetching transactions:", error);
-            }
-            setLoading(false);
-            setTransactions(null);
-        }
-    );
-
-    return () => unsubscribe();
-  }, [firestore, status, user, authLoading]);
+  const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(transactionsQuery);
 
 
   if (loading) {
