@@ -5,31 +5,16 @@ import { revalidatePath } from 'next/cache';
 import { firestore } from '@/firebase/server-init';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Transaction } from '@/lib/types';
-import { getAuthenticatedUser } from '@/firebase/server-auth';
-
-
-async function isAdmin(uid: string): Promise<boolean> {
-  // This is a temporary and insecure check.
-  // In a real application, you would have a more robust way of verifying admins,
-  // likely checking a custom claim or a secure database collection.
-  const { getAuth } = await import('firebase-admin/auth');
-  try {
-    const userRecord = await getAuth().getUser(uid);
-    return userRecord.email === 'admin@xavef.com';
-  } catch (e) {
-    return false;
-  }
-}
 
 export async function handleTransactionUpdate(
   userId: string,
   transactionId: string,
   decision: 'approved' | 'declined'
 ): Promise<{ success: boolean; error?: string }> {
-  // IMPORTANT: The admin check has been removed temporarily to unblock UI development.
-  // This is a security risk and MUST be reinstated with a proper
-  // authentication and authorization mechanism before any production use.
+  // IMPORTANT: A proper admin check is required for production environments.
+  // This temporary implementation is for UI development and is not secure.
   /*
+  const { getAuthenticatedUser } = await import('@/firebase/server-auth');
   const user = await getAuthenticatedUser();
   if (!user || user.email !== 'admin@xavef.com') {
     return { success: false, error: 'Permission denied. You must be an admin to perform this action.' };
