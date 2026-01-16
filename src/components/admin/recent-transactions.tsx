@@ -64,15 +64,15 @@ export function RecentTransactions() {
             setLoading(false);
             setIndexCreationUrl(null);
         }, (error: FirestoreError) => {
-             if (
-                error.code === 'failed-precondition' &&
-                error.message.includes('requires an index')
-            ) {
+             let handled = false;
+             if (error.code === 'failed-precondition') {
                 const urlMatch = error.message.match(/https?:\/\/console\.firebase\.google\.com\S+/);
                 if (urlMatch) {
                     setIndexCreationUrl(urlMatch[0]);
+                    handled = true;
                 }
-            } else {
+            }
+            if (!handled) {
                 console.error("Error fetching recent transactions:", error);
             }
             setLoading(false);
