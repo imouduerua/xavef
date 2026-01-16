@@ -1,9 +1,8 @@
 'use client';
 
-import React from 'react';
-import { collectionGroup, query, orderBy, limit, where, Firestore } from 'firebase/firestore';
-import { useFirestore, useMemoFirebase } from '@/firebase';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import React, { useEffect, useState } from 'react';
+import { collectionGroup, query, orderBy, limit, where, FirestoreError, onSnapshot } from 'firebase/firestore';
+import { useFirestore, useUser } from '@/firebase';
 import { TransactionWithUserDetails } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,32 +49,70 @@ type AllTransactionsTableProps = {
 
 export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
   const firestore = useFirestore();
-  
-  const transactionsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+  const { user, loading: authLoading } = useUser();
+  const [transactions, setTransactions] = useState<TransactionWithUserDetails[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authLoading || !firestore || !user) {
+        if (!authLoading) {
+            setLoading(false);
+        }
+        return;
+    }
+
+    setLoading(true);
+    setIndexCreationUrl(null);
 
     const baseQuery = collectionGroup(firestore, 'transactions');
-    const constraints = [orderBy('date', 'desc'), limit(PAGE_SIZE)];
+    let q;
 
     if (status) {
-        return query(baseQuery, where('status', '==', status), ...constraints);
+        q = query(baseQuery, where('status', '==', status), orderBy('date', 'desc'), limit(PAGE_SIZE));
+    } else {
+        q = query(baseQuery, orderBy('date', 'desc'), limit(PAGE_SIZE));
     }
-    
-    return query(baseQuery, ...constraints);
-  }, [firestore, status]);
 
+    const unsubscribe = onSnapshot(q, 
+        (snapshot) => {
+            const results = snapshot.docs.map(doc => ({
+                ...doc.data(),
+                id: doc.id,
+                path: doc.ref.path,
+            } as TransactionWithUserDetails));
+            setTransactions(results);
+            setLoading(false);
+        }, 
+        (error: FirestoreError) => {
+            if (
+                error.code === 'failed-precondition' &&
+                error.message.includes('requires an index')
+            ) {
+                const urlMatch = error.message.match(/https?:\/\/console\.firebase\.google\.com\S+/);
+                if (urlMatch) {
+                    setIndexCreationUrl(urlMatch[0]);
+                }
+            } else {
+                console.error("Error fetching transactions:", error);
+            }
+            setLoading(false);
+            setTransactions(null);
+        }
+    );
 
-  const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(transactionsQuery);
+    return () => unsubscribe();
+  }, [firestore, status, user, authLoading]);
 
-
-  if (indexCreationUrl) {
-    return <MissingIndexAlert url={indexCreationUrl} />;
-  }
 
   if (loading) {
     return <TableSkeleton />;
   }
 
+  if (indexCreationUrl) {
+    return <MissingIndexAlert url={indexCreationUrl} />;
+  }
+  
   if (!transactions || transactions.length === 0) {
     return (
         <Card>
@@ -114,7 +151,7 @@ export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
                             <Badge variant={statusVariant[tx.status]}>{tx.status}</Badge>
                         </TableCell>
                         <TableCell>{formatDate(tx.date)}</TableCell>
-                        <TableCell className={`text-right font-semibold ${tx.type === 'Deposit' || tx.type === 'Group Payout' ? 'text-green-600' : 'text-red-600'}`}>
+                        <TableCell className={`text-right font-semibold ${tx.type === 'Deposit' || tx.type === 'Group Payout' ? 'text-green-600' : 'text-destructive'}`}>
                             {tx.type === 'Deposit' || tx.type === 'Group Payout' ? `+₦${amount.toFixed(2)}` : `-₦${Math.abs(amount).toFixed(2)}`}
                         </TableCell>
                         <TableCell className="text-center">
