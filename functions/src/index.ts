@@ -4,6 +4,7 @@ import * as admin from "firebase-admin";
 
 admin.initializeApp();
 const firestore = admin.firestore();
+const messaging = admin.messaging();
 
 interface Transaction {
   status: 'Pending' | 'Completed' | 'Failed';
@@ -39,6 +40,18 @@ export const notifyAdminOnPendingTransaction = functions.firestore
 
       const adminUids = adminsSnapshot.docs.map(doc => doc.id);
       const notificationPromises: Promise<any>[] = [];
+      const fcmTokens: string[] = [];
+
+       // Fetch FCM tokens for all admins
+      for (const adminUid of adminUids) {
+          const tokenDoc = await firestore.collection('fcmTokens').doc(adminUid).get();
+          if (tokenDoc.exists) {
+              const tokenData = tokenDoc.data();
+              if (tokenData?.token) {
+                fcmTokens.push(tokenData.token);
+              }
+          }
+      }
 
       const amountFormatted = (transaction.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -58,6 +71,33 @@ export const notifyAdminOnPendingTransaction = functions.firestore
 
       await Promise.all(notificationPromises);
       console.log(`Notified ${adminUids.length} admin(s) of new pending transaction.`);
+      
+      // Send push notifications
+      if (fcmTokens.length > 0) {
+          const message: admin.messaging.MulticastMessage = {
+              notification: {
+                  title: `New Pending ${transaction.type}`,
+                  body: `A ${transaction.type.toLowerCase()} of ₦${amountFormatted} from ${transaction.userEmail} requires approval.`,
+              },
+              webpush: {
+                  fcmOptions: {
+                      link: '/admin/transactions?tab=pending'
+                  }
+              },
+              tokens: fcmTokens,
+          };
+
+          const response = await messaging.sendEachForMulticast(message);
+          console.log(`Sent ${response.successCount} push notifications successfully.`);
+          if (response.failureCount > 0) {
+             response.responses.forEach((resp, idx) => {
+                if (!resp.success) {
+                    console.error('Failure sending notification to token:', fcmTokens[idx], resp.error);
+                }
+             });
+          }
+      }
+      
       return null;
     } catch (error) {
       console.error('Error sending notification to admins:', error);

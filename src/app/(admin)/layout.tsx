@@ -10,6 +10,7 @@ import { useAdmin } from '@/hooks/use-admin';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { SidebarInset } from '@/components/ui/sidebar';
 import { AdminHeader } from '@/components/layout/admin-header';
+import { FCMInitializer } from '@/components/admin/fcm-initializer';
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useUser();
@@ -73,6 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <AdminAuthGuard>
+      <FCMInitializer />
       <AdminSidebar />
       <SidebarInset>
         <AdminHeader />
