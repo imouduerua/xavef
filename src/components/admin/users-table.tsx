@@ -1,10 +1,8 @@
-
-
 'use client';
 
-import React, { useMemo } from 'react';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
-import { useFirestore, useMemoFirebase } from '@/firebase';
+import React, { useEffect, useState } from 'react';
+import { collection, query, orderBy, limit, Query } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { UserData } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -55,10 +53,16 @@ function TableSkeleton() {
 
 export function UsersTable() {
   const firestore = useFirestore();
-  const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'), limit(50));
+  const [usersQuery, setUsersQuery] = useState<Query<UserData> | null>(null);
+
+  useEffect(() => {
+    if (firestore) {
+      setUsersQuery(
+        query(collection(firestore, 'users'), orderBy('createdAt', 'desc'), limit(50)) as Query<UserData>
+      );
+    }
   }, [firestore]);
+
 
   const { data: users, loading, indexCreationUrl } = useCollection<UserData>(usersQuery);
 
