@@ -129,10 +129,10 @@ export function RegisterForm() {
 
         toast({
             title: "Account Created!",
-            description: "You can now log in.",
+            description: "Redirecting to your dashboard...",
         });
         
-        router.push('/login');
+        router.replace('/dashboard');
 
     } catch (error: any) {
         console.error("Registration Error:", error);
