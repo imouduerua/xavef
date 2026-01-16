@@ -45,24 +45,27 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setLoading(false);
       },
       (err: FirestoreError) => {
-        // Only log errors if the user is still logged in.
+        // Only process errors if the user is still logged in.
         // This prevents permission errors on logout.
         if (user) {
-            console.error(`[useCollection] Error fetching collection:`, err.message);
-
-            if (
-              err.code === 'failed-precondition' &&
-              err.message.includes('requires an index')
-            ) {
-              const urlMatch = err.message.match(
-                /https?:\/\/console\.firebase\.google\.com\S+/
-              );
-              if (urlMatch) {
-                setIndexCreationUrl(urlMatch[0]);
-              }
+          if (
+            err.code === 'failed-precondition' &&
+            err.message.includes('requires an index')
+          ) {
+            // This is a special case that we handle gracefully in the UI
+            // by providing a link to create the index. We don't need to
+            // log it as a console error, which would trigger the Next.js overlay.
+            const urlMatch = err.message.match(
+              /https?:\/\/console\.firebase\.google\.com\S+/
+            );
+            if (urlMatch) {
+              setIndexCreationUrl(urlMatch[0]);
             }
-            
-            setError(err);
+          } else {
+            // For all other errors, we log them.
+            console.error(`[useCollection] Error fetching collection:`, err);
+          }
+          setError(err);
         }
         
         setData(null);
