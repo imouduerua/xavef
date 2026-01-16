@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { collectionGroup, query, orderBy, limit, startAfter, endBefore, limitToLast, DocumentData, Query, where, Firestore } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { collectionGroup, query, orderBy, limit, where, Firestore } from 'firebase/firestore';
+import { useFirestore, useMemoFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { TransactionWithUserDetails } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,8 +10,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
 import { TransactionActions } from './transaction-actions';
-import { Button } from '../ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MissingIndexAlert } from './missing-index-alert';
 
 const statusVariant: Record<TransactionWithUserDetails['status'], 'default' | 'secondary' | 'destructive'> = {
@@ -30,14 +28,14 @@ const formatDate = (date: any) => {
   return d.toLocaleString();
 };
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 50;
 
 function TableSkeleton() {
     return (
         <Card>
             <CardContent className="pt-6">
                  <div className="space-y-2">
-                    {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                    {Array.from({ length: 10 }).map((_, i) => (
                         <Skeleton key={i} className="h-12 w-full" />
                     ))}
                  </div>
@@ -50,66 +48,31 @@ type AllTransactionsTableProps = {
     status?: 'Pending' | 'Completed' | 'Failed';
 }
 
-const buildQuery = (db: Firestore, status?: 'Pending' | 'Completed' | 'Failed', constraints: any[] = []) => {
-    let q = query(collectionGroup(db, 'transactions'), orderBy('date', 'desc'));
-    if (status) {
-        q = query(q, where('status', '==', status));
-    }
-    return query(q, ...constraints);
-}
-
-
 export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
   const firestore = useFirestore();
-  const [lastVisible, setLastVisible] = React.useState<DocumentData | null>(null);
-  const [firstVisible, setFirstVisible] = React.useState<DocumentData | null>(null);
-  const [page, setPage] = React.useState(1);
   
-  const [currentQuery, setCurrentQuery] = React.useState<Query | null>(null);
-  
-  React.useEffect(() => {
-      if (firestore) {
-          const initialQuery = buildQuery(firestore, status, [limit(PAGE_SIZE)]);
-          setCurrentQuery(initialQuery);
-          setPage(1);
-          setFirstVisible(null);
-          setLastVisible(null);
-      }
+  const transactionsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+
+    const baseQuery = collectionGroup(firestore, 'transactions');
+    const constraints = [orderBy('date', 'desc'), limit(PAGE_SIZE)];
+
+    if (status) {
+        return query(baseQuery, where('status', '==', status), ...constraints);
+    }
+    
+    return query(baseQuery, ...constraints);
   }, [firestore, status]);
 
-  const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(currentQuery);
 
-  React.useEffect(() => {
-      if (transactions && transactions.length > 0) {
-        // @ts-ignore
-          setFirstVisible(transactions[0].__snapshot);
-          // @ts-ignore
-          setLastVisible(transactions[transactions.length - 1].__snapshot);
-      }
-  }, [transactions]);
+  const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(transactionsQuery);
 
-
-  const handleNextPage = () => {
-    if (firestore && lastVisible) {
-        const nextQuery = buildQuery(firestore, status, [startAfter(lastVisible), limit(PAGE_SIZE)]);
-        setCurrentQuery(nextQuery);
-        setPage(page + 1);
-    }
-  };
-  
-  const handlePrevPage = () => {
-    if (firestore && firstVisible) {
-        const prevQuery = buildQuery(firestore, status, [endBefore(firstVisible), limitToLast(PAGE_SIZE)]);
-        setCurrentQuery(prevQuery);
-        setPage(page - 1);
-    }
-  };
 
   if (indexCreationUrl) {
     return <MissingIndexAlert url={indexCreationUrl} />;
   }
 
-  if (loading && page === 1) { // Only show skeleton on initial load
+  if (loading) {
     return <TableSkeleton />;
   }
 
@@ -162,29 +125,6 @@ export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
             })}
           </TableBody>
         </Table>
-         <div className="flex items-center justify-between space-x-2 py-4">
-            <div className="text-sm text-muted-foreground">Page {page}</div>
-            <div className="flex items-center space-x-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrevPage}
-                    disabled={page === 1}
-                >
-                    <ChevronLeft className="mr-2 h-4 w-4" />
-                    Previous
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNextPage}
-                    disabled={transactions.length < PAGE_SIZE}
-                >
-                    Next
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-            </div>
-        </div>
       </CardContent>
     </Card>
   );
