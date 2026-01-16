@@ -18,8 +18,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from '../ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Eye } from 'lucide-react';
 import { MissingIndexAlert } from './missing-index-alert';
+import Link from 'next/link';
 
 const formatDate = (date: any) => {
   if (!date) return 'N/A';
@@ -119,13 +120,18 @@ export function UsersTable() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                           <Link href={`/admin/users/${user.id}`}>
+                               <Eye className="mr-2 h-4 w-4" />
+                               View Details
+                           </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem
                             onClick={() => navigator.clipboard.writeText(user.email)}
                         >
                             Copy user email
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>View transactions</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </TableCell>
