@@ -1,23 +1,15 @@
 
 'use client';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 
 export function useAdmin() {
   const { user, loading: authLoading } = useUser();
-  const firestore = useFirestore();
-
-  const adminDocRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return doc(firestore, 'admins', user.uid);
-  }, [user, firestore]);
-
-  const { data: adminData, loading: adminDocLoading } = useDoc(adminDocRef);
-
-  const loading = authLoading || adminDocLoading;
   
-  // We consider the user an admin if the document exists and has isAdmin: true
-  const isAdmin = adminData ? adminData.isAdmin === true : false;
+  // Hardcode the admin check to a specific email address
+  const isAdmin = user?.email === 'admin@xavef.com';
+  
+  // The loading state is now only dependent on the authentication status
+  const loading = authLoading;
 
   return { isAdmin, loading };
 }

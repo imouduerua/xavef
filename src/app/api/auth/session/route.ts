@@ -1,56 +1,17 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
-import { app, firestore } from '@/firebase/server-init';
+import { app } from '@/firebase/server-init';
 import { cookies } from 'next/headers';
-import { collection, query, orderBy, limit, getDocs, serverTimestamp, doc } from 'firebase-admin/firestore';
-
-/**
- * Checks if a user is an admin. If they are the first user and no other admins exist,
- * it promotes them to admin by creating a document in the 'admins' collection.
- * @param uid The user's ID to check.
- * @returns A promise that resolves to true if the user is an admin, false otherwise.
- */
-async function ensureAdminUser(uid: string): Promise<boolean> {
-  try {
-    // Standard check: Is the user in the 'admins' collection?
-    const adminDocRef = firestore.collection('admins').doc(uid);
-    const adminDoc = await adminDocRef.get();
-    if (adminDoc.exists && adminDoc.data()?.isAdmin === true) {
-      return true;
-    }
-
-    // BOOTSTRAP LOGIC: If no admins exist, treat the first user ever created as the admin.
-    const adminsSnapshot = await firestore.collection('admins').limit(1).get();
-    if (adminsSnapshot.empty) {
-      const usersQuery = query(firestore.collection('users'), orderBy('createdAt', 'asc'), limit(1));
-      const usersSnapshot = await usersQuery.get();
-
-      if (!usersSnapshot.empty && usersSnapshot.docs[0].id === uid) {
-        console.warn(`BOOTSTRAPPING ADMIN: Granting admin access to first registered user: ${uid}`);
-        // Atomically create the admin document to promote the user.
-        await adminDocRef.set({
-          isAdmin: true,
-          promotedBy: 'system-bootstrap',
-          promotedAt: serverTimestamp(),
-        });
-        return true;
-      }
-    }
-
-    return false;
-  } catch (error) {
-    console.error('Error in ensureAdminUser:', error);
-    return false;
-  }
-}
 
 export async function POST(request: NextRequest) {
   const { idToken } = await request.json();
 
   try {
     const decodedToken = await getAuth(app).verifyIdToken(idToken);
-    const userIsAdmin = await ensureAdminUser(decodedToken.uid);
+    
+    // Hardcode admin check to a specific email
+    const userIsAdmin = decodedToken.email === 'admin@xavef.com';
 
     if (!userIsAdmin) {
       return NextResponse.json({ success: false, error: 'Permission denied. You are not an administrator.' }, { status: 403 });
