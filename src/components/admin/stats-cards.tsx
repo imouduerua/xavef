@@ -1,11 +1,10 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Users, Clock, Banknote, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { collection, collectionGroup, getCountFromServer, query, where } from 'firebase/firestore';
 
 interface Stat {
@@ -16,6 +15,7 @@ interface Stat {
 }
 
 export function StatsCards() {
+    const { user, loading: authLoading } = useUser();
     const firestore = useFirestore();
     const [stats, setStats] = useState({
         users: null as number | null,
@@ -25,45 +25,39 @@ export function StatsCards() {
     });
 
     useEffect(() => {
-        if (!firestore) return;
+        if (authLoading || !user || !firestore) return;
 
-        // Fetch users count
-        const usersCol = collection(firestore, 'users');
-        getCountFromServer(usersCol).then(snap => {
-            setStats(s => ({ ...s, users: snap.data().count }));
-        }).catch(err => {
-            console.error("Error fetching user count:", err);
-            setStats(s => ({ ...s, users: 0 }));
-        });
+        const fetchStats = async () => {
+            try {
+                // Fetch users count
+                const usersCol = collection(firestore, 'users');
+                const usersSnap = await getCountFromServer(usersCol);
+                setStats(s => ({ ...s, users: usersSnap.data().count }));
 
-        // Fetch transaction counts
-        const transactionsColGroup = collectionGroup(firestore, 'transactions');
+                // Fetch transaction counts
+                const transactionsColGroup = collectionGroup(firestore, 'transactions');
+                
+                const pendingQuery = query(transactionsColGroup, where('status', '==', 'Pending'));
+                const pendingSnap = await getCountFromServer(pendingQuery);
+                setStats(s => ({ ...s, pending: pendingSnap.data().count }));
+                
+                const completedQuery = query(transactionsColGroup, where('status', '==', 'Completed'));
+                const completedSnap = await getCountFromServer(completedQuery);
+                setStats(s => ({ ...s, completed: completedSnap.data().count }));
+
+                const failedQuery = query(transactionsColGroup, where('status', '==', 'Failed'));
+                const failedSnap = await getCountFromServer(failedQuery);
+                setStats(s => ({ ...s, failed: failedSnap.data().count }));
+            } catch (error) {
+                console.error("Error fetching stats:", error);
+                // Set to 0 on error to avoid infinite loading
+                setStats({ users: 0, pending: 0, completed: 0, failed: 0 });
+            }
+        };
         
-        const pendingQuery = query(transactionsColGroup, where('status', '==', 'Pending'));
-        getCountFromServer(pendingQuery).then(snap => {
-            setStats(s => ({ ...s, pending: snap.data().count }));
-        }).catch(err => {
-            console.error("Error fetching pending count:", err);
-            setStats(s => ({ ...s, pending: 0 }));
-        });
-        
-        const completedQuery = query(transactionsColGroup, where('status', '==', 'Completed'));
-        getCountFromServer(completedQuery).then(snap => {
-            setStats(s => ({ ...s, completed: snap.data().count }));
-        }).catch(err => {
-            console.error("Error fetching completed count:", err);
-            setStats(s => ({ ...s, completed: 0 }));
-        });
+        fetchStats();
 
-        const failedQuery = query(transactionsColGroup, where('status', '==', 'Failed'));
-        getCountFromServer(failedQuery).then(snap => {
-            setStats(s => ({ ...s, failed: snap.data().count }));
-        }).catch(err => {
-            console.error("Error fetching failed count:", err);
-            setStats(s => ({ ...s, failed: 0 }));
-        });
-
-    }, [firestore]);
+    }, [firestore, user, authLoading]);
 
 
     const statCards: Stat[] = [

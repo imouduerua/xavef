@@ -1,13 +1,12 @@
-
 'use client';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
 import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
-import { useFirestore } from '@/firebase';
-import { collectionGroup, query, where, onSnapshot, orderBy, FirestoreError, limit } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collectionGroup, query, where, orderBy, limit } from 'firebase/firestore';
 import { TransactionWithUserDetails } from '@/lib/types';
 import { MissingIndexAlert } from './missing-index-alert';
 import { Avatar, AvatarFallback } from '../ui/avatar';
@@ -35,48 +34,19 @@ function PendingWithdrawalsSkeleton() {
 
 export function PendingWithdrawals() {
     const firestore = useFirestore();
-    const [withdrawals, setWithdrawals] = useState<TransactionWithUserDetails[] | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!firestore) return;
-
-        setLoading(true);
-        const withdrawalsQuery = query(
+    const withdrawalsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(
             collectionGroup(firestore, 'transactions'),
             where('type', '==', 'Withdrawal'),
             where('status', '==', 'Pending'),
             orderBy('date', 'desc'),
             limit(5)
         );
-
-        const unsubscribe = onSnapshot(withdrawalsQuery, (snapshot) => {
-            const results = snapshot.docs.map(doc => ({
-                ...doc.data(),
-                id: doc.id,
-                path: doc.ref.path
-            } as TransactionWithUserDetails));
-            setWithdrawals(results);
-            setLoading(false);
-            setIndexCreationUrl(null);
-        }, (error: FirestoreError) => {
-            let handled = false;
-            if (error.code === 'failed-precondition') {
-                const urlMatch = error.message.match(/https?:\/\/console\.firebase\.google\.com\S+/);
-                if (urlMatch) {
-                    setIndexCreationUrl(urlMatch[0]);
-                    handled = true;
-                }
-            }
-            if (!handled) {
-                console.error("Error fetching pending withdrawals:", error);
-            }
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
     }, [firestore]);
+    
+    const { data: withdrawals, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(withdrawalsQuery);
 
 
     if (loading) {

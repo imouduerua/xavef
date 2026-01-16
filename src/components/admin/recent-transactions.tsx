@@ -1,14 +1,13 @@
-
 'use client';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { ArrowUpRight } from 'lucide-react';
 import { Button } from '../ui/button';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { collectionGroup, query, orderBy, limit, onSnapshot, FirestoreError } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { collectionGroup, query, orderBy, limit } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { TransactionWithUserDetails } from '@/lib/types';
 import { MissingIndexAlert } from './missing-index-alert';
 
@@ -40,46 +39,17 @@ function RecentTransactionsSkeleton() {
 
 export function RecentTransactions() {
     const firestore = useFirestore();
-    const [transactions, setTransactions] = useState<TransactionWithUserDetails[] | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [indexCreationUrl, setIndexCreationUrl] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!firestore) return;
-
-        setLoading(true);
-        const transQuery = query(
+    const transQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(
             collectionGroup(firestore, 'transactions'),
             orderBy('date', 'desc'),
             limit(5)
         );
-
-        const unsubscribe = onSnapshot(transQuery, (snapshot) => {
-            const recentTxs = snapshot.docs.map(doc => ({
-                ...doc.data(),
-                id: doc.id,
-                path: doc.ref.path
-            } as TransactionWithUserDetails));
-            setTransactions(recentTxs);
-            setLoading(false);
-            setIndexCreationUrl(null);
-        }, (error: FirestoreError) => {
-             let handled = false;
-             if (error.code === 'failed-precondition') {
-                const urlMatch = error.message.match(/https?:\/\/console\.firebase\.google\.com\S+/);
-                if (urlMatch) {
-                    setIndexCreationUrl(urlMatch[0]);
-                    handled = true;
-                }
-            }
-            if (!handled) {
-                console.error("Error fetching recent transactions:", error);
-            }
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
     }, [firestore]);
+
+    const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(transQuery);
 
 
   if (loading) {
