@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useDoc } from "@/firebase/firestore/use-collection";
-import { useFirestore, useUser } from "@/firebase/provider";
+import { useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,7 +58,7 @@ export default function SettingsPage() {
   const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const userDocRef = React.useMemo(() => {
+  const userDocRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return doc(firestore, "users", user.uid);
   }, [user, firestore]);
@@ -279,5 +279,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    

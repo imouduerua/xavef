@@ -11,7 +11,7 @@ import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
 import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { useCollection, useDoc, useUser, useFirestore } from '@/firebase';
+import { useCollection, useDoc, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AccountType, SavingGoal, Transaction, GroupJoinRequest, UserData } from '@/lib/types';
@@ -25,17 +25,17 @@ function DashboardApp() {
   const { user, loading: authLoading } = useUser();
   const firestore = useFirestore();
 
-  const userDocRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'users', user.uid) : null, [firestore, user?.uid]);
+  const userDocRef = useMemoFirebase(() => firestore && user?.uid ? doc(firestore, 'users', user.uid) : null, [firestore, user?.uid]);
   const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
-  const pendingTransactionsQuery = useMemo(() => firestore && user?.uid ? query(
+  const pendingTransactionsQuery = useMemoFirebase(() => firestore && user?.uid ? query(
       collection(firestore, "users", user.uid, "transactions"),
       where("status", "==", "Pending"),
     ) : null, [firestore, user?.uid]);
   
-  const goalsQuery = useMemo(() => firestore && user?.uid ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [firestore, user?.uid]);
+  const goalsQuery = useMemoFirebase(() => firestore && user?.uid ? query(collection(firestore, `users/${user.uid}/goals`), orderBy('createdAt', 'desc')) : null, [firestore, user?.uid]);
 
-  const joinRequestsQuery = useMemo(() => firestore && user?.uid ? query(
+  const joinRequestsQuery = useMemoFirebase(() => firestore && user?.uid ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')

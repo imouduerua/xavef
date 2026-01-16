@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,7 +72,7 @@ export default function WithdrawalPage() {
     const { user, loading: authLoading } = useUser();
     const firestore = useFirestore();
 
-    const userDocRef = useMemo(() => firestore && user?.uid ? doc(firestore, 'users', user.uid) : null, [firestore, user?.uid]);
+    const userDocRef = useMemoFirebase(() => firestore && user?.uid ? doc(firestore, 'users', user.uid) : null, [firestore, user?.uid]);
     const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
 
     const pendingWithdrawalQuery = useMemoFirebase(() => firestore && user?.uid ? query(
