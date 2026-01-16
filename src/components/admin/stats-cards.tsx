@@ -1,10 +1,10 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Users, Clock, Banknote, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
-import { Skeleton } from '../ui/skeleton';
 import { useFirestore } from '@/firebase';
 import { collection, collectionGroup, getCountFromServer, query, where } from 'firebase/firestore';
 
@@ -15,101 +15,56 @@ interface Stat {
     href: string;
 }
 
-function StatsCardsSkeleton() {
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-8 w-16" />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Pending Transactions</CardTitle>
-          <Clock className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-8 w-16" />
-        </CardContent>
-      </Card>
-       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Completed Transactions</CardTitle>
-          <Banknote className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-           <Skeleton className="h-8 w-16" />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Failed Transactions</CardTitle>
-          <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-            <Skeleton className="h-8 w-16" />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 export function StatsCards() {
     const firestore = useFirestore();
-    const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
-        users: null,
-        pending: null,
-        completed: null,
-        failed: null,
+        users: null as number | null,
+        pending: null as number | null,
+        completed: null as number | null,
+        failed: null as number | null,
     });
 
     useEffect(() => {
         if (!firestore) return;
 
-        const fetchCounts = async () => {
-            try {
-                setLoading(true);
-                const usersCol = collection(firestore, 'users');
-                const transactionsColGroup = collectionGroup(firestore, 'transactions');
+        // Fetch users count
+        const usersCol = collection(firestore, 'users');
+        getCountFromServer(usersCol).then(snap => {
+            setStats(s => ({ ...s, users: snap.data().count }));
+        }).catch(err => {
+            console.error("Error fetching user count:", err);
+            setStats(s => ({ ...s, users: 0 }));
+        });
 
-                const pendingQuery = query(transactionsColGroup, where('status', '==', 'Pending'));
-                const completedQuery = query(transactionsColGroup, where('status', '==', 'Completed'));
-                const failedQuery = query(transactionsColGroup, where('status', '==', 'Failed'));
+        // Fetch transaction counts
+        const transactionsColGroup = collectionGroup(firestore, 'transactions');
+        
+        const pendingQuery = query(transactionsColGroup, where('status', '==', 'Pending'));
+        getCountFromServer(pendingQuery).then(snap => {
+            setStats(s => ({ ...s, pending: snap.data().count }));
+        }).catch(err => {
+            console.error("Error fetching pending count:", err);
+            setStats(s => ({ ...s, pending: 0 }));
+        });
+        
+        const completedQuery = query(transactionsColGroup, where('status', '==', 'Completed'));
+        getCountFromServer(completedQuery).then(snap => {
+            setStats(s => ({ ...s, completed: snap.data().count }));
+        }).catch(err => {
+            console.error("Error fetching completed count:", err);
+            setStats(s => ({ ...s, completed: 0 }));
+        });
 
-                const [
-                    usersSnap,
-                    pendingSnap,
-                    completedSnap,
-                    failedSnap
-                ] = await Promise.all([
-                    getCountFromServer(usersCol),
-                    getCountFromServer(pendingQuery),
-                    getCountFromServer(completedQuery),
-                    getCountFromServer(failedQuery)
-                ]);
+        const failedQuery = query(transactionsColGroup, where('status', '==', 'Failed'));
+        getCountFromServer(failedQuery).then(snap => {
+            setStats(s => ({ ...s, failed: snap.data().count }));
+        }).catch(err => {
+            console.error("Error fetching failed count:", err);
+            setStats(s => ({ ...s, failed: 0 }));
+        });
 
-                setStats({
-                    users: usersSnap.data().count,
-                    pending: pendingSnap.data().count,
-                    completed: completedSnap.data().count,
-                    failed: failedSnap.data().count,
-                });
-
-            } catch (error) {
-                console.error("Error fetching admin stats:", error);
-                setStats({ users: 0, pending: 0, completed: 0, failed: 0 }); // Show 0 on error
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchCounts();
     }, [firestore]);
+
 
     const statCards: Stat[] = [
         { value: stats.users, icon: Users, title: 'Total Users', href: '/admin/users' },
@@ -117,10 +72,6 @@ export function StatsCards() {
         { value: stats.completed, icon: Banknote, title: 'Completed Transactions', href: '/admin/transactions?tab=completed' },
         { value: stats.failed, icon: ShieldAlert, title: 'Failed Transactions', href: '/admin/transactions?tab=failed' },
     ];
-
-    if (loading) {
-        return <StatsCardsSkeleton />;
-    }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -140,5 +91,3 @@ export function StatsCards() {
     </div>
   );
 }
-
-StatsCards.Skeleton = StatsCardsSkeleton;

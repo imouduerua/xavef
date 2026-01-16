@@ -17,9 +17,7 @@ export default function AdminDashboardPage() {
         </CardHeader>
       </Card>
 
-      <Suspense fallback={<StatsCards.Skeleton />}>
-        <StatsCards />
-      </Suspense>
+      <StatsCards />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Suspense fallback={<PendingWithdrawals.Skeleton />}>
