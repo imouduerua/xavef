@@ -2,10 +2,10 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { doc, getDoc, runTransaction, increment, collection, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { firestore } from '@/firebase/server-init';
+import { FieldValue } from 'firebase-admin/firestore';
+import type { Transaction } from '@/lib/types';
 import { getAuthenticatedUser } from '@/firebase/server-auth';
-import type { UserData, TransactionWithUserDetails, Transaction } from '@/lib/types';
 
 
 async function isAdmin(uid: string): Promise<boolean> {
@@ -36,12 +36,12 @@ export async function handleTransactionUpdate(
   }
   */
 
-  const transactionRef = doc(firestore, `users/${userId}/transactions`, transactionId);
-  const userRef = doc(firestore, 'users', userId);
+  const transactionRef = firestore.collection('users').doc(userId).collection('transactions').doc(transactionId);
+  const userRef = firestore.collection('users').doc(userId);
 
   try {
-    await runTransaction(firestore, async (transaction) => {
-      const txDoc = await transaction.get(transactionRef);
+    await firestore.runTransaction(async (t) => {
+      const txDoc = await t.get(transactionRef);
       if (!txDoc.exists || txDoc.data()?.status !== 'Pending') {
         throw new Error('Transaction not found or already processed.');
       }
@@ -52,13 +52,14 @@ export async function handleTransactionUpdate(
       if (decision === 'approved') {
         if (txData.type === 'Deposit') {
           const balanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
-          transaction.update(userRef, { [balanceField]: increment(amount) });
+          t.update(userRef, { [balanceField]: FieldValue.increment(amount) });
         } else if (txData.type === 'Withdrawal') {
-           transaction.update(userRef, { solidaraBalance: increment(-amount) });
+           // For withdrawals, `amount` is positive, so we debit it.
+           t.update(userRef, { solidaraBalance: FieldValue.increment(-amount) });
         }
-        transaction.update(transactionRef, { status: 'Completed' });
+        t.update(transactionRef, { status: 'Completed' });
       } else { // Declined
-        transaction.update(transactionRef, { status: 'Failed' });
+        t.update(transactionRef, { status: 'Failed' });
       }
     });
 
