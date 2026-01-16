@@ -58,7 +58,7 @@ export function ContributeDialog({ group, children }: ContributeDialogProps) {
     setIsContributing(true);
     const result = await contributeToGroupFromSavings(
       firestore,
-      user.uid,
+      user,
       group.id
     );
 

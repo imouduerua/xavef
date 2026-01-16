@@ -46,6 +46,7 @@ export async function transferToAnnual(
                 type: "Internal Transfer",
                 status: "Completed",
                 targetAccount: "solidara",
+                userEmail: userData.email,
             });
         });
         return { success: true };

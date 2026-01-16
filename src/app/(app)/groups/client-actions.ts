@@ -279,7 +279,8 @@ export async function distributeGroupFunds(
        if (!recipientDoc.exists()) {
         throw new Error('Recipient user data not found.');
       }
-      const recipientName = recipientDoc.data()?.displayName || 'A member';
+      const recipientData = recipientDoc.data();
+      const recipientName = recipientData?.displayName || 'A member';
 
 
       // 1. Credit the recipient's Olidara balance
@@ -298,6 +299,7 @@ export async function distributeGroupFunds(
         type: 'Group Payout',
         status: 'Completed',
         groupId: groupId,
+        userEmail: recipientData?.email,
       });
 
       // 3. Update the group to the next collection week
@@ -336,14 +338,14 @@ export async function distributeGroupFunds(
 
 export async function contributeToGroupFromSavings(
   firestore: Firestore,
-  userId: string,
+  user: User,
   groupId: string
 ): Promise<{ success: boolean; error?: string }> {
   if (!firestore) {
     return { success: false, error: 'Database not initialized.' };
   }
   const groupRef = doc(firestore, 'groups', groupId);
-  const userRef = doc(firestore, 'users', userId);
+  const userRef = doc(firestore, 'users', user.uid);
   const userTransactionsRef = collection(userRef, 'transactions');
 
   // We must perform the read for existing contributions *outside* the transaction.
@@ -398,13 +400,13 @@ export async function contributeToGroupFromSavings(
       if (!userSnap.exists()) throw new Error('User not found.');
 
       const group = groupSnap.data() as Group;
-      const user = userSnap.data() as UserData;
+      const userData = userSnap.data() as UserData;
 
       if (group.status !== 'active') {
         throw new Error('This group is not active.');
       }
 
-      if (user.solidaraBalance < group.contributionAmount) {
+      if (userData.solidaraBalance < group.contributionAmount) {
         throw new Error('Insufficient Olidara balance to make contribution.');
       }
 
@@ -422,6 +424,7 @@ export async function contributeToGroupFromSavings(
         type: 'Group Contribution',
         status: 'Completed',
         groupId: groupId,
+        userEmail: user.email,
       });
     });
 

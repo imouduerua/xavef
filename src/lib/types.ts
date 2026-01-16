@@ -64,6 +64,7 @@ export interface Transaction {
   payoutAmount?: number;
   targetAccount?: AccountType | 'group';
   proofOfPaymentUrl?: string;
+  userEmail?: string;
   groupId?: string; // For group contributions
   destinationBankName?: string;
   destinationAccountName?: string;

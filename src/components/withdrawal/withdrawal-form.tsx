@@ -109,6 +109,7 @@ export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalForm
         type: 'Withdrawal' as const,
         status: 'Pending' as const,
         targetAccount: 'solidara' as const,
+        userEmail: user.email,
         destinationBankName: selectedAccount.bankName,
         destinationAccountName: selectedAccount.accountName,
         destinationAccountNumber: selectedAccount.bankAccountNumber,

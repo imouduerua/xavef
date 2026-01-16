@@ -137,6 +137,7 @@ export function DepositDialog({
         type: 'Deposit' as const,
         targetAccount: targetAccount,
         proofOfPaymentUrl: proofOfPayment.dataUrl || '',
+        userEmail: user.email,
       };
       
       await addDoc(transactionRef, newTransaction);
