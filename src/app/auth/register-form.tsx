@@ -132,7 +132,7 @@ export function RegisterForm() {
             description: "Redirecting to your dashboard...",
         });
         
-        router.push('/dashboard');
+        router.replace('/dashboard');
 
     } catch (error: any) {
         console.error("Registration Error:", error);
