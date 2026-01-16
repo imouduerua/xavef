@@ -3,6 +3,7 @@ export { getAuth } from 'firebase/auth';
 export { getFirestore } from 'firebase/firestore';
 
 export { useCollection, useDoc } from './firestore/use-collection';
+export { useCollectionCount } from './firestore/use-collection-count';
 export { useUser, useAuth, useFirestore, useFirebaseApp } from './provider';
 export { useMemoFirebase } from './use-memo-firebase';
 
