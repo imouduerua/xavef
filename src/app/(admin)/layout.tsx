@@ -6,21 +6,22 @@ import { useUser } from '@/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAdminStatus } from '@/hooks/use-admin-status';
+import { useAdmin } from '@/hooks/use-admin';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { SidebarInset } from '@/components/ui/sidebar';
 import { AdminHeader } from '@/components/layout/admin-header';
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useUser();
-  const { isAdmin, loading: adminLoading } = useAdminStatus();
+  const { isAdmin, loading: adminLoading } = useAdmin();
   const router = useRouter();
   const pathname = usePathname();
 
   const isAuthPage = pathname === '/admin-login';
   
   useEffect(() => {
-    if (authLoading || adminLoading) return;
+    const totalLoading = authLoading || adminLoading;
+    if (totalLoading) return;
 
     if (!user && !isAuthPage) {
       router.replace('/admin-login');
@@ -53,8 +54,8 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Prevent flicker
-  if ((!user && !isAuthPage) || (user && isAuthPage) || (user && !isAdmin && !isAuthPage)) {
+  // Prevent flicker during redirects or when access is denied
+  if ((!user && !isAuthPage) || (user && !isAdmin && !isAuthPage)) {
     return null;
   }
   

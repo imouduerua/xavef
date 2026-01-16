@@ -25,7 +25,7 @@ import { ReferralCodeDialog } from '../dashboard/referral-code-dialog';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import type { GroupJoinRequest, Notification } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
-import { useAdminStatus } from '@/hooks/use-admin-status';
+import { useAdmin } from '@/hooks/use-admin';
 
 const formatDate = (date: any) => {
     if (!date) return '';
@@ -39,7 +39,7 @@ export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useUser();
-  const { isAdmin } = useAdminStatus();
+  const { isAdmin } = useAdmin();
   const firestore = useFirestore();
   const auth = useAuth();
 
