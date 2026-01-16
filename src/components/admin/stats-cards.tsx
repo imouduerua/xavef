@@ -1,12 +1,15 @@
+
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Users, Clock, Banknote, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
-import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, collectionGroup, query, where } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, collectionGroup, query, where, type Query } from 'firebase/firestore';
 import { useCollectionCount } from '@/firebase/firestore/use-collection-count';
+import type { UserData, TransactionWithUserDetails } from '@/lib/types';
+
 
 interface StatCardProps {
     value: number | null;
@@ -34,14 +37,20 @@ function StatCard({ value, icon: Icon, title, href }: StatCardProps) {
 
 export function StatsCards() {
     const firestore = useFirestore();
+    const [usersQuery, setUsersQuery] = useState<Query<UserData> | null>(null);
+    const [pendingQuery, setPendingQuery] = useState<Query<TransactionWithUserDetails> | null>(null);
+    const [completedQuery, setCompletedQuery] = useState<Query<TransactionWithUserDetails> | null>(null);
+    const [failedQuery, setFailedQuery] = useState<Query<TransactionWithUserDetails> | null>(null);
 
-    const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
-    
-    const pendingQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Pending')) : null, [firestore]);
-    
-    const completedQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Completed')) : null, [firestore]);
-    
-    const failedQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Failed')) : null, [firestore]);
+    useEffect(() => {
+        if (firestore) {
+            setUsersQuery(collection(firestore, 'users') as Query<UserData>);
+            setPendingQuery(query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Pending')) as Query<TransactionWithUserDetails>);
+            setCompletedQuery(query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Completed')) as Query<TransactionWithUserDetails>);
+            setFailedQuery(query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Failed')) as Query<TransactionWithUserDetails>);
+        }
+    }, [firestore]);
+
 
     const { count: usersCount } = useCollectionCount(usersQuery);
     const { count: pendingCount } = useCollectionCount(pendingQuery);
