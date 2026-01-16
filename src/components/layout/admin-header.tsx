@@ -1,8 +1,7 @@
-
 'use client';
 
-import React from 'react';
-import { LogOut, LayoutDashboard, User as UserIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LogOut, LayoutDashboard, User as UserIcon, Moon, Sun } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 
@@ -25,6 +24,21 @@ export function AdminHeader() {
   const router = useRouter();
   const { user } = useUser();
   const auth = useAuth();
+  
+  const [theme, setTheme] = useState('dark');
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(storedTheme);
+    document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -49,6 +63,12 @@ export function AdminHeader() {
       <SidebarTrigger />
       <div className="flex-1" />
       <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={toggleTheme}>
+            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+        </Button>
+
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
