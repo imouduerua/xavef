@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -60,7 +61,6 @@ export function PendingWithdrawals() {
             setLoading(false);
             setIndexCreationUrl(null);
         }, (error: FirestoreError) => {
-            console.error("Error fetching pending withdrawals:", error);
             if (
                 error.code === 'failed-precondition' &&
                 error.message.includes('requires an index')
@@ -69,6 +69,8 @@ export function PendingWithdrawals() {
                 if (urlMatch) {
                     setIndexCreationUrl(urlMatch[0]);
                 }
+            } else {
+                console.error("Error fetching pending withdrawals:", error);
             }
             setLoading(false);
         });

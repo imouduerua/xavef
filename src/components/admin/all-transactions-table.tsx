@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -82,6 +83,7 @@ export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
                 path: doc.ref.path,
             } as TransactionWithUserDetails));
             setTransactions(results);
+            setIndexCreationUrl(null);
             setLoading(false);
         }, 
         (error: FirestoreError) => {
