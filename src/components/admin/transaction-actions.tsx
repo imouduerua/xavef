@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import {
@@ -24,8 +23,9 @@ import {
 import { MoreHorizontal, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Transaction, TransactionWithUserDetails } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
-import { handleTransactionUpdate } from './actions';
+import { updateTransactionStatusClient } from '@/app/(admin)/admin/client-actions';
 import Image from 'next/image';
+import { useFirestore } from '@/firebase';
 
 interface TransactionActionsProps {
   userId: string;
@@ -34,10 +34,19 @@ interface TransactionActionsProps {
 
 export function TransactionActions({ userId, transaction }: TransactionActionsProps) {
   const [isProcessing, setIsProcessing] = useState<false | 'approved' | 'declined'>(false);
+  const firestore = useFirestore();
 
   const onAction = async (decision: 'approved' | 'declined') => {
+    if (!firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Action Failed',
+        description: 'Firestore is not available.'
+      });
+      return;
+    }
     setIsProcessing(decision);
-    const result = await handleTransactionUpdate(userId, transaction.id, decision);
+    const result = await updateTransactionStatusClient(firestore, userId, transaction.id, decision);
     if (result.success) {
       toast({
         title: `Transaction ${decision}`,
@@ -49,8 +58,8 @@ export function TransactionActions({ userId, transaction }: TransactionActionsPr
         title: `Failed to ${decision} transaction`,
         description: result.error,
       });
-      setIsProcessing(false);
     }
+    setIsProcessing(false);
   };
 
   if (transaction.status !== 'Pending') {
