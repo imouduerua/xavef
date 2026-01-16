@@ -21,9 +21,9 @@ export async function updateTransactionStatusClient(
       }
 
       const txData = txDoc.data() as Transaction;
-      const amount = Number(txData.amount);
 
       if (decision === 'approved') {
+        const amount = Number(txData.amount);
         if (txData.type === 'Deposit') {
           const balanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
           t.update(userRef, { [balanceField]: increment(amount) });
@@ -31,7 +31,9 @@ export async function updateTransactionStatusClient(
            t.update(userRef, { solidaraBalance: increment(-amount) });
         }
         t.update(transactionRef, { status: 'Completed' });
-      } else { // Declined
+      } else if (decision === 'declined') {
+        // If the transaction is declined, we only update its status to 'Failed'.
+        // We do not modify the user's balance.
         t.update(transactionRef, { status: 'Failed' });
       }
     });
