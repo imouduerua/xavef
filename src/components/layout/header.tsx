@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Bell, LogOut, Moon, Sun, User as UserIcon, BadgePercent, Users, Shield } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -17,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '../ui/sidebar';
-import { useFirestore, useAuth, useUser, useCollection } from '@/firebase';
+import { useFirestore, useAuth, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
@@ -46,13 +45,13 @@ export function AppHeader() {
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState('dark');
 
-  const joinRequestsQuery = useMemo(() => (user?.uid && firestore) ? query(
+  const joinRequestsQuery = useMemoFirebase(() => (user?.uid && firestore) ? query(
       collection(firestore, 'joinRequests'),
       where('groupCreatorUid', '==', user.uid),
       where('status', '==', 'pending')
     ) : null, [user?.uid, firestore]);
   
-  const notificationsQuery = useMemo(() => (user?.uid && firestore) ? query(
+  const notificationsQuery = useMemoFirebase(() => (user?.uid && firestore) ? query(
       collection(firestore, `users/${user.uid}/notifications`),
       orderBy('createdAt', 'desc'),
       limit(10)
