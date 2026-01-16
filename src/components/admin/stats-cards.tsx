@@ -15,6 +15,49 @@ interface Stat {
     href: string;
 }
 
+function StatsCardsSkeleton() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+          <Users className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-8 w-16" />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Pending Transactions</CardTitle>
+          <Clock className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-8 w-16" />
+        </CardContent>
+      </Card>
+       <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Completed Transactions</CardTitle>
+          <Banknote className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+           <Skeleton className="h-8 w-16" />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Failed Transactions</CardTitle>
+          <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            <Skeleton className="h-8 w-16" />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function StatsCards() {
     const firestore = useFirestore();
     const [loading, setLoading] = useState(true);
@@ -76,7 +119,7 @@ export function StatsCards() {
     ];
 
     if (loading) {
-        return <StatsCards.Skeleton />;
+        return <StatsCardsSkeleton />;
     }
 
   return (
@@ -98,45 +141,4 @@ export function StatsCards() {
   );
 }
 
-StatsCards.Skeleton = function SkeletonComponent() {
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-8 w-16" />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Pending Transactions</CardTitle>
-          <Clock className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-8 w-16" />
-        </CardContent>
-      </Card>
-       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Completed Transactions</CardTitle>
-          <Banknote className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-           <Skeleton className="h-8 w-16" />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Failed Transactions</CardTitle>
-          <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-            <Skeleton className="h-8 w-16" />
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+StatsCards.Skeleton = StatsCardsSkeleton;

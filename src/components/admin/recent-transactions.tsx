@@ -17,6 +17,26 @@ const formatDate = (date: any) => {
     return d.toLocaleDateString();
 };
 
+function RecentTransactionsSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function RecentTransactions() {
     const firestore = useFirestore();
     const [transactions, setTransactions] = useState<TransactionWithUserDetails[] | null>(null);
@@ -61,7 +81,7 @@ export function RecentTransactions() {
 
 
   if (loading) {
-    return <RecentTransactions.Skeleton />;
+    return <RecentTransactionsSkeleton />;
   }
 
   return (
@@ -111,22 +131,4 @@ export function RecentTransactions() {
   );
 }
 
-RecentTransactions.Skeleton = function SkeletonComponent() {
-  return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-6 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+RecentTransactions.Skeleton = RecentTransactionsSkeleton;

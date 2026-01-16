@@ -13,6 +13,25 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import { TransactionActions } from './transaction-actions';
 
 
+function PendingWithdrawalsSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+
 export function PendingWithdrawals() {
     const firestore = useFirestore();
     const [withdrawals, setWithdrawals] = useState<TransactionWithUserDetails[] | null>(null);
@@ -59,7 +78,7 @@ export function PendingWithdrawals() {
 
 
     if (loading) {
-        return <PendingWithdrawals.Skeleton />;
+        return <PendingWithdrawalsSkeleton />;
     }
 
   return (
@@ -110,20 +129,4 @@ export function PendingWithdrawals() {
   );
 }
 
-PendingWithdrawals.Skeleton = function SkeletonComponent() {
-  return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-6 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+PendingWithdrawals.Skeleton = PendingWithdrawalsSkeleton;
