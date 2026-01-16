@@ -2,7 +2,7 @@
 'use client';
 
 import { respondToJoinRequest } from '@/app/(app)/groups/client-actions';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import type { GroupJoinRequest, Transaction } from '@/lib/types';
 import { collection, query, where, Timestamp } from 'firebase/firestore';
@@ -40,7 +40,7 @@ export function JoinRequestCard({ request }: JoinRequestCardProps) {
     return date;
   }, []);
 
-  const transactionsQuery = useMemo(() => firestore && requesterUid ? query(
+  const transactionsQuery = useMemoFirebase(() => firestore && requesterUid ? query(
         collection(firestore, `users/${requesterUid}/transactions`),
         where('type', '==', 'Deposit'),
         where('status', '==', 'Completed'),
