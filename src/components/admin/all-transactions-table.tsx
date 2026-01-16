@@ -1,12 +1,10 @@
-
-
 'use client';
 
 import React, { useMemo } from 'react';
-import { collectionGroup, query, orderBy, limit, startAfter, endBefore, limitToLast, DocumentData } from 'firebase/firestore';
+import { collectionGroup, query, orderBy, limit, startAfter, endBefore, limitToLast, DocumentData, Query, where } from 'firebase/firestore';
 import { useFirestore, useMemoFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { TransactionWithUserDetails, UserData } from '@/lib/types';
+import { TransactionWithUserDetails } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '../ui/skeleton';
@@ -48,30 +46,45 @@ function TableSkeleton() {
     );
 }
 
-export function AllTransactionsTable() {
+type AllTransactionsTableProps = {
+    status?: 'Pending' | 'Completed' | 'Failed';
+}
+
+export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
   const firestore = useFirestore();
   const [lastVisible, setLastVisible] = React.useState<DocumentData | null>(null);
   const [firstVisible, setFirstVisible] = React.useState<DocumentData | null>(null);
   const [page, setPage] = React.useState(1);
+  const [currentQuery, setCurrentQuery] = React.useState<Query | null>(null);
 
+  const getQuery = (constraints: any[] = []) => {
+      let q = query(collectionGroup(firestore!, 'transactions'), orderBy('date', 'desc'));
+      if (status) {
+          q = query(q, where('status', '==', status));
+      }
+      return query(q, ...constraints);
+  }
 
   const transactionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc'), limit(PAGE_SIZE));
-  }, [firestore]);
+    return getQuery([limit(PAGE_SIZE)])
+  }, [firestore, status]);
 
   const nextPageQuery = useMemoFirebase(() => {
     if (!firestore || !lastVisible) return null;
-    return query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc'), startAfter(lastVisible), limit(PAGE_SIZE));
-  }, [firestore, lastVisible]);
+    return getQuery([startAfter(lastVisible), limit(PAGE_SIZE)])
+  }, [firestore, status, lastVisible]);
   
   const prevPageQuery = useMemoFirebase(() => {
-      if (!firestore || !firstVisible) return null;
-      return query(collectionGroup(firestore, 'transactions'), orderBy('date', 'desc'), endBefore(firstVisible), limitToLast(PAGE_SIZE));
-  }, [firestore, firstVisible]);
+    if (!firestore || !firstVisible) return null;
+    return getQuery([endBefore(firstVisible), limitToLast(PAGE_SIZE)])
+  }, [firestore, status, firstVisible]);
 
-  const [currentQuery, setCurrentQuery] = React.useState(transactionsQuery);
-
+  React.useEffect(() => {
+      setCurrentQuery(transactionsQuery);
+      setPage(1);
+  }, [transactionsQuery]);
+  
   const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(currentQuery);
 
   React.useEffect(() => {
@@ -80,6 +93,9 @@ export function AllTransactionsTable() {
           setFirstVisible(transactions[0].__snapshot);
           // @ts-ignore
           setLastVisible(transactions[transactions.length - 1].__snapshot);
+      } else {
+          setFirstVisible(null);
+          setLastVisible(null);
       }
   }, [transactions]);
 
@@ -109,8 +125,8 @@ export function AllTransactionsTable() {
   if (!transactions || transactions.length === 0) {
     return (
         <Card>
-            <CardContent className="pt-6">
-                <p>No transactions found.</p>
+            <CardContent className="pt-6 text-center text-muted-foreground">
+                <p>No {status ? status.toLowerCase() : ''} transactions found.</p>
             </CardContent>
         </Card>
     );
@@ -134,7 +150,6 @@ export function AllTransactionsTable() {
           <TableBody>
             {transactions.map((tx) => {
                 const amount = Number(tx.amount);
-                // Extract userId from path, which is like 'users/{userId}/transactions/{txId}'
                 const userId = tx.path?.split('/')[1] || 'N/A';
                 return (
                     <TableRow key={tx.id}>
@@ -156,25 +171,28 @@ export function AllTransactionsTable() {
             })}
           </TableBody>
         </Table>
-         <div className="flex items-center justify-end space-x-2 py-4">
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrevPage}
-                disabled={page === 1}
-            >
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Previous
-            </Button>
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNextPage}
-                disabled={transactions.length < PAGE_SIZE}
-            >
-                Next
-                <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
+         <div className="flex items-center justify-between space-x-2 py-4">
+            <div className="text-sm text-muted-foreground">Page {page}</div>
+            <div className="flex items-center space-x-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrevPage}
+                    disabled={page === 1}
+                >
+                    <ChevronLeft className="mr-2 h-4 w-4" />
+                    Previous
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNextPage}
+                    disabled={transactions.length < PAGE_SIZE}
+                >
+                    Next
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+            </div>
         </div>
       </CardContent>
     </Card>
