@@ -1,45 +1,12 @@
-
-
 'use client';
 import React from 'react';
-import { collectionGroup, query, where, orderBy, limit } from 'firebase/firestore';
-import { useFirestore, useMemoFirebase } from '@/firebase';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import type { TransactionWithUserDetails } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '../ui/skeleton';
-import { TransactionActions } from './transaction-actions';
 import { Button } from '../ui/button';
 import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
-import { MissingIndexAlert } from './missing-index-alert';
-
-const formatDate = (date: any) => {
-  if (!date) return 'N/A';
-  if (date.toDate) {
-    return date.toDate().toLocaleString();
-  }
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return 'Invalid Date';
-  return d.toLocaleString();
-};
 
 export function PendingWithdrawals() {
-  const firestore = useFirestore();
-  const transactionsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(
-        collectionGroup(firestore, 'transactions'),
-        where('status', '==', 'Pending'),
-        where('type', '==', 'Withdrawal'),
-        orderBy('date', 'asc'),
-        limit(5)
-    );
-  }, [firestore]);
-
-  const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(transactionsQuery);
-
   return (
     <Card>
       <CardHeader className="flex flex-row items-center">
@@ -55,46 +22,9 @@ export function PendingWithdrawals() {
         </Button>
       </CardHeader>
       <CardContent>
-        {indexCreationUrl ? (
-          <MissingIndexAlert url={indexCreationUrl} />
-        ) : loading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-          </div>
-        ) : !transactions || transactions.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No pending withdrawals.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions.map((tx) => {
-                 const userId = tx.path?.split('/')[1] || 'N/A';
-                 return (
-                    <TableRow key={tx.id}>
-                        <TableCell>
-                            <div className="font-medium">{tx.userDisplayName || 'N/A'}</div>
-                            <div className="text-xs text-muted-foreground">{tx.userEmail}</div>
-                        </TableCell>
-                        <TableCell>{formatDate(tx.date)}</TableCell>
-                        <TableCell className="text-right font-semibold text-red-600">
-                            -₦{Number(tx.amount).toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                            <TransactionActions userId={userId} transaction={tx} />
-                        </TableCell>
-                    </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        )}
+        <div className="text-center text-sm text-muted-foreground py-8">
+            Data fetching is temporarily disabled for debugging.
+        </div>
       </CardContent>
     </Card>
   );
