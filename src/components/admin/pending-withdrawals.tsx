@@ -13,6 +13,7 @@ import { TransactionActions } from './transaction-actions';
 import { Button } from '../ui/button';
 import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
+import { MissingIndexAlert } from './missing-index-alert';
 
 const formatDate = (date: any) => {
   if (!date) return 'N/A';
@@ -37,7 +38,7 @@ export function PendingWithdrawals() {
     );
   }, [firestore]);
 
-  const { data: transactions, loading } = useCollection<TransactionWithUserDetails>(transactionsQuery);
+  const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(transactionsQuery);
 
   return (
     <Card>
@@ -54,7 +55,9 @@ export function PendingWithdrawals() {
         </Button>
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {indexCreationUrl ? (
+          <MissingIndexAlert url={indexCreationUrl} />
+        ) : loading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>

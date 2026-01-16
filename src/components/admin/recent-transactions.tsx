@@ -13,6 +13,7 @@ import { Skeleton } from '../ui/skeleton';
 import { ArrowUpRight } from 'lucide-react';
 import { Button } from '../ui/button';
 import Link from 'next/link';
+import { MissingIndexAlert } from './missing-index-alert';
 
 const statusVariant: Record<TransactionWithUserDetails['status'], 'default' | 'secondary' | 'destructive'> = {
   Completed: 'default',
@@ -42,7 +43,7 @@ export function RecentTransactions() {
     );
   }, [firestore]);
 
-  const { data: transactions, loading } = useCollection<TransactionWithUserDetails>(transactionsQuery);
+  const { data: transactions, loading, indexCreationUrl } = useCollection<TransactionWithUserDetails>(transactionsQuery);
 
   return (
     <Card>
@@ -59,7 +60,9 @@ export function RecentTransactions() {
         </Button>
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {indexCreationUrl ? (
+          <MissingIndexAlert url={indexCreationUrl} />
+        ) : loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>
