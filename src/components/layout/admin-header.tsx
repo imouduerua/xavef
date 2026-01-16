@@ -4,6 +4,7 @@
 import React from 'react';
 import { LogOut, LayoutDashboard, User as UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'firebase/auth';
 
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -16,20 +17,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '../ui/sidebar';
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
 export function AdminHeader() {
   const router = useRouter();
   const { user } = useUser();
+  const auth = useAuth();
 
   const handleLogout = async () => {
+    if (!auth) return;
     try {
-      // Clear the server-side session cookie
-      const res = await fetch('/api/auth/session', { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to clear session');
-      
+      await signOut(auth);
       toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',

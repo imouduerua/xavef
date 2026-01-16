@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { signInWithEmailAndPassword, getIdToken } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -63,25 +62,24 @@ export function AdminLoginForm() {
     }
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      const idToken = await getIdToken(userCredential.user);
+      if (values.email !== 'admin@xavef.com') {
+          throw new Error('Permission denied. You are not an administrator.');
+      }
       
-      const res = await fetch('/api/auth/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken }),
-      });
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
 
-      if (!res.ok) {
-          const { error } = await res.json();
-          throw new Error(error || 'Failed to create session.');
+      if (userCredential.user.email === 'admin@xavef.com') {
+        toast({
+          title: 'Login Successful',
+          description: 'Redirecting to your dashboard...',
+        });
+        router.replace('/admin');
+      } else {
+         // This case should theoretically not be hit due to the check above, but it's good practice
+         await signOut(auth);
+         throw new Error('Permission denied. You are not an administrator.');
       }
 
-      toast({
-        title: 'Login Successful',
-        description: 'Redirecting to your dashboard...',
-      });
-      router.replace('/admin');
     } catch (error: any) {
       let description = 'An unknown error occurred. Please try again.';
       if (error.code === 'auth/invalid-credential') {
