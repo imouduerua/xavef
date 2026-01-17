@@ -1,7 +1,7 @@
 
 'use client';
 
-import { MoreVertical, Trash2, Pencil, PartyPopper } from 'lucide-react';
+import { MoreVertical, Trash2, Pencil, PartyPopper, ArrowUpFromDot } from 'lucide-react';
 import React, { useMemo } from 'react';
 
 import {
@@ -33,6 +33,7 @@ import { deleteSavingGoal, withdrawCompletedGoal } from '@/app/(app)/savings/cli
 import { AddFundsDialog } from './add-funds-dialog';
 import { EditGoalDialog } from './edit-goal-dialog';
 import { doc } from 'firebase/firestore';
+import { WithdrawFundsDialog } from './withdraw-funds-dialog';
 
 
 interface GoalCardProps {
@@ -158,6 +159,16 @@ export function GoalCard({ goal }: GoalCardProps) {
                         <span>Edit</span>
                     </DropdownMenuItem>
                 </EditGoalDialog>
+
+                {goal.currentAmount > 0 && !isCompleted && (
+                  <WithdrawFundsDialog goal={goal}>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <ArrowUpFromDot className="mr-2 h-4 w-4" />
+                      <span>Withdraw Funds</span>
+                    </DropdownMenuItem>
+                  </WithdrawFundsDialog>
+                )}
+
                 <DropdownMenuSeparator />
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem className="text-destructive" disabled={isDeleting}>

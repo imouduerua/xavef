@@ -19,7 +19,7 @@ import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { collection, query, where, orderBy, doc } from 'firebase/firestore';
 import { addFundsToGoal } from '@/app/(app)/savings/client-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { transferToAnnual, transferToSolidara } from '@/app/(app)/dashboard/actions';
+import { transferToAnnual } from '@/app/(app)/dashboard/actions';
 
 function DashboardApp() {
   const { user, loading: authLoading } = useUser();
@@ -108,25 +108,6 @@ function DashboardApp() {
           }
       }
     } 
-    // from annual
-    else if (from === 'annual') {
-      if (to === 'solidara') {
-          const result = await transferToSolidara(firestore, user.uid, amount);
-          if (result.success) {
-              toast({
-                  title: "Transfer Successful!",
-                  description: `You transferred ₦${amount.toFixed(2)} to your Olidara Savings.`
-              });
-              return true;
-          } else {
-              toast({ variant: "destructive", title: "Transfer Failed", description: result.error });
-              return false;
-          }
-      } else {
-          toast({ variant: "destructive", title: "Invalid Transfer", description: "You can only transfer from Annual savings to Olidara savings." });
-          return false;
-      }
-    }
 
     return false;
 

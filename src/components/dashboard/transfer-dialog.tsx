@@ -204,11 +204,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                           ))}
                         </>
                       )}
-                      {fromAccountValue === 'annual' && (
-                         <SelectItem value="solidara">
-                            Olidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
-                         </SelectItem>
-                      )}
+                      
                     </SelectContent>
                   </Select>
                   <FormMessage />

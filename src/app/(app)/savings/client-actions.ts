@@ -147,6 +147,69 @@ export async function addFundsToGoal(
   }
 }
 
+export async function withdrawFromGoal(
+  firestore: Firestore,
+  userId: string,
+  goalId: string,
+  amount: number
+): Promise<{ success: boolean; error?: string }> {
+  if (!firestore) {
+    return { success: false, error: 'Database not initialized.' };
+  }
+  if (amount <= 0) {
+    return { success: false, error: 'Withdrawal amount must be positive.' };
+  }
+
+  const userDocRef = doc(firestore, 'users', userId);
+  const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
+  const transactionCollectionRef = collection(firestore, `users/${userId}/transactions`);
+
+  try {
+    await runTransaction(firestore, async (transaction) => {
+      const userDoc = await transaction.get(userDocRef);
+      const goalDoc = await transaction.get(goalDocRef);
+
+      if (!userDoc.exists()) {
+        throw new Error('User data not found.');
+      }
+      if (!goalDoc.exists()) {
+        throw new Error('Saving goal not found.');
+      }
+
+      const userData = userDoc.data();
+      const goalData = goalDoc.data();
+
+      if (goalData.currentAmount < amount) {
+        throw new Error('Insufficient funds in goal.');
+      }
+
+      // Perform the updates
+      transaction.update(goalDocRef, { currentAmount: increment(-amount) });
+      transaction.update(userDocRef, { solidaraBalance: increment(amount) });
+      
+      // Create a transaction record for this internal transfer
+      const newTxDocRef = doc(transactionCollectionRef);
+      transaction.set(newTxDocRef, {
+        amount: amount, // Credit to Solidara, so positive
+        date: serverTimestamp(),
+        description: `Transfer from goal: "${goalData.name}"`,
+        type: 'Internal Transfer',
+        status: 'Completed',
+        targetAccount: 'solidara',
+        userEmail: userData.email,
+      });
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error withdrawing funds from goal:', error);
+    return {
+      success: false,
+      error: error.message || 'An unexpected error occurred.',
+    };
+  }
+}
+
+
 export async function withdrawCompletedGoal(
   firestore: Firestore,
   userId: string,
