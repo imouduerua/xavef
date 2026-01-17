@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -95,7 +94,7 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
         emoji: goal.emoji || '🎯',
       });
     }
-  }, [isOpen, goal, form.reset]);
+  }, [isOpen, goal, form]);
 
 
   return (

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,27 +38,28 @@ interface WithdrawFundsDialogProps {
   disabled?: boolean;
 }
 
-const withdrawFundsFormSchema = z.object({
-  amount: z.coerce
-    .number()
-    .positive('Amount must be positive.')
-    .min(1, 'Minimum amount is ₦1.00'),
-});
-
-type WithdrawFundsFormValues = z.infer<typeof withdrawFundsFormSchema>;
-
-
 export function WithdrawFundsDialog({ goal, children, disabled }: WithdrawFundsDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useUser();
   const { toast } = useToast();
   const firestore = useFirestore();
 
+  const withdrawFundsFormSchema = React.useMemo(() => z.object({
+    amount: z.coerce
+      .number()
+      .positive('Amount must be positive.')
+      .min(1, 'Minimum amount is ₦1.00')
+      .max(goal.currentAmount, 'Amount cannot exceed the goal balance.'),
+  }), [goal.currentAmount]);
+
+  type WithdrawFundsFormValues = z.infer<typeof withdrawFundsFormSchema>;
+
   const form = useForm<WithdrawFundsFormValues>({
     resolver: zodResolver(withdrawFundsFormSchema),
     defaultValues: {
       amount: '' as any,
     },
+    mode: 'onChange'
   });
 
   const { isSubmitting } = form.formState;
@@ -72,11 +72,6 @@ export function WithdrawFundsDialog({ goal, children, disabled }: WithdrawFundsD
         description: 'Could not process request. Please try again later.',
       });
       return;
-    }
-
-    if (values.amount > goal.currentAmount) {
-        form.setError('amount', { message: 'Amount cannot exceed the goal balance.' });
-        return;
     }
 
     const result = await withdrawFromGoal(firestore, user.uid, goal.id, values.amount);
