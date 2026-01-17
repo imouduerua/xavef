@@ -1,9 +1,8 @@
 
-
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
+import { useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import React, { useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
