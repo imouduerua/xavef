@@ -40,22 +40,23 @@ interface AddFundsDialogProps {
   disabled?: boolean;
 }
 
+const addFundsFormSchema = z.object({
+  amount: z.coerce
+    .number()
+    .positive('Amount must be positive.')
+    .min(1, 'Minimum amount is ₦1.00'),
+});
+
+type AddFundsFormValues = z.infer<typeof addFundsFormSchema>;
+
 export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: AddFundsDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useUser();
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const formSchema = React.useMemo(() => z.object({
-    amount: z.coerce
-      .number()
-      .positive('Amount must be positive.')
-      .min(1, 'Minimum amount is ₦1.00')
-      .max(solidaraBalance, 'Amount cannot exceed your Olidara balance.'),
-  }), [solidaraBalance]);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<AddFundsFormValues>({
+    resolver: zodResolver(addFundsFormSchema),
     defaultValues: {
       amount: '' as any,
     },
@@ -63,7 +64,7 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
 
   const { isSubmitting } = form.formState;
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: AddFundsFormValues) {
     if (!user || !firestore) {
       toast({
         variant: 'destructive',
@@ -71,6 +72,11 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
         description: 'Could not process request. Please try again later.',
       });
       return;
+    }
+    
+    if (values.amount > solidaraBalance) {
+        form.setError('amount', { message: 'Amount cannot exceed your Olidara balance.' });
+        return;
     }
 
     const result = await addFundsToGoal(firestore, user.uid, goal.id, values.amount);
