@@ -69,6 +69,7 @@ export function AdminHeader() {
     if (!auth) return;
     try {
       await signOut(auth);
+      await fetch('/api/auth/admin-session', { method: 'DELETE' });
       toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',

@@ -62,23 +62,24 @@ export function AdminLoginForm() {
     }
 
     try {
-      if (values.email !== 'admin@xavef.com') {
-          throw new Error('Permission denied. You are not an administrator.');
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const idToken = await userCredential.user.getIdToken();
+
+      // Set the session cookie by calling our new API route.
+      const response = await fetch('/api/auth/admin-session', {
+        method: 'POST',
+        body: idToken,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create server session.');
       }
       
-      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-
-      if (userCredential.user.email === 'admin@xavef.com') {
-        toast({
-          title: 'Login Successful',
-          description: 'Redirecting to your dashboard...',
-        });
-        router.replace('/admin');
-      } else {
-         // This case should theoretically not be hit due to the check above, but it's good practice
-         await signOut(auth);
-         throw new Error('Permission denied. You are not an administrator.');
-      }
+      toast({
+        title: 'Login Successful',
+        description: 'Redirecting to your dashboard...',
+      });
+      router.replace('/admin');
 
     } catch (error: any) {
       let description = 'An unknown error occurred. Please try again.';
