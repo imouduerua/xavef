@@ -199,6 +199,14 @@
         "isAdmin": {
           "type": "boolean"
         },
+        "email": {
+            "type": "string",
+            "description": "The admin's email address."
+        },
+        "displayName": {
+            "type": "string",
+            "description": "The admin's display name."
+        },
         "promotedBy": {
           "type": "string",
           "description": "Email of the admin who granted these privileges."
@@ -209,7 +217,7 @@
         }
       },
       "required": [
-        "isAdmin", "promotedBy", "promotedAt"
+        "isAdmin", "promotedBy", "promotedAt", "email", "displayName"
       ]
     },
     "savingGoal": {

@@ -1,15 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Button } from '../ui/button';
-import { Loader2, Search, Shield, Trash2, UserPlus } from 'lucide-react';
-import { Input } from '../ui/input';
-import { findUserByEmail, promoteToAdmin, revokeAdmin } from '@/app/(admin)/admin/management/actions';
+import { Trash2 } from 'lucide-react';
+import { revokeAdmin } from '@/app/(admin)/admin/management/actions';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { useUser } from '@/firebase';
@@ -20,13 +19,6 @@ interface AdminUser {
     email: string;
     promotedAt: any;
     promotedBy: string;
-}
-
-interface FoundUser {
-    id: string;
-    email: string;
-    displayName: string;
-    isAdmin: boolean;
 }
 
 const formatDate = (date: any) => {
@@ -52,95 +44,6 @@ function AdminListSkeleton() {
     );
 }
 
-function PromoteUserSection() {
-    const [email, setEmail] = useState('');
-    const [isSearching, setIsSearching] = useState(false);
-    const [isPromoting, setIsPromoting] = useState(false);
-    const [foundUser, setFoundUser] = useState<FoundUser | null>(null);
-
-    const handleSearch = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!email) return;
-
-        setIsSearching(true);
-        setFoundUser(null);
-        try {
-            const user = await findUserByEmail(email);
-            if (user) {
-                setFoundUser(user);
-            } else {
-                toast({ variant: 'destructive', title: 'Not Found', description: 'No user found with that email address.' });
-            }
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Search Failed', description: error.message });
-        } finally {
-            setIsSearching(false);
-        }
-    };
-
-    const handlePromote = async () => {
-        if (!foundUser) return;
-        setIsPromoting(true);
-        try {
-            const result = await promoteToAdmin(foundUser.id, foundUser.email, foundUser.displayName);
-            if (result.success) {
-                toast({ title: 'Success!', description: `${foundUser.displayName} has been promoted to admin.` });
-                setFoundUser(null);
-                setEmail('');
-            } else {
-                throw new Error(result.error);
-            }
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Promotion Failed', description: error.message });
-        } finally {
-            setIsPromoting(false);
-        }
-    };
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Promote New Admin</CardTitle>
-                <CardDescription>Grant administrative privileges to an existing user by their email.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <form onSubmit={handleSearch} className="flex gap-2">
-                    <Input
-                        type="email"
-                        placeholder="user@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        disabled={isSearching}
-                    />
-                    <Button type="submit" disabled={isSearching || !email}>
-                        {isSearching ? <Loader2 className="animate-spin" /> : <Search />}
-                        <span className="sr-only">Search</span>
-                    </Button>
-                </form>
-
-                {foundUser && (
-                    <Card className="p-4 bg-muted/50">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <p className="font-semibold">{foundUser.displayName}</p>
-                                <p className="text-sm text-muted-foreground">{foundUser.email}</p>
-                            </div>
-                            {foundUser.isAdmin ? (
-                                <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Shield /> Already Admin</span>
-                            ) : (
-                                <Button onClick={handlePromote} disabled={isPromoting}>
-                                    {isPromoting ? <Loader2 className="animate-spin mr-2" /> : <UserPlus className="mr-2" />}
-                                    Promote to Admin
-                                </Button>
-                            )}
-                        </div>
-                    </Card>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
-
 export function AdminManagementClient() {
     const firestore = useFirestore();
     const { user: currentUser } = useUser();
@@ -162,12 +65,10 @@ export function AdminManagementClient() {
 
     return (
         <div className="space-y-6">
-            <PromoteUserSection />
-
             <Card>
                 <CardHeader>
                     <CardTitle>Current Administrators</CardTitle>
-                    <CardDescription>List of all users with administrative privileges.</CardDescription>
+                    <CardDescription>List of all users with administrative privileges. New admins can be promoted from the 'Users' page by a super admin.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loading ? <AdminListSkeleton /> : (

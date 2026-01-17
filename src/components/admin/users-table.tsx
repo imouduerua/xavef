@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { collection, query, orderBy, limit, Query } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import React, { useEffect, useState, useMemo } from 'react';
+import { collection, query, orderBy, limit, Query, doc } from 'firebase/firestore';
+import { useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { UserData } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,9 +18,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from '../ui/button';
-import { MoreHorizontal, Eye } from 'lucide-react';
+import { MoreHorizontal, Eye, UserPlus, Shield } from 'lucide-react';
 import { MissingIndexAlert } from './missing-index-alert';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { promoteToAdmin } from '@/app/(admin)/admin/management/actions';
+import { toast } from '@/hooks/use-toast';
+
+interface AdminUser { id: string; }
 
 const formatDate = (date: any) => {
   if (!date) return 'N/A';
@@ -36,7 +51,6 @@ const formatCurrency = (amount: number | null | undefined) => {
     if (typeof amount !== 'number') return '₦0.00';
     return `₦${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
-
 
 function TableSkeleton() {
     return (
@@ -54,18 +68,41 @@ function TableSkeleton() {
 
 export function UsersTable() {
   const firestore = useFirestore();
-  const [usersQuery, setUsersQuery] = useState<Query<UserData> | null>(null);
+  const { user: currentUser } = useUser();
+  
+  const usersQuery = useMemoFirebase(() => 
+      (firestore ? query(collection(firestore, 'users'), orderBy('createdAt', 'desc'), limit(50)) : null) as Query<UserData> | null, 
+  [firestore]);
 
-  useEffect(() => {
-    if (firestore) {
-      setUsersQuery(
-        query(collection(firestore, 'users'), orderBy('createdAt', 'desc'), limit(50)) as Query<UserData>
-      );
-    }
-  }, [firestore]);
+  const adminsQuery = useMemoFirebase(() => 
+      firestore ? collection(firestore, 'admins') : null, 
+  [firestore]);
 
+  const { data: users, loading: usersLoading, indexCreationUrl } = useCollection<UserData>(usersQuery);
+  const { data: admins, loading: adminsLoading } = useCollection<AdminUser>(adminsQuery);
+  
+  const adminUids = useMemo(() => {
+      if (!admins) return new Set<string>();
+      return new Set(admins.map(admin => admin.id));
+  }, [admins]);
 
-  const { data: users, loading, indexCreationUrl } = useCollection<UserData>(usersQuery);
+  const isSuperAdmin = currentUser?.email === 'admin@xavef.com';
+
+  const handlePromote = async (userToPromote: UserData) => {
+      try {
+          const result = await promoteToAdmin(userToPromote.id, userToPromote.email, userToPromote.displayName);
+          if (result.success) {
+              toast({ title: 'Success!', description: `${userToPromote.displayName} has been promoted to admin.` });
+          } else {
+              throw new Error(result.error);
+          }
+      } catch (error: any) {
+          toast({ variant: 'destructive', title: 'Promotion Failed', description: error.message });
+      }
+  };
+
+  const loading = usersLoading || adminsLoading;
+
 
   if (indexCreationUrl) {
     return <MissingIndexAlert url={indexCreationUrl} />;
@@ -94,7 +131,9 @@ export function UsersTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {users.map((user) => {
+              const isAlreadyAdmin = adminUids.has(user.id);
+              return (
               <TableRow key={user.id}>
                 <TableCell className="font-medium flex items-center gap-3">
                     <Avatar>
@@ -119,24 +158,56 @@ export function UsersTable() {
                         </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem asChild>
-                           <Link href={`/admin/users/${user.id}`}>
-                               <Eye className="mr-2 h-4 w-4" />
-                               View Details
-                           </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            onClick={() => navigator.clipboard.writeText(user.email)}
-                        >
-                            Copy user email
-                        </DropdownMenuItem>
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/users/${user.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                            </Link>
+                          </DropdownMenuItem>
+                          {isSuperAdmin && (
+                            <>
+                              <DropdownMenuSeparator />
+                              {isAlreadyAdmin ? (
+                                <DropdownMenuItem disabled>
+                                    <Shield className="mr-2 h-4 w-4" />
+                                    Already an Admin
+                                </DropdownMenuItem>
+                              ) : (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                      <UserPlus className="mr-2 h-4 w-4" />
+                                      Promote to Admin
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                          <AlertDialogTitle>Promote {user.displayName}?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                              Are you sure you want to grant admin privileges to this user? They will have access to all administrative functions.
+                                          </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handlePromote(user)}>
+                                              Yes, Promote
+                                          </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.email)}>
+                              Copy user email
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
       </CardContent>
