@@ -86,6 +86,9 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
     }
   }
   
+  // This effect resets the form with the correct goal data whenever the dialog is opened.
+  // The `form` object was removed from the dependency array because its reference is not stable
+  // and was causing unnecessary re-renders and resetting the input fields.
   React.useEffect(() => {
     if (isOpen) {
       form.reset({
@@ -94,7 +97,7 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
         emoji: goal.emoji || '🎯',
       });
     }
-  }, [isOpen, goal, form]);
+  }, [isOpen, goal, form.reset]);
 
 
   return (

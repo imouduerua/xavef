@@ -39,28 +39,29 @@ interface AddFundsDialogProps {
   disabled?: boolean;
 }
 
+// Define the schema outside the component for stability.
+const addFundsFormSchema = z.object({
+  amount: z.coerce
+    .number()
+    .positive('Amount must be positive.')
+    .min(1, 'Minimum amount is ₦1.00'),
+});
+
+type AddFundsFormValues = z.infer<typeof addFundsFormSchema>;
+
 export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: AddFundsDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useUser();
   const { toast } = useToast();
   const firestore = useFirestore();
-
-  const addFundsFormSchema = React.useMemo(() => z.object({
-    amount: z.coerce
-      .number()
-      .positive('Amount must be positive.')
-      .min(1, 'Minimum amount is ₦1.00')
-      .max(solidaraBalance, 'Amount cannot exceed your Olidara balance.'),
-  }), [solidaraBalance]);
   
-  type AddFundsFormValues = z.infer<typeof addFundsFormSchema>;
-
   const form = useForm<AddFundsFormValues>({
     resolver: zodResolver(addFundsFormSchema),
     defaultValues: {
       amount: '' as any,
     },
-    mode: 'onChange'
+    // By removing `mode: 'onChange'`, we prevent re-validations on every keystroke,
+    // which was causing the input to reset. Validation will now happen on submit.
   });
 
   const { isSubmitting } = form.formState;
@@ -74,6 +75,12 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
       });
       return;
     }
+    
+    // Manually check the balance before submitting.
+    if (values.amount > solidaraBalance) {
+        form.setError("amount", { type: "manual", message: `Amount cannot exceed your Olidara balance of ₦${solidaraBalance.toFixed(2)}.` });
+        return;
+    }
 
     const result = await addFundsToGoal(firestore, user.uid, goal.id, values.amount);
     
@@ -83,7 +90,6 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
         description: `₦${values.amount.toFixed(2)} was added to your "${goal.name}" goal.`,
       });
       setIsOpen(false);
-      form.reset({ amount: '' as any });
     } else {
       toast({
         variant: 'destructive',
@@ -93,8 +99,16 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
     }
   }
 
+  // Reset form when dialog opens/closes
+  const onOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      form.reset({ amount: '' as any });
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild disabled={disabled}>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

@@ -38,28 +38,29 @@ interface WithdrawFundsDialogProps {
   disabled?: boolean;
 }
 
+// Define the schema outside the component for stability.
+const withdrawFundsFormSchema = z.object({
+  amount: z.coerce
+    .number()
+    .positive('Amount must be positive.')
+    .min(1, 'Minimum amount is ₦1.00'),
+});
+
+type WithdrawFundsFormValues = z.infer<typeof withdrawFundsFormSchema>;
+
 export function WithdrawFundsDialog({ goal, children, disabled }: WithdrawFundsDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useUser();
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const withdrawFundsFormSchema = React.useMemo(() => z.object({
-    amount: z.coerce
-      .number()
-      .positive('Amount must be positive.')
-      .min(1, 'Minimum amount is ₦1.00')
-      .max(goal.currentAmount, 'Amount cannot exceed the goal balance.'),
-  }), [goal.currentAmount]);
-
-  type WithdrawFundsFormValues = z.infer<typeof withdrawFundsFormSchema>;
-
   const form = useForm<WithdrawFundsFormValues>({
     resolver: zodResolver(withdrawFundsFormSchema),
     defaultValues: {
       amount: '' as any,
     },
-    mode: 'onChange'
+    // By removing `mode: 'onChange'`, we prevent re-validations on every keystroke,
+    // which was causing the input to reset. Validation will now happen on submit.
   });
 
   const { isSubmitting } = form.formState;
@@ -73,6 +74,12 @@ export function WithdrawFundsDialog({ goal, children, disabled }: WithdrawFundsD
       });
       return;
     }
+    
+    // Manually check the balance before submitting.
+    if (values.amount > goal.currentAmount) {
+        form.setError("amount", { type: "manual", message: "Amount cannot exceed the goal balance." });
+        return;
+    }
 
     const result = await withdrawFromGoal(firestore, user.uid, goal.id, values.amount);
     
@@ -82,7 +89,6 @@ export function WithdrawFundsDialog({ goal, children, disabled }: WithdrawFundsD
         description: `₦${values.amount.toFixed(2)} was withdrawn from your "${goal.name}" goal.`,
       });
       setIsOpen(false);
-      form.reset({ amount: '' as any });
     } else {
       toast({
         variant: 'destructive',
@@ -92,8 +98,16 @@ export function WithdrawFundsDialog({ goal, children, disabled }: WithdrawFundsD
     }
   }
 
+  // Reset form when dialog opens/closes
+  const onOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      form.reset({ amount: '' as any });
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild disabled={disabled}>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
