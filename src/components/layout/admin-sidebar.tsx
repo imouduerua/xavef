@@ -25,6 +25,7 @@ const navItems = [
   { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { href: '/admin/users', icon: Users, label: 'Users' },
   { href: '/admin/transactions', icon: Banknote, label: 'Transactions' },
+  { href: '/admin/management', icon: Shield, label: 'Management' },
 ];
 
 export function AdminSidebar() {
