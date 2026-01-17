@@ -95,7 +95,7 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
         emoji: goal.emoji || '🎯',
       });
     }
-  }, [isOpen, goal, form]);
+  }, [isOpen, goal, form.reset]);
 
 
   return (

@@ -46,15 +46,13 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const formSchema = z.object({
+  const formSchema = React.useMemo(() => z.object({
     amount: z.coerce
       .number()
       .positive('Amount must be positive.')
       .min(1, 'Minimum amount is ₦1.00')
-      .refine(amount => typeof solidaraBalance === 'number' ? amount <= solidaraBalance : true, {
-        message: 'Amount cannot exceed your Olidara balance.'
-      }),
-  });
+      .max(solidaraBalance, 'Amount cannot exceed your Olidara balance.'),
+  }), [solidaraBalance]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

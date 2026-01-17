@@ -45,15 +45,13 @@ export function WithdrawFundsDialog({ goal, children, disabled }: WithdrawFundsD
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const formSchema = z.object({
+  const formSchema = React.useMemo(() => z.object({
     amount: z.coerce
       .number()
       .positive('Amount must be positive.')
       .min(1, 'Minimum amount is ₦1.00')
-      .refine(amount => amount <= goal.currentAmount, {
-        message: 'Amount cannot exceed the goal balance.'
-      }),
-  });
+      .max(goal.currentAmount, 'Amount cannot exceed the goal balance.'),
+  }), [goal.currentAmount]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
