@@ -75,24 +75,26 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
     },
   });
 
-  const { formState: { isSubmitting }, reset } = form;
+  const { formState: { isSubmitting }, reset, watch } = form;
+  const fromAccountValue = watch('fromAccount');
 
   async function onSubmit(values: FormValues) {
-    if (values.amount > balances.solidara) {
-        toast({
+    if (values.amount > balances[values.fromAccount]) {
+      toast({
         variant: "destructive",
         title: "Transfer Failed",
-        description: "Insufficient Olidara balance.",
-    });
-    return;
+        description: `Insufficient ${values.fromAccount === 'solidara' ? 'Olidara' : 'Annual'} balance.`,
+      });
+      return;
     }
+
     const success = await onSelfTransfer(
-    values.amount,
-    values.fromAccount,
-    values.toAccount
+      values.amount,
+      values.fromAccount,
+      values.toAccount
     );
     if (success) {
-    setIsOpen(false);
+      setIsOpen(false);
     }
   }
 
@@ -148,7 +150,10 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                 <FormItem>
                   <FormLabel>From</FormLabel>
                   <Select
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      form.setValue('toAccount', ''); // Reset destination
+                    }}
                     defaultValue={field.value}
                   >
                     <FormControl>
@@ -160,7 +165,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                         <SelectItem value="solidara">
                             Olidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
                         </SelectItem>
-                          <SelectItem value="annual" disabled>
+                          <SelectItem value="annual">
                             Annual Savings (Balance: ₦{balances.annual.toFixed(2)})
                         </SelectItem>
                     </SelectContent>
@@ -177,6 +182,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                   <FormLabel>To</FormLabel>
                   <Select
                     onValueChange={field.onChange}
+                    value={field.value}
                     defaultValue={field.value}
                   >
                     <FormControl>
@@ -185,15 +191,24 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="annual">
-                        Annual Savings (Balance: ₦{balances.annual.toFixed(2)})
-                      </SelectItem>
-                        {goals.length > 0 && <Separator className="my-2" />}
-                        {goals.map(goal => (
-                          <SelectItem key={goal.id} value={goal.id}>
-                              Goal: {goal.name} (Balance: ₦{goal.currentAmount.toFixed(2)})
+                       {fromAccountValue === 'solidara' && (
+                        <>
+                          <SelectItem value="annual">
+                            Annual Savings (Balance: ₦{balances.annual.toFixed(2)})
                           </SelectItem>
-                        ))}
+                          {goals.length > 0 && <Separator className="my-2" />}
+                          {goals.map(goal => (
+                            <SelectItem key={goal.id} value={goal.id}>
+                                Goal: {goal.name} (Balance: ₦{goal.currentAmount.toFixed(2)})
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      {fromAccountValue === 'annual' && (
+                         <SelectItem value="solidara">
+                            Olidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
+                         </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
