@@ -94,38 +94,57 @@ export async function addFundsToGoal(
   goalId: string,
   amount: number
 ): Promise<{ success: boolean; error?: string }> {
-    if (!firestore) {
-        return { success: false, error: 'Database not initialized.' };
-    }
-    const userDocRef = doc(firestore, 'users', userId);
-    const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
+  if (!firestore) {
+    return { success: false, error: 'Database not initialized.' };
+  }
+  const userDocRef = doc(firestore, 'users', userId);
+  const goalDocRef = doc(firestore, `users/${userId}/goals`, goalId);
+  const transactionCollectionRef = collection(firestore, `users/${userId}/transactions`);
 
-    try {
-        await runTransaction(firestore, async (transaction) => {
-            const userDoc = await transaction.get(userDocRef);
-            const goalDoc = await transaction.get(goalDocRef);
+  try {
+    await runTransaction(firestore, async (transaction) => {
+      const userDoc = await transaction.get(userDocRef);
+      const goalDoc = await transaction.get(goalDocRef);
 
-            if (!userDoc.exists()) {
-                throw new Error("User data not found.");
-            }
-            if (!goalDoc.exists()) {
-                throw new Error("Saving goal not found.");
-            }
+      if (!userDoc.exists()) {
+        throw new Error('User data not found.');
+      }
+      if (!goalDoc.exists()) {
+        throw new Error('Saving goal not found.');
+      }
 
-            const userData = userDoc.data();
-            if (userData.solidaraBalance < amount) {
-                throw new Error("Insufficient Olidara balance.");
-            }
+      const userData = userDoc.data();
+      const goalData = goalDoc.data();
 
-            // Perform the updates
-            transaction.update(userDocRef, { solidaraBalance: increment(-amount) });
-            transaction.update(goalDocRef, { currentAmount: increment(amount) });
-        });
-        return { success: true };
-    } catch (error: any) {
-        console.error("Error adding funds to goal:", error);
-        return { success: false, error: error.message || "An unexpected error occurred." };
-    }
+      if (userData.solidaraBalance < amount) {
+        throw new Error('Insufficient Olidara balance.');
+      }
+
+      // Perform the updates
+      transaction.update(userDocRef, { solidaraBalance: increment(-amount) });
+      transaction.update(goalDocRef, { currentAmount: increment(amount) });
+      
+      // Create a transaction record for this internal transfer
+      const newTxDocRef = doc(transactionCollectionRef);
+      transaction.set(newTxDocRef, {
+        amount: -amount,
+        date: serverTimestamp(),
+        description: `Transfer to goal: "${goalData.name}"`,
+        type: 'Internal Transfer',
+        status: 'Completed',
+        targetAccount: 'solidara',
+        userEmail: userData.email,
+      });
+
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error adding funds to goal:', error);
+    return {
+      success: false,
+      error: error.message || 'An unexpected error occurred.',
+    };
+  }
 }
 
 export async function withdrawCompletedGoal(
