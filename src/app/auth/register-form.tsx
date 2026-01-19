@@ -56,7 +56,7 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     
-    if (!firestore) {
+    if (!auth || !firestore) {
         toast({
             variant: "destructive",
             title: "Registration Error",

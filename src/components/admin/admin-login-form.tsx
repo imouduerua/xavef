@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -72,7 +73,17 @@ export function AdminLoginForm() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create server session.');
+        let errorMsg = 'Failed to create server session.';
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMsg = errorData.error;
+          }
+        } catch (e) {
+          // Could not parse error JSON, stick with default message
+          errorMsg = `Failed to create server session. Status: ${response.status}`;
+        }
+        throw new Error(errorMsg);
       }
       
       toast({

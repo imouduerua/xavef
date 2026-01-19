@@ -1,3 +1,4 @@
+
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -15,9 +16,10 @@ export async function POST(request: NextRequest) {
     const isSecure = process.env.NODE_ENV === 'production';
     cookies().set('session', sessionCookie, { maxAge: expiresIn, httpOnly: true, secure: isSecure, path: '/' });
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating session cookie:', error);
-    return NextResponse.json({ success: false, error: 'Failed to create session.' }, { status: 401 });
+    const errorMessage = error.message || 'Failed to create session.';
+    return NextResponse.json({ success: false, error: `Server error: ${errorMessage}` }, { status: 401 });
   }
 }
 
