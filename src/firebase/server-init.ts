@@ -5,12 +5,10 @@ import 'server-only';
 
 let app: AdminApp;
 
-// When deployed to App Hosting, initializeApp() automatically discovers the project
-// and credentials. In a local dev environment, we might need to provide the project ID.
+// When deployed to App Hosting, or in a correctly configured dev environment,
+// initializeApp() automatically discovers the project and credentials.
 if (getApps().length === 0) {
-  app = initializeApp({
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  });
+  app = initializeApp();
 } else {
   app = getApp();
 }
