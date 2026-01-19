@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -435,5 +434,57 @@ export async function contributeToGroupFromSavings(
       success: false,
       error: error.message || 'Failed to make contribution.',
     };
+  }
+}
+
+export async function contributeToGroupPoolFromSavings(
+  firestore: Firestore,
+  user: User,
+  amount: number
+): Promise<{ success: boolean; error?: string }> {
+  if (!firestore) {
+    return { success: false, error: 'Database not initialized.' };
+  }
+  if (amount <= 0) {
+    return { success: false, error: 'Contribution amount must be positive.' };
+  }
+
+  const userRef = doc(firestore, 'users', user.uid);
+  const transactionCollectionRef = collection(firestore, `users/${user.uid}/transactions`);
+
+  try {
+    await runTransaction(firestore, async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists()) {
+        throw new Error('User data not found.');
+      }
+      const userData = userDoc.data() as UserData;
+
+      if (userData.solidaraBalance < amount) {
+        throw new Error('Insufficient Olidara balance for this contribution.');
+      }
+
+      // Debit from Olidara, credit to Group Pool
+      transaction.update(userRef, {
+        solidaraBalance: increment(-amount),
+        groupPoolBalance: increment(amount),
+      });
+
+      // Create a transaction record
+      const newTxDocRef = doc(transactionCollectionRef);
+      transaction.set(newTxDocRef, {
+        amount: -amount,
+        date: serverTimestamp(),
+        description: 'Contribution to Xavef Savings Pool',
+        type: 'Internal Transfer',
+        status: 'Completed',
+        targetAccount: 'solidara',
+        userEmail: userData.email,
+      });
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error contributing to group pool:', error);
+    return { success: false, error: error.message || 'An unexpected error occurred.' };
   }
 }

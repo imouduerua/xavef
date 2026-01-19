@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { ShieldCheck, HandCoins, CheckCircle } from 'lucide-react';
-import { DepositDialog } from '../dashboard/deposit-dialog';
+import { ContributeToPoolDialog } from './contribute-to-pool-dialog';
 
 export function XavefLoanPoolCard() {
     
@@ -17,7 +17,7 @@ export function XavefLoanPoolCard() {
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                <ShieldCheck className="h-6 w-6 text-primary" />
-                               Xavef Loan & Savings Pool
+                               Xavef Loan &amp; Savings Pool
                             </CardTitle>
                             <CardDescription>
                                 The official, Xavef-managed group for secure loans and yearly savings.
@@ -36,12 +36,12 @@ export function XavefLoanPoolCard() {
                             Learn More
                         </Button>
                      </DialogTrigger>
-                     <DepositDialog accountName="Xavef Loan & Savings Pool" targetAccount="groupPool">
+                     <ContributeToPoolDialog>
                         <Button className="flex-1">
                             <HandCoins className="mr-2 h-4 w-4" />
                             Contribute
                         </Button>
-                    </DepositDialog>
+                    </ContributeToPoolDialog>
                 </CardFooter>
             </Card>
 
@@ -49,14 +49,14 @@ export function XavefLoanPoolCard() {
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <ShieldCheck className="h-6 w-6 text-primary" />
-                        Xavef Loan & Savings Pool
+                        Xavef Loan &amp; Savings Pool
                     </DialogTitle>
                     <DialogDescription>
                         A secure, centrally-managed fund designed for disciplined savings and access to loans.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4 text-sm">
-                    <p>The Xavef Loan & Savings Pool is different from peer-to-peer groups. It is managed directly by Xavef to provide a stable and secure environment for all members.</p>
+                    <p>The Xavef Loan &amp; Savings Pool is different from peer-to-peer groups. It is managed directly by Xavef to provide a stable and secure environment for all members.</p>
                     <ul className="space-y-3">
                         <li className="flex items-start gap-3">
                             <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
