@@ -116,6 +116,7 @@ export function RegisterForm() {
                 referredBy: referredBy,
                 solidaraBalance: 0,
                 annualBalance: 0,
+                groupPoolBalance: 0,
                 bankAccounts: [],
             };
 

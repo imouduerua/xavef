@@ -20,6 +20,7 @@ import { collection, query, where, orderBy, doc } from 'firebase/firestore';
 import { addFundsToGoal } from '@/app/(app)/savings/client-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { transferToAnnual } from '@/app/(app)/dashboard/actions';
+import { GroupPoolSavingsCard } from '@/components/dashboard/group-pool-savings-card';
 
 function DashboardApp() {
   const { user, loading: authLoading } = useUser();
@@ -52,16 +53,21 @@ function DashboardApp() {
     [pendingTransactions]
   );
   const pendingAnnualDeposit = useMemo(
-    () => pendingTransactions?.find(tx => tx.targetAccount === 'annual'),
+    () => pendingTransactions?.find(tx => tx.targetAccount === 'annual' && tx.type === 'Deposit'),
+    [pendingTransactions]
+  );
+    const pendingGroupPoolDeposit = useMemo(
+    () => pendingTransactions?.find(tx => tx.targetAccount === 'groupPool' && tx.type === 'Deposit'),
     [pendingTransactions]
   );
   
   const balances = {
     solidara: userData?.solidaraBalance ?? 0.0,
     annual: userData?.annualBalance ?? 0.0,
+    groupPool: userData?.groupPoolBalance ?? 0.0,
   };
 
-  const totalSavings = balances.solidara + balances.annual;
+  const totalSavings = balances.solidara + balances.annual + balances.groupPool;
 
   const handleSelfTransfer = useCallback(async (
     amount: number,
@@ -181,9 +187,10 @@ function DashboardApp() {
           </Button>
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <SolidaraSavingsCard balance={balances.solidara} pendingAmount={pendingSolidaraDeposit?.amount} />
         <AnnualSavingsCard balance={balances.annual} pendingAmount={pendingAnnualDeposit?.amount} />
+        <GroupPoolSavingsCard balance={balances.groupPool} pendingAmount={pendingGroupPoolDeposit?.amount} />
         <TotalSavingsCard balance={totalSavings} />
       </div>
       <div>
@@ -213,7 +220,8 @@ function PageSkeleton() {
                  <Skeleton className="h-10 w-40" />
                </div>
             </div>
-             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+             <div className="grid gap-4 sm:grid-cols-2">
+                <CardSkeleton />
                 <CardSkeleton />
                 <CardSkeleton />
                 <CardSkeleton />

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,7 @@ export function XavefLoanPoolCard() {
                             Learn More
                         </Button>
                      </DialogTrigger>
-                     <DepositDialog accountName="Xavef Loan & Savings Pool" targetAccount="annual">
+                     <DepositDialog accountName="Xavef Loan & Savings Pool" targetAccount="groupPool">
                         <Button className="flex-1">
                             <HandCoins className="mr-2 h-4 w-4" />
                             Contribute

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc, runTransaction, increment, type Firestore } from 'firebase/firestore';
@@ -25,7 +26,17 @@ export async function updateTransactionStatusClient(
       if (decision === 'approved') {
         const amount = Number(txData.amount);
         if (txData.type === 'Deposit') {
-          const balanceField = txData.targetAccount === 'annual' ? 'annualBalance' : 'solidaraBalance';
+          let balanceField: string;
+          switch (txData.targetAccount) {
+            case 'annual':
+              balanceField = 'annualBalance';
+              break;
+            case 'groupPool':
+              balanceField = 'groupPoolBalance';
+              break;
+            default:
+              balanceField = 'solidaraBalance';
+          }
           t.update(userRef, { [balanceField]: increment(amount) });
         } else if (txData.type === 'Withdrawal') {
            t.update(userRef, { solidaraBalance: increment(-amount) });
