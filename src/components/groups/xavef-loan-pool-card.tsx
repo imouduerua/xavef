@@ -3,18 +3,11 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { ShieldCheck, ArrowRight, CheckCircle } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { ShieldCheck, HandCoins, CheckCircle } from 'lucide-react';
+import { DepositDialog } from '../dashboard/deposit-dialog';
 
 export function XavefLoanPoolCard() {
     
-    const handleJoin = () => {
-        toast({
-            title: "Coming Soon!",
-            description: "The ability to join the loan pool is under development. Stay tuned!",
-        });
-    };
-
     return (
         <Dialog>
             <Card className="bg-primary/5 border-primary/20">
@@ -33,16 +26,21 @@ export function XavefLoanPoolCard() {
                 </CardHeader>
                 <CardContent>
                      <p className="text-sm text-muted-foreground">
-                        Contribute monthly to a central purse to become eligible for loans guaranteed by other members. All your contributions are available for withdrawal every December.
+                        Contribute to a central purse to become eligible for loans and get a lump-sum payout of your savings every December.
                      </p>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="gap-2">
                      <DialogTrigger asChild>
-                        <Button>
+                        <Button variant="outline">
                             Learn More
-                            <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                      </DialogTrigger>
+                     <DepositDialog accountName="Xavef Loan & Savings Pool" targetAccount="annual">
+                        <Button className="flex-1">
+                            <HandCoins className="mr-2 h-4 w-4" />
+                            Contribute
+                        </Button>
+                    </DepositDialog>
                 </CardFooter>
             </Card>
 
@@ -62,8 +60,8 @@ export function XavefLoanPoolCard() {
                         <li className="flex items-start gap-3">
                             <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                             <div>
-                                <h4 className="font-semibold">Monthly Contributions</h4>
-                                <p className="text-muted-foreground">Build your savings consistently with automated or manual monthly contributions.</p>
+                                <h4 className="font-semibold">Flexible Contributions</h4>
+                                <p className="text-muted-foreground">Build your savings by contributing any amount, any time. All contributions are added to your Annual Savings balance.</p>
                             </div>
                         </li>
                         <li className="flex items-start gap-3">
@@ -82,13 +80,10 @@ export function XavefLoanPoolCard() {
                         </li>
                     </ul>
                 </div>
-                <DialogFooter className="gap-2">
+                <DialogFooter>
                     <DialogClose asChild>
-                        <Button variant="outline">Close</Button>
+                        <Button>Sounds Good</Button>
                     </DialogClose>
-                    <Button onClick={handleJoin}>
-                        Join the Pool
-                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
