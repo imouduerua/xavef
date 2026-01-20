@@ -2,17 +2,9 @@ import { initializeApp, getApps, getApp, App as AdminApp } from 'firebase-admin/
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import 'server-only';
 
-let app: AdminApp;
-const ADMIN_APP_NAME = 'firebase-admin-app-server-side'; // A unique name for the admin app
-
-try {
-  // Try to get an existing app with this name
-  app = getApp(ADMIN_APP_NAME);
-} catch (e) {
-  // If it doesn't exist, initialize it.
-  // Pass no arguments to initializeApp() to rely on Application Default Credentials.
-  app = initializeApp({}, ADMIN_APP_NAME);
-}
+// This simpler pattern is more robust for some environments.
+// It ensures we use the default app instance if it already exists.
+const app: AdminApp = getApps().length > 0 ? getApp() : initializeApp();
 
 const firestore: Firestore = getFirestore(app);
 
