@@ -6,5 +6,5 @@ import {genkit} from 'genkit';
 // authentication conflict that is preventing admin login.
 export const ai = genkit({
   plugins: [],
-  model: 'googleai/gemini-2.5-flash',
+  // model: 'googleai/gemini-2.5-flash', // Temporarily removed to debug auth conflict
 });
