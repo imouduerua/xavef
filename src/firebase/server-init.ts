@@ -1,9 +1,11 @@
+
 import { initializeApp, getApps, getApp, App as AdminApp } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import 'server-only';
 
-// This simpler pattern is more robust for some environments.
-// It ensures we use the default app instance if it already exists.
+// This is the simplest, most robust way to initialize the Firebase Admin SDK.
+// It relies on the standard Application Default Credentials (ADC) provided by the cloud environment.
+// It ensures that the app is only initialized once.
 const app: AdminApp = getApps().length > 0 ? getApp() : initializeApp();
 
 const firestore: Firestore = getFirestore(app);

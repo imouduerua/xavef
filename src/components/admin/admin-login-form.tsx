@@ -5,8 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import React, { useState, useEffect } from 'react';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import React from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -34,13 +34,8 @@ const formSchema = z.object({
 
 export function AdminLoginForm() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
   const auth = useAuth();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -83,6 +78,7 @@ export function AdminLoginForm() {
           // Could not parse error JSON, stick with default message
           errorMsg = `Failed to create server session. Status: ${response.status}`;
         }
+        // This will ensure the server error is displayed to the user.
         throw new Error(errorMsg);
       }
       
@@ -90,6 +86,7 @@ export function AdminLoginForm() {
         title: 'Login Successful',
         description: 'Redirecting to your dashboard...',
       });
+      // Replace the current history entry, so the user can't go back to the login page.
       router.replace('/admin');
 
     } catch (error: any) {
@@ -108,8 +105,6 @@ export function AdminLoginForm() {
       setIsLoading(false);
     }
   }
-
-  const isButtonDisabled = isLoading || !isClient || !auth;
 
   return (
     <Form {...form}>
@@ -151,7 +146,7 @@ export function AdminLoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isButtonDisabled}>
+        <Button type="submit" className="w-full" disabled={isLoading || !auth}>
           {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Signing In...</> : 'Sign In'}
         </Button>
       </form>
