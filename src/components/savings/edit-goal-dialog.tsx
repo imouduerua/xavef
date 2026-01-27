@@ -14,7 +14,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogClose,
 } from '@/components/ui/dialog';
 import {
@@ -41,16 +40,17 @@ const formSchema = z.object({
 
 interface EditGoalDialogProps {
     goal: SavingGoal;
-    children: React.ReactNode;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
 }
 
-export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
+export function EditGoalDialog({ goal, open, onOpenChange }: EditGoalDialogProps) {
   const { user } = useUser();
   const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    // Default values will be set by the effect when the dialog opens
     defaultValues: {
       name: goal.name,
       targetAmount: goal.targetAmount,
@@ -58,7 +58,19 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
     },
   });
 
-  const { isSubmitting } = form;
+  // Reset the form with the goal's current data whenever the dialog opens.
+  React.useEffect(() => {
+    if (open) {
+      form.reset({
+        name: goal.name,
+        targetAmount: goal.targetAmount,
+        emoji: goal.emoji || '🎯',
+      });
+    }
+  }, [open, goal, form]);
+
+
+  const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) {
@@ -75,7 +87,7 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
         title: 'Goal Updated!',
         description: `Your goal "${values.name}" has been updated.`,
       });
-      setIsOpen(false);
+      onOpenChange(false); // Close the dialog on success
     } else {
       toast({
         variant: 'destructive',
@@ -85,24 +97,8 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
     }
   }
 
-  // When the dialog opens, reset the form with the latest goal data.
-  // This ensures that if you open the dialog for different goals, the data is not stale.
-  const handleOpenChange = (open: boolean) => {
-    if (open) {
-      form.reset({
-        name: goal.name,
-        targetAmount: goal.targetAmount,
-        emoji: goal.emoji || '🎯',
-      });
-    }
-    setIsOpen(open);
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Saving Goal</DialogTitle>
