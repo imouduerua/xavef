@@ -24,6 +24,7 @@ import { XavefLogoText } from '@/components/icons';
 const navItems = [
   { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { href: '/admin/users', icon: Users, label: 'Users' },
+  { href: '/admin/groups', icon: Users, label: 'Groups' },
   { href: '/admin/transactions', icon: Banknote, label: 'All Transactions' },
   { href: '/admin/transactions?tab=pending', icon: Clock, label: 'Pending Transactions' },
   { href: '/admin/management', icon: Shield, label: 'Management' },
@@ -41,6 +42,9 @@ export function AdminSidebar() {
     }
     if (href === '/admin/transactions?tab=pending') {
       return pathname === '/admin/transactions' && searchParams.get('tab') === 'pending';
+    }
+    if (href === '/admin/groups') {
+      return pathname.startsWith('/admin/groups');
     }
 
     return exact ? pathname === href : pathname.startsWith(href);
