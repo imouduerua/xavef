@@ -41,7 +41,7 @@ import { Separator } from '../ui/separator';
 
 const formSchema = z.object({
     amount: z.coerce.number().positive('Amount must be a positive number.'),
-    fromAccount: z.enum(['solidara', 'annual']),
+    fromAccount: z.enum(['olidara', 'annual']),
     toAccount: z.string().min(1, "Please select a destination."),
   }).refine((data) => {
     return data.fromAccount !== data.toAccount;
@@ -54,7 +54,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface TransferDialogProps {
-  balances: { solidara: number; annual: number };
+  balances: { olidara: number; annual: number };
   goals: SavingGoal[];
   onSelfTransfer: (
     amount: number,
@@ -70,7 +70,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: '' as any,
-      fromAccount: 'solidara',
+      fromAccount: 'olidara',
       toAccount: '',
     },
   });
@@ -83,7 +83,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
       toast({
         variant: "destructive",
         title: "Transfer Failed",
-        description: `Insufficient ${values.fromAccount === 'solidara' ? 'Olidara' : 'Annual'} balance.`,
+        description: `Insufficient ${values.fromAccount === 'olidara' ? 'Olidara' : 'Annual'} balance.`,
       });
       return;
     }
@@ -103,7 +103,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
     if (!open) {
        reset({
         amount: '' as any,
-        fromAccount: 'solidara',
+        fromAccount: 'olidara',
         toAccount: ''
        });
     }
@@ -162,8 +162,8 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        <SelectItem value="solidara">
-                            Olidara Savings (Balance: ₦{balances.solidara.toFixed(2)})
+                        <SelectItem value="olidara">
+                            Olidara Savings (Balance: ₦{balances.olidara.toFixed(2)})
                         </SelectItem>
                           <SelectItem value="annual">
                             Annual Savings (Balance: ₦{balances.annual.toFixed(2)})
@@ -191,7 +191,7 @@ export function TransferDialog({ balances, goals, onSelfTransfer }: TransferDial
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                       {fromAccountValue === 'solidara' && (
+                       {fromAccountValue === 'olidara' && (
                         <>
                           <SelectItem value="annual">
                             Annual Savings (Balance: ₦{balances.annual.toFixed(2)})

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
@@ -146,7 +147,7 @@ export function UsersTable() {
                     </div>
                 </TableCell>
                 <TableCell>{user.xavefId}</TableCell>
-                <TableCell>{formatCurrency(user.solidaraBalance)}</TableCell>
+                <TableCell>{formatCurrency(user.olidaraBalance)}</TableCell>
                 <TableCell>{formatCurrency(user.annualBalance)}</TableCell>
                 <TableCell>{formatDate(user.createdAt)}</TableCell>
                 <TableCell>

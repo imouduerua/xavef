@@ -8,16 +8,16 @@ import { DepositDialog } from './deposit-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 
-interface SolidaraSavingsCardProps {
+interface OlidaraSavingsCardProps {
   balance: number;
   pendingAmount?: number;
 }
 
-export function SolidaraSavingsCard({ balance, pendingAmount }: SolidaraSavingsCardProps) {
+export function OlidaraSavingsCard({ balance, pendingAmount }: OlidaraSavingsCardProps) {
   const isDisabled = pendingAmount !== undefined;
 
   const depositButton = (
-     <DepositDialog accountName="Olidara Savings" targetAccount="solidara">
+     <DepositDialog accountName="Olidara Savings" targetAccount="olidara">
         <Button className="w-full" disabled={isDisabled}>
            <Banknote className="mr-2" />
            Deposit

@@ -127,7 +127,7 @@ export function GoalCard({ goal }: GoalCardProps) {
     return (
       <AddFundsDialog
         goal={goal}
-        solidaraBalance={userData?.solidaraBalance ?? 0}
+        olidaraBalance={userData?.olidaraBalance ?? 0}
         disabled={userDataLoading || !firestore}
       >
         <Button variant="outline" className="w-full" disabled={userDataLoading || !firestore}>

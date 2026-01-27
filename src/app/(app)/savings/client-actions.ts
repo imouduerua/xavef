@@ -116,12 +116,12 @@ export async function addFundsToGoal(
       const userData = userDoc.data();
       const goalData = goalDoc.data();
 
-      if (userData.solidaraBalance < amount) {
+      if (userData.olidaraBalance < amount) {
         throw new Error('Insufficient Olidara balance.');
       }
 
       // Perform the updates
-      transaction.update(userDocRef, { solidaraBalance: increment(-amount) });
+      transaction.update(userDocRef, { olidaraBalance: increment(-amount) });
       transaction.update(goalDocRef, { currentAmount: increment(amount) });
       
       // Create a transaction record for this internal transfer
@@ -132,7 +132,7 @@ export async function addFundsToGoal(
         description: `Transfer to goal: "${goalData.name}"`,
         type: 'Internal Transfer',
         status: 'Completed',
-        targetAccount: 'solidara',
+        targetAccount: 'olidara',
         userEmail: userData.email,
       });
 
@@ -185,17 +185,17 @@ export async function withdrawFromGoal(
 
       // Perform the updates
       transaction.update(goalDocRef, { currentAmount: increment(-amount) });
-      transaction.update(userDocRef, { solidaraBalance: increment(amount) });
+      transaction.update(userDocRef, { olidaraBalance: increment(amount) });
       
       // Create a transaction record for this internal transfer
       const newTxDocRef = doc(transactionCollectionRef);
       transaction.set(newTxDocRef, {
-        amount: amount, // Credit to Solidara, so positive
+        amount: amount, // Credit to Olidara, so positive
         date: serverTimestamp(),
         description: `Transfer from goal: "${goalData.name}"`,
         type: 'Internal Transfer',
         status: 'Completed',
-        targetAccount: 'solidara',
+        targetAccount: 'olidara',
         userEmail: userData.email,
       });
     });
@@ -236,7 +236,7 @@ export async function withdrawCompletedGoal(
       }
       
       // Add funds back to Olidara balance
-      transaction.update(userDocRef, { solidaraBalance: increment(amountToWithdraw) });
+      transaction.update(userDocRef, { olidaraBalance: increment(amountToWithdraw) });
       // Reset the goal's current amount to 0 instead of deleting it.
       transaction.update(goalDocRef, { currentAmount: 0 });
     });

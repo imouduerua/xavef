@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc, runTransaction, increment, serverTimestamp, collection } from "firebase/firestore";
@@ -26,13 +27,13 @@ export async function transferToAnnual(
             }
 
             const userData = userDoc.data();
-            if (userData.solidaraBalance < amount) {
+            if (userData.olidaraBalance < amount) {
                 throw new Error("Insufficient Olidara balance for this transfer.");
             }
 
             // Debit from Olidara, credit to Annual
             transaction.update(userRef, {
-                solidaraBalance: increment(-amount),
+                olidaraBalance: increment(-amount),
                 annualBalance: increment(amount),
             });
 
@@ -44,7 +45,7 @@ export async function transferToAnnual(
                 description: "Transfer to Annual Savings",
                 type: "Internal Transfer",
                 status: "Completed",
-                targetAccount: "solidara",
+                targetAccount: "olidara",
                 userEmail: userData.email,
             });
         });
