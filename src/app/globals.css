@@ -77,7 +77,7 @@
 
 @layer base {
   html {
-    @apply text-base;
+    font-size: 17px;
   }
   * {
     @apply border-border;
