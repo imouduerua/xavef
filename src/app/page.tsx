@@ -29,7 +29,7 @@ export default function LandingPage() {
         <div className="flex flex-col min-h-screen light">
             <header className="px-4 lg:px-6 h-16 flex items-center border-b">
                 <Link href="#" className="flex items-center justify-center" prefetch={false}>
-                    <XavefLogo className="h-6 w-6 text-sidebar-primary" />
+                    <XavefLogo className="h-6 w-6" />
                     <span className="sr-only">XAVEF Financials</span>
                 </Link>
                 <nav className="ml-auto flex gap-4 sm:gap-6">
