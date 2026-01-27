@@ -6,7 +6,7 @@ import Link from 'next/link';
 import React, { Suspense, useMemo, useCallback, useState, useEffect } from 'react';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
-import { OlidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
+import { OlidaraSavingsCard } from '@/components/dashboard/olidara-savings-card';
 import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
 import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
@@ -58,14 +58,14 @@ function DashboardApp() {
         try {
             await Promise.all([
                 createSavingGoal(firestore, user.uid, {
-                    name: "Dream Vacation",
-                    targetAmount: 500000,
-                    emoji: '✈️'
+                    name: "House Rent",
+                    targetAmount: 1200000,
+                    emoji: '🏠'
                 }),
                 createSavingGoal(firestore, user.uid, {
-                    name: "New Laptop",
-                    targetAmount: 750000,
-                    emoji: '💻'
+                    name: "School Fees",
+                    targetAmount: 800000,
+                    emoji: '🎓'
                 })
             ]);
 
