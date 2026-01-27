@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,7 +55,7 @@ export function ContributeToPoolDialog({ children, disabled }: ContributeToPoolD
 
   const userDocRef = useMemoFirebase(() => (firestore && user?.uid ? doc(firestore, 'users', user.uid) : null), [firestore, user?.uid]);
   const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
-  const solidaraBalance = userData?.solidaraBalance ?? 0;
+  const olidaraBalance = userData?.olidaraBalance ?? 0;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -75,8 +76,8 @@ export function ContributeToPoolDialog({ children, disabled }: ContributeToPoolD
       return;
     }
     
-    if (values.amount > solidaraBalance) {
-        form.setError("amount", { type: "manual", message: `Amount cannot exceed your Olidara balance of ₦${solidaraBalance.toFixed(2)}.` });
+    if (values.amount > olidaraBalance) {
+        form.setError("amount", { type: "manual", message: `Amount cannot exceed your Olidara balance of ₦${olidaraBalance.toFixed(2)}.` });
         return;
     }
 
@@ -131,7 +132,7 @@ export function ContributeToPoolDialog({ children, disabled }: ContributeToPoolD
                     </div>
                   </FormControl>
                    <FormDescription>
-                    Available Olidara Balance: {userDataLoading ? 'Loading...' : `₦${solidaraBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    Available Olidara Balance: {userDataLoading ? 'Loading...' : `₦${olidaraBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -157,3 +158,5 @@ export function ContributeToPoolDialog({ children, disabled }: ContributeToPoolD
     </Dialog>
   );
 }
+
+    

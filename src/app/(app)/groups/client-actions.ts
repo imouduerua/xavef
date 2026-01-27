@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -284,7 +285,7 @@ export async function distributeGroupFunds(
 
       // 1. Credit the recipient's Olidara balance
       transaction.update(recipientUserRef, {
-        solidaraBalance: increment(totalPurse),
+        olidaraBalance: increment(totalPurse),
       });
 
       // 2. Create a "Group Payout" transaction for the recipient
@@ -405,13 +406,13 @@ export async function contributeToGroupFromSavings(
         throw new Error('This group is not active.');
       }
 
-      if (userData.solidaraBalance < group.contributionAmount) {
+      if (userData.olidaraBalance < group.contributionAmount) {
         throw new Error('Insufficient Olidara balance to make contribution.');
       }
 
       // 1. Debit the user's Olidara balance
       transaction.update(userRef, {
-        solidaraBalance: increment(-group.contributionAmount),
+        olidaraBalance: increment(-group.contributionAmount),
       });
 
       // 2. Create a "Group Contribution" transaction for the user
@@ -460,13 +461,13 @@ export async function contributeToGroupPoolFromSavings(
       }
       const userData = userDoc.data() as UserData;
 
-      if (userData.solidaraBalance < amount) {
+      if (userData.olidaraBalance < amount) {
         throw new Error('Insufficient Olidara balance for this contribution.');
       }
 
       // Debit from Olidara, credit to Group Pool
       transaction.update(userRef, {
-        solidaraBalance: increment(-amount),
+        olidaraBalance: increment(-amount),
         groupPoolBalance: increment(amount),
       });
 
@@ -478,7 +479,7 @@ export async function contributeToGroupPoolFromSavings(
         description: 'Contribution to Xavef Savings Pool',
         type: 'Internal Transfer',
         status: 'Completed',
-        targetAccount: 'solidara',
+        targetAccount: 'olidara',
         userEmail: userData.email,
       });
     });
@@ -488,3 +489,5 @@ export async function contributeToGroupPoolFromSavings(
     return { success: false, error: error.message || 'An unexpected error occurred.' };
   }
 }
+
+    

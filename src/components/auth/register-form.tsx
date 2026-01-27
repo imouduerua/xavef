@@ -114,8 +114,9 @@ export function RegisterForm() {
                 xavefId,
                 createdAt: Timestamp.now(),
                 referredBy: referredBy,
-                solidaraBalance: 0,
+                olidaraBalance: 0,
                 annualBalance: 0,
+                groupPoolBalance: 0,
                 bankAccounts: [],
             };
 
@@ -232,3 +233,5 @@ export function RegisterForm() {
     </Form>
   );
 }
+
+    

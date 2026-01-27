@@ -57,13 +57,17 @@
           "format": "date-time",
           "description": "The timestamp when the user account was created."
         },
-        "solidaraBalance": {
+        "olidaraBalance": {
           "type": "number",
           "description": "The user's balance for the Olidara savings account."
         },
         "annualBalance": {
           "type": "number",
           "description": "The user's balance for the Annual savings account."
+        },
+        "groupPoolBalance": {
+          "type": "number",
+          "description": "The user's balance for the Xavef Loan & Savings Pool."
         },
         "bankAccounts": {
             "type": "array",
@@ -139,9 +143,10 @@
         "targetAccount": {
           "type": "string",
           "enum": [
-            "solidara",
+            "olidara",
             "annual",
-            "group"
+            "group",
+            "groupPool"
           ],
           "description": "The target account for the transaction, if applicable."
         },
@@ -383,3 +388,5 @@
     }
   }
 }
+
+    
