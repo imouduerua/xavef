@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { MissingIndexAlert } from '@/components/admin/missing-index-alert';
 import { GroupTransactionsTable } from '@/components/groups/group-transactions-table';
+import { Button } from '@/components/ui/button';
 
 
 function PageSkeleton() {
@@ -232,42 +233,77 @@ export default function AdminGroupDetailsPage() {
                     
                     <Separator />
 
-                    {serializableGroup.payoutOrder && serializableGroup.payoutOrder.length > 0 && (
-                         <div>
-                            <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
-                                <ListOrdered />
-                                Payout Order
-                            </h3>
-                             <div className="space-y-4">
-                                {serializableGroup.payoutOrder.map((memberId, index) => {
-                                    const member = memberMap.get(memberId);
-                                    const isCurrentPayout = index === currentPayoutIndex;
-                                    return (
-                                        <Card key={memberId} className={isCurrentPayout ? 'border-primary bg-primary/10' : ''}>
-                                            <CardContent className="p-4 flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-lg font-bold text-muted-foreground w-6">{index + 1}.</span>
-                                                    <Avatar className="h-9 w-9">
-                                                        <AvatarImage src={undefined} alt={member?.displayName} />
-                                                        <AvatarFallback>{member?.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                                                    </Avatar>
-                                                    <div>
-                                                        <p className="font-semibold">{member?.displayName || 'Loading...'}</p>
-                                                        <p className="text-xs text-muted-foreground">{member?.email}</p>
-                                                    </div>
+                    <div>
+                        <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
+                            <Users />
+                            Group Members ({membersData.length})
+                        </h3>
+                        {loadingMembers ? <Skeleton className="h-24 w-full" /> : (
+                            <div className="space-y-2">
+                                {membersData.map((member) => (
+                                    <Card key={member.uid}>
+                                        <CardContent className="p-3 flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <Avatar className="h-10 w-10">
+                                                    <AvatarImage src={undefined} alt={member.displayName} />
+                                                    <AvatarFallback>{member.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="font-semibold">{member.displayName}</p>
+                                                    <p className="text-sm text-muted-foreground">{member.email}</p>
                                                 </div>
-                                                {isCurrentPayout && (
-                                                    <Badge>
-                                                        <UserCheck className="mr-2 h-4 w-4" />
-                                                        This Week's Payout
-                                                    </Badge>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    )
-                                })}
+                                            </div>
+                                            <Button asChild variant="secondary" size="sm">
+                                                <Link href={`/admin/users/${member.uid}`}>
+                                                    View Profile
+                                                </Link>
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                ))}
                             </div>
-                        </div>
+                        )}
+                    </div>
+
+                    {serializableGroup.payoutOrder && serializableGroup.payoutOrder.length > 0 && (
+                         <>
+                            <Separator />
+                            <div>
+                                <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
+                                    <ListOrdered />
+                                    Payout Order
+                                </h3>
+                                <div className="space-y-4">
+                                    {serializableGroup.payoutOrder.map((memberId, index) => {
+                                        const member = memberMap.get(memberId);
+                                        const isCurrentPayout = index === currentPayoutIndex;
+                                        return (
+                                            <Card key={memberId} className={isCurrentPayout ? 'border-primary bg-primary/10' : ''}>
+                                                <CardContent className="p-4 flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-lg font-bold text-muted-foreground w-6">{index + 1}.</span>
+                                                        <Avatar className="h-9 w-9">
+                                                            <AvatarImage src={undefined} alt={member?.displayName} />
+                                                            <AvatarFallback>{member?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                                        </Avatar>
+                                                        <div>
+                                                            <p className="font-semibold">{member?.displayName || 'Loading...'}</p>
+                                                            <p className="text-xs text-muted-foreground">{member?.email}</p>
+                                                        </div>
+                                                    </div>
+                                                    {isCurrentPayout && (
+                                                        <Badge>
+                                                            <UserCheck className="mr-2 h-4 w-4" />
+                                                            This Week's Payout
+                                                        </Badge>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        </>
                     )}
                     
                     <Separator />
