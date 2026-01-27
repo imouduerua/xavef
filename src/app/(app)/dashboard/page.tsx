@@ -6,7 +6,7 @@ import Link from 'next/link';
 import React, { Suspense, useMemo, useCallback, useState, useEffect } from 'react';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
-import { OlidaraSavingsCard } from '@/components/dashboard/olidara-savings-card';
+import { OlidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
 import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
 import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
@@ -297,3 +297,5 @@ export default function DashboardPage() {
       </Suspense>
     );
   }
+
+    
