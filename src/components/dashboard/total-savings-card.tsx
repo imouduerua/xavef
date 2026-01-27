@@ -22,7 +22,7 @@ export function TotalSavingsCard({ balance }: TotalSavingsCardProps) {
         <p className="text-2xl font-bold tracking-tight md:text-3xl">
           ₦{balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
-        <CardDescription>Your combined Olidara & Annual balance.</CardDescription>
+        <CardDescription>Your combined savings across all accounts.</CardDescription>
       </CardContent>
     </Card>
   );

@@ -62,7 +62,7 @@ export function XavefLoanPoolCard() {
                             <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                             <div>
                                 <h4 className="font-semibold">Flexible Contributions</h4>
-                                <p className="text-muted-foreground">Build your savings by contributing any amount, any time. All contributions are added to your Annual Savings balance.</p>
+                                <p className="text-muted-foreground">Build your savings by contributing any amount, any time. All contributions are added to your Xavef Pool Savings balance.</p>
                             </div>
                         </li>
                         <li className="flex items-start gap-3">
