@@ -3,7 +3,7 @@
 
 import { Copy, Users } from 'lucide-react';
 import Link from 'next/link';
-import React, { Suspense, useMemo, useCallback } from 'react';
+import React, { Suspense, useMemo, useCallback, useState, useEffect } from 'react';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
 import { OlidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
@@ -16,8 +16,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AccountType, SavingGoal, Transaction, GroupJoinRequest, UserData } from '@/lib/types';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
-import { collection, query, where, orderBy, doc } from 'firebase/firestore';
-import { addFundsToGoal } from '@/app/(app)/savings/client-actions';
+import { collection, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { addFundsToGoal, createSavingGoal } from '@/app/(app)/savings/client-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { transferToAnnual } from '@/app/(app)/dashboard/actions';
 import { GroupPoolSavingsCard } from '@/components/dashboard/group-pool-savings-card';
@@ -25,6 +25,7 @@ import { GroupPoolSavingsCard } from '@/components/dashboard/group-pool-savings-
 function DashboardApp() {
   const { user, loading: authLoading } = useUser();
   const firestore = useFirestore();
+  const [creatingGoals, setCreatingGoals] = useState(false);
 
   const userDocRef = useMemoFirebase(() => firestore && user?.uid ? doc(firestore, 'users', user.uid) : null, [firestore, user?.uid]);
   const { data: userData, loading: userDataLoading } = useDoc<UserData>(userDocRef);
@@ -44,8 +45,47 @@ function DashboardApp() {
 
 
   const { data: pendingTransactions } = useCollection<Transaction>(pendingTransactionsQuery);
-  const { data: goals } = useCollection<SavingGoal>(goalsQuery);
+  const { data: goals, loading: goalsLoading } = useCollection<SavingGoal>(goalsQuery);
   const { data: joinRequests } = useCollection<GroupJoinRequest>(joinRequestsQuery);
+
+  useEffect(() => {
+    const createDefaultGoals = async () => {
+        if (authLoading || userDataLoading || !user || !userData || !firestore || userData.goalsInitialized || creatingGoals) {
+            return;
+        }
+
+        setCreatingGoals(true);
+        try {
+            await Promise.all([
+                createSavingGoal(firestore, user.uid, {
+                    name: "Dream Vacation",
+                    targetAmount: 500000,
+                    emoji: '✈️'
+                }),
+                createSavingGoal(firestore, user.uid, {
+                    name: "New Laptop",
+                    targetAmount: 750000,
+                    emoji: '💻'
+                })
+            ]);
+
+            const userRef = doc(firestore, 'users', user.uid);
+            await updateDoc(userRef, { goalsInitialized: true });
+
+            toast({
+                title: "Welcome!",
+                description: "We've created a couple of example saving goals for you to get started."
+            });
+
+        } catch (error) {
+            console.error("Failed to create default saving goals:", error);
+        } finally {
+            setCreatingGoals(false);
+        }
+    };
+
+    createDefaultGoals();
+  }, [authLoading, userDataLoading, user, userData, firestore, creatingGoals]);
 
 
   const pendingOlidaraDeposit = useMemo(

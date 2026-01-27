@@ -33,6 +33,7 @@ export interface UserData {
   olidaraBalance: number;
   annualBalance: number;
   groupPoolBalance: number;
+  goalsInitialized?: boolean;
   bankAccounts: BankAccount[];
 }
 
