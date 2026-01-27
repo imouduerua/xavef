@@ -12,7 +12,7 @@ export default function LoginPage() {
         <div className="flex w-full md:w-1/2 flex-col items-center justify-center p-8">
             <div className="w-full max-w-md space-y-8">
                 <div className="flex flex-col items-center text-center">
-                    <XavefLogo className="mb-4 h-12 w-12 text-primary" />
+                    <XavefLogo className="mb-4 h-12 w-12 text-sidebar-primary" />
                     <h1 className="text-3xl font-bold tracking-tight text-foreground">
                         Welcome Back
                     </h1>
