@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -59,7 +58,7 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
     },
   });
 
-  const { isSubmitting, reset } = form;
+  const { isSubmitting } = form;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) {
@@ -85,20 +84,22 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
       });
     }
   }
-  
-  React.useEffect(() => {
-    if (isOpen) {
-      reset({
+
+  // When the dialog opens, reset the form with the latest goal data.
+  // This ensures that if you open the dialog for different goals, the data is not stale.
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      form.reset({
         name: goal.name,
         targetAmount: goal.targetAmount,
         emoji: goal.emoji || '🎯',
       });
     }
-  }, [isOpen, goal.id, goal.name, goal.targetAmount, goal.emoji, reset]);
-
+    setIsOpen(open);
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
