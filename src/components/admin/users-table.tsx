@@ -127,6 +127,7 @@ export function UsersTable() {
               <TableHead>Xavef ID</TableHead>
               <TableHead>Olidara Balance</TableHead>
               <TableHead>Annual Balance</TableHead>
+              <TableHead>Pool Balance</TableHead>
               <TableHead>Date Joined</TableHead>
               <TableHead><span className="sr-only">Actions</span></TableHead>
             </TableRow>
@@ -149,6 +150,7 @@ export function UsersTable() {
                 <TableCell>{user.xavefId}</TableCell>
                 <TableCell>{formatCurrency(user.olidaraBalance)}</TableCell>
                 <TableCell>{formatCurrency(user.annualBalance)}</TableCell>
+                <TableCell>{formatCurrency(user.groupPoolBalance)}</TableCell>
                 <TableCell>{formatDate(user.createdAt)}</TableCell>
                 <TableCell>
                      <DropdownMenu>

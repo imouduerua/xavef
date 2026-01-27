@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -140,11 +141,15 @@ export default function UserDetailPage() {
                         <CardContent className="space-y-3">
                              <div className="flex justify-between items-baseline">
                                 <span className="text-muted-foreground">Olidara Savings</span>
-                                <span className="font-bold text-lg">{formatCurrency(user.solidaraBalance)}</span>
+                                <span className="font-bold text-lg">{formatCurrency(user.olidaraBalance)}</span>
                             </div>
                              <div className="flex justify-between items-baseline">
                                 <span className="text-muted-foreground">Annual Savings</span>
                                 <span className="font-bold text-lg">{formatCurrency(user.annualBalance)}</span>
+                            </div>
+                             <div className="flex justify-between items-baseline">
+                                <span className="text-muted-foreground">Group Pool Savings</span>
+                                <span className="font-bold text-lg">{formatCurrency(user.groupPoolBalance)}</span>
                             </div>
                         </CardContent>
                     </Card>
