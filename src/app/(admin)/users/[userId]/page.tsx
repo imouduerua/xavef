@@ -9,7 +9,7 @@ import { doc, collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { ArrowLeft, User, Wallet, Calendar, AtSign, Fingerprint } from 'lucide-react';
+import { ArrowLeft, User, Wallet, Calendar, AtSign, Fingerprint, UserPlus } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
@@ -85,10 +85,13 @@ export default function UserDetailPage() {
     const userDocRef = useMemoFirebase(() => (firestore && userId) ? doc(firestore, 'users', userId) : null, [firestore, userId]);
     const { data: user, loading: userLoading } = useDoc<UserData>(userDocRef);
 
+    const referrerDocRef = useMemoFirebase(() => (firestore && user?.referredBy) ? doc(firestore, 'users', user.referredBy) : null, [firestore, user?.referredBy]);
+    const { data: referrer, loading: referrerLoading } = useDoc<UserData>(referrerDocRef);
+
     const transactionsQuery = useMemoFirebase(() => (firestore && userId) ? query(collection(firestore, 'users', userId, 'transactions'), orderBy('date', 'desc')) : null, [firestore, userId]);
     const { data: transactions, loading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
 
-    if (userLoading || transactionsLoading) {
+    if (userLoading || transactionsLoading || referrerLoading) {
         return <PageSkeleton />;
     }
 
@@ -132,6 +135,12 @@ export default function UserDetailPage() {
                                 <span className="text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" /> Joined</span>
                                 <span className="font-medium">{formatDate(user.createdAt)}</span>
                             </div>
+                             {referrer && (
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground flex items-center gap-2"><UserPlus className="h-4 w-4" /> Referred By</span>
+                                    <Link href={`/admin/users/${referrer.id}`} className="font-medium text-primary hover:underline truncate">{referrer.displayName}</Link>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                     <Card>
@@ -146,6 +155,10 @@ export default function UserDetailPage() {
                              <div className="flex justify-between items-baseline">
                                 <span className="text-muted-foreground">Annual Savings</span>
                                 <span className="font-bold text-lg">{formatCurrency(user.annualBalance)}</span>
+                            </div>
+                             <div className="flex justify-between items-baseline">
+                                <span className="text-muted-foreground">Group Pool Savings</span>
+                                <span className="font-bold text-lg">{formatCurrency(user.groupPoolBalance)}</span>
                             </div>
                         </CardContent>
                     </Card>
