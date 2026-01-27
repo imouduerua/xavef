@@ -31,7 +31,6 @@ import { toast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 import { updateSavingGoal } from '@/app/(app)/savings/client-actions';
 import { SavingGoal } from '@/lib/types';
-import { ScrollArea } from '../ui/scroll-area';
 
 const defaultEmojis = ['🎯', '✈️', '🏠', '🚗', '🎓', '🎁', '💻', '💍', '💼', '🏖️', '🚀', '🎉'];
 
@@ -60,7 +59,7 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
     },
   });
 
-  const { isSubmitting } = form.formState;
+  const { isSubmitting, reset } = form;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) {
@@ -87,18 +86,15 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
     }
   }
   
-  // This effect resets the form with the correct goal data whenever the dialog is opened
-  // or when the goal itself changes. Using primitive values from the `goal` object in
-  // the dependency array prevents unwanted resets during other component re-renders.
   React.useEffect(() => {
     if (isOpen) {
-      form.reset({
+      reset({
         name: goal.name,
         targetAmount: goal.targetAmount,
         emoji: goal.emoji || '🎯',
       });
     }
-  }, [isOpen, goal.id, goal.name, goal.targetAmount, goal.emoji, form.reset]);
+  }, [isOpen, goal.id, goal.name, goal.targetAmount, goal.emoji, reset]);
 
 
   return (
@@ -106,76 +102,72 @@ export function EditGoalDialog({ goal, children }: EditGoalDialogProps) {
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90vh]">
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Saving Goal</DialogTitle>
+          <DialogDescription>
+            Update the details for your "{goal.name}" goal.
+          </DialogDescription>
+        </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
-            <DialogHeader className="p-6 pb-4">
-              <DialogTitle>Edit Saving Goal</DialogTitle>
-              <DialogDescription>
-                Update the details for your "{goal.name}" goal.
-              </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="flex-1 px-6">
-              <div className="space-y-4 py-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Goal Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., European Vacation" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="targetAmount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Goal Amount</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
-                            ₦
-                          </span>
-                          <Input type="number" placeholder="0.00" className="pl-8" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="emoji"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Select an Emoji</FormLabel>
-                      <FormControl>
-                        <div className="grid grid-cols-6 gap-2">
-                          {defaultEmojis.map((emoji) => (
-                            <Button
-                              key={emoji}
-                              type="button"
-                              variant={field.value === emoji ? 'default' : 'outline'}
-                              className="text-2xl p-2 h-auto aspect-square"
-                              onClick={() => field.onChange(emoji)}
-                            >
-                              {emoji}
-                            </Button>
-                          ))}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </ScrollArea>
-            <DialogFooter className="p-6 pt-4 border-t mt-auto">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Goal Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., European Vacation" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="targetAmount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Goal Amount</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
+                        ₦
+                      </span>
+                      <Input type="number" placeholder="0.00" className="pl-8" {...field} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="emoji"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Select an Emoji</FormLabel>
+                  <FormControl>
+                    <div className="grid grid-cols-6 gap-2">
+                      {defaultEmojis.map((emoji) => (
+                        <Button
+                          key={emoji}
+                          type="button"
+                          variant={field.value === emoji ? 'default' : 'outline'}
+                          className="text-2xl p-2 h-auto aspect-square"
+                          onClick={() => field.onChange(emoji)}
+                        >
+                          {emoji}
+                        </Button>
+                      ))}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter className="pt-4">
               <DialogClose asChild>
                 <Button type="button" variant="outline">
                   Cancel
