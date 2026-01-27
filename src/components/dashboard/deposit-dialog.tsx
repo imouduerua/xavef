@@ -132,7 +132,7 @@ export function DepositDialog({
       const newTransaction = {
         date: Timestamp.now(),
         amount: amountAsNumber,
-        description: `Contribution to ${accountName.replace("Solidara", "Olidara")}`,
+        description: `Contribution to ${accountName}`,
         status: 'Pending' as const,
         type: 'Deposit' as const,
         targetAccount: targetAccount,
@@ -278,5 +278,3 @@ export function DepositDialog({
     </Dialog>
   );
 }
-
-    
