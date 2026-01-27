@@ -1,13 +1,13 @@
-
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
   Banknote,
   Shield,
+  Clock,
 } from 'lucide-react';
 
 import {
@@ -24,15 +24,25 @@ import { XavefLogoText } from '@/components/icons';
 const navItems = [
   { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { href: '/admin/users', icon: Users, label: 'Users' },
-  { href: '/admin/transactions', icon: Banknote, label: 'Transactions' },
+  { href: '/admin/transactions', icon: Banknote, label: 'All Transactions' },
+  { href: '/admin/transactions?tab=pending', icon: Clock, label: 'Pending Transactions' },
   { href: '/admin/management', icon: Shield, label: 'Management' },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isMobile, setOpenMobile } = useSidebar();
 
   const isActive = (href: string, exact = false) => {
+    if (href === '/admin/transactions') {
+      // "All Transactions" is active if we're on the transactions page, but not specifically on the "pending" tab.
+      return pathname === '/admin/transactions' && searchParams.get('tab') !== 'pending';
+    }
+    if (href === '/admin/transactions?tab=pending') {
+      return pathname === '/admin/transactions' && searchParams.get('tab') === 'pending';
+    }
+
     return exact ? pathname === href : pathname.startsWith(href);
   };
   
