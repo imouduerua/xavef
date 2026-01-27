@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -8,6 +9,7 @@ import {
   Banknote,
   Shield,
   Clock,
+  UserCog,
 } from 'lucide-react';
 
 import {
@@ -25,9 +27,10 @@ const navItems = [
   { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { href: '/admin/users', icon: Users, label: 'Users' },
   { href: '/admin/groups', icon: Users, label: 'Groups' },
+  { href: '/admin/pool', icon: Shield, label: 'Savings Pool' },
   { href: '/admin/transactions', icon: Banknote, label: 'All Transactions' },
   { href: '/admin/transactions?tab=pending', icon: Clock, label: 'Pending Transactions' },
-  { href: '/admin/management', icon: Shield, label: 'Management' },
+  { href: '/admin/management', icon: UserCog, label: 'Management' },
 ];
 
 export function AdminSidebar() {
@@ -45,6 +48,9 @@ export function AdminSidebar() {
     }
     if (href === '/admin/groups') {
       return pathname.startsWith('/admin/groups');
+    }
+    if (href === '/admin/pool') {
+      return pathname.startsWith('/admin/pool');
     }
 
     return exact ? pathname === href : pathname.startsWith(href);

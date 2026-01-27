@@ -72,7 +72,7 @@ export function StatsCards() {
 
     const statCards: StatCardProps[] = [
         { value: usersCount, icon: Users, title: 'Total Users', href: '/admin/users' },
-        { value: totalPoolBalance, icon: Shield, title: 'Total Pool Savings', href: '/admin/users', formatAsCurrency: true },
+        { value: totalPoolBalance, icon: Shield, title: 'Total Pool Savings', href: '/admin/pool', formatAsCurrency: true },
         { value: pendingCount, icon: Clock, title: 'Pending Transactions', href: '/admin/transactions?tab=pending' },
         { value: completedCount, icon: Banknote, title: 'Completed Transactions', href: '/admin/transactions?tab=completed' },
         { value: failedCount, icon: ShieldAlert, title: 'Failed Transactions', href: '/admin/transactions?tab=failed' },
