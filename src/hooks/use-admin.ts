@@ -1,25 +1,20 @@
 'use client';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 
+/**
+ * This hook checks if the currently logged-in user is an administrator.
+ * To unblock admin access, this has been temporarily simplified to only
+ * check for the hardcoded super admin email.
+ */
 export function useAdmin() {
   const { user, loading: authLoading } = useUser();
-  const firestore = useFirestore();
 
-  // The admin check is now based on a document in the 'admins' collection
-  const adminDocRef = useMemoFirebase(
-    () => (user?.uid && firestore ? doc(firestore, 'admins', user.uid) : null),
-    [user?.uid, firestore]
-  );
-
-  const { data: adminDoc, loading: adminLoading } = useDoc(adminDocRef);
+  // For now, only the hardcoded admin email is considered an admin.
+  // This bypasses any Firestore-related authentication issues.
+  const isAdmin = user?.email === 'admin@xavef.com';
   
-  // Fallback for the initial hardcoded admin to ensure they can set up other admins.
-  const isHardcodedAdmin = user?.email === 'admin@xavef.com';
-
-  const isAdmin = !!adminDoc || isHardcodedAdmin;
-  // If the user is the hardcoded admin, we don't need to wait for the firestore read.
-  const loading = authLoading || (!isHardcodedAdmin && adminLoading);
+  // The loading state now only depends on the authentication status.
+  const loading = authLoading;
 
   return { isAdmin, loading };
 }
