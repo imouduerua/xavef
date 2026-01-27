@@ -9,9 +9,16 @@ import { useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { useAdmin } from '@/hooks/use-admin';
 
-// IMPORTANT: You need to generate this key in your Firebase project settings
-// under Cloud Messaging > Web configuration.
-const VAPID_KEY = 'YOUR_VAPID_PUBLIC_KEY'; 
+// =======================================================================================
+// IMPORTANT: ACTION REQUIRED TO ENABLE PUSH NOTIFICATIONS
+// =======================================================================================
+// You need to generate a "VAPID key" (Web Push certificate) in your Firebase project:
+// 1. Go to Project Settings > Cloud Messaging.
+// 2. In the "Web configuration" section, find your Web Push certificates.
+// 3. Click "Generate key pair".
+// 4. Copy the generated key and paste it below, replacing the placeholder string.
+// =======================================================================================
+const VAPID_KEY = 'PASTE_YOUR_FIREBASE_MESSAGING_VAPID_KEY_HERE';
 
 export const FCMInitializer = () => {
     const app = useFirebaseApp();
@@ -24,8 +31,8 @@ export const FCMInitializer = () => {
             return;
         }
 
-        if (VAPID_KEY === 'YOUR_VAPID_PUBLIC_KEY') {
-            console.warn('FCM VAPID key not set. Push notifications will not work.');
+        if (VAPID_KEY === 'PASTE_YOUR_FIREBASE_MESSAGING_VAPID_KEY_HERE') {
+            console.warn('FCM VAPID key not set. Push notifications will not work until you add it.');
             return;
         }
 
