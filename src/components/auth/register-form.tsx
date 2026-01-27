@@ -118,6 +118,7 @@ export function RegisterForm() {
                 annualBalance: 0,
                 groupPoolBalance: 0,
                 bankAccounts: [],
+                goalsInitialized: false,
             };
 
             transaction.set(userDocRef, newUserProfile);
@@ -218,7 +219,7 @@ export function RegisterForm() {
             name="referralCode"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Referral Code (Optional)</FormLabel>
+                    <FormLabel>Referral Code</FormLabel>
                     <FormControl>
                         <Input placeholder="Enter referral code" {...field} />
                     </FormControl>
@@ -233,5 +234,3 @@ export function RegisterForm() {
     </Form>
   );
 }
-
-    

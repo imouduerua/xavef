@@ -69,6 +69,10 @@
           "type": "number",
           "description": "The user's balance for the Xavef Loan & Savings Pool."
         },
+        "goalsInitialized": {
+            "type": "boolean",
+            "description": "Flag to indicate if default saving goals have been created for the user."
+        },
         "bankAccounts": {
             "type": "array",
             "description": "A list of the user's bank accounts.",
@@ -388,5 +392,3 @@
     }
   }
 }
-
-    
