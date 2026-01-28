@@ -35,7 +35,7 @@ import type { SavingGoal } from '@/lib/types';
 
 interface AddFundsDialogProps {
   goal: SavingGoal;
-  solidaraBalance: number;
+  olidaraBalance: number;
   children: React.ReactNode;
   disabled?: boolean;
 }
@@ -50,7 +50,7 @@ const addFundsFormSchema = z.object({
 
 type AddFundsFormValues = z.infer<typeof addFundsFormSchema>;
 
-export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: AddFundsDialogProps) {
+export function AddFundsDialog({ goal, olidaraBalance, children, disabled }: AddFundsDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useUser();
   const { toast } = useToast();
@@ -78,8 +78,8 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
     }
     
     // Manually check the balance before submitting.
-    if (values.amount > solidaraBalance) {
-        form.setError("amount", { type: "manual", message: `Amount cannot exceed your Solidara balance of ₦${solidaraBalance.toFixed(2)}.` });
+    if (values.amount > olidaraBalance) {
+        form.setError("amount", { type: "manual", message: `Amount cannot exceed your Olidara balance of ₦${olidaraBalance.toFixed(2)}.` });
         return;
     }
 
@@ -115,7 +115,7 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
         <DialogHeader>
           <DialogTitle>Add Funds to "{goal.name}"</DialogTitle>
           <DialogDescription>
-            Transfer money from your main Solidara account to this savings goal.
+            Transfer money from your main Olidara account to this savings goal.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -135,7 +135,7 @@ export function AddFundsDialog({ goal, solidaraBalance, children, disabled }: Ad
                     </div>
                   </FormControl>
                    <FormDescription>
-                    Available Solidara Balance: ₦{solidaraBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    Available Olidara Balance: ₦{olidaraBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

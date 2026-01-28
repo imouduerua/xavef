@@ -6,7 +6,7 @@ import Link from 'next/link';
 import React, { Suspense, useMemo, useCallback, useState, useEffect } from 'react';
 
 import { AnnualSavingsCard } from '@/components/dashboard/annual-savings-card';
-import { SolidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
+import { OlidaraSavingsCard } from '@/components/dashboard/solidara-savings-card';
 import { TotalSavingsCard } from '@/components/dashboard/total-savings-card';
 import { TransferDialog } from '@/components/dashboard/transfer-dialog';
 import { Button } from '@/components/ui/button';
@@ -88,8 +88,8 @@ function DashboardApp() {
   }, [authLoading, userDataLoading, user, userData, firestore, creatingGoals]);
 
 
-  const pendingSolidaraDeposit = useMemo(
-    () => pendingTransactions?.find(tx => tx.targetAccount === 'solidara' && tx.type === 'Deposit'),
+  const pendingOlidaraDeposit = useMemo(
+    () => pendingTransactions?.find(tx => tx.targetAccount === 'olidara' && tx.type === 'Deposit'),
     [pendingTransactions]
   );
   const pendingAnnualDeposit = useMemo(
@@ -102,12 +102,12 @@ function DashboardApp() {
   );
   
   const balances = {
-    solidara: userData?.solidaraBalance ?? 0.0,
+    olidara: userData?.olidaraBalance ?? 0.0,
     annual: userData?.annualBalance ?? 0.0,
     groupPool: userData?.groupPoolBalance ?? 0.0,
   };
 
-  const totalSavings = balances.solidara + balances.annual + balances.groupPool;
+  const totalSavings = balances.olidara + balances.annual + balances.groupPool;
 
   const handleSelfTransfer = useCallback(async (
     amount: number,
@@ -125,8 +125,8 @@ function DashboardApp() {
         return false;
     }
     
-    // from solidara
-    if (from === 'solidara') {
+    // from olidara
+    if (from === 'olidara') {
       if (to === 'annual') {
           const result = await transferToAnnual(firestore, user.uid, amount);
           if (result.success) {
@@ -228,7 +228,7 @@ function DashboardApp() {
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        <SolidaraSavingsCard balance={balances.solidara} pendingAmount={pendingSolidaraDeposit?.amount} />
+        <OlidaraSavingsCard balance={balances.olidara} pendingAmount={pendingOlidaraDeposit?.amount} />
         <AnnualSavingsCard balance={balances.annual} pendingAmount={pendingAnnualDeposit?.amount} />
         <GroupPoolSavingsCard balance={balances.groupPool} pendingAmount={pendingGroupPoolDeposit?.amount} />
         <TotalSavingsCard balance={totalSavings} />

@@ -114,7 +114,7 @@ export function WithdrawFundsDialog({ goal, children, disabled }: WithdrawFundsD
         <DialogHeader>
           <DialogTitle>Withdraw Funds from "{goal.name}"</DialogTitle>
           <DialogDescription>
-            Transfer money from this savings goal back to your main Solidara account.
+            Transfer money from this savings goal back to your main Olidara account.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

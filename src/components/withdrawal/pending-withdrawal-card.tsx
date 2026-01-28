@@ -29,7 +29,7 @@ export function PendingWithdrawalCard({ transaction }: PendingWithdrawalCardProp
                      <Clock className="h-6 w-6 text-yellow-600" />
                     <CardTitle>Withdrawal Request Pending</CardTitle>
                 </div>
-                <CardDescription>Your request to withdraw from your Solidara account is awaiting admin approval. You cannot make another withdrawal until this one is processed.</CardDescription>
+                <CardDescription>Your request to withdraw from your Olidara account is awaiting admin approval. You cannot make another withdrawal until this one is processed.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
                 <div className="flex justify-between">

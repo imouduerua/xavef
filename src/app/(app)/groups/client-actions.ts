@@ -283,9 +283,9 @@ export async function distributeGroupFunds(
       const recipientName = recipientData?.displayName || 'A member';
 
 
-      // 1. Credit the recipient's Solidara balance
+      // 1. Credit the recipient's Olidara balance
       transaction.update(recipientUserRef, {
-        solidaraBalance: increment(totalPurse),
+        olidaraBalance: increment(totalPurse),
       });
 
       // 2. Create a "Group Payout" transaction for the recipient
@@ -406,13 +406,13 @@ export async function contributeToGroupFromSavings(
         throw new Error('This group is not active.');
       }
 
-      if (userData.solidaraBalance < group.contributionAmount) {
-        throw new Error('Insufficient Solidara balance to make contribution.');
+      if (userData.olidaraBalance < group.contributionAmount) {
+        throw new Error('Insufficient Olidara balance to make contribution.');
       }
 
-      // 1. Debit the user's Solidara balance
+      // 1. Debit the user's Olidara balance
       transaction.update(userRef, {
-        solidaraBalance: increment(-group.contributionAmount),
+        olidaraBalance: increment(-group.contributionAmount),
       });
 
       // 2. Create a "Group Contribution" transaction for the user
@@ -461,13 +461,13 @@ export async function contributeToGroupPoolFromSavings(
       }
       const userData = userDoc.data() as UserData;
 
-      if (userData.solidaraBalance < amount) {
-        throw new Error('Insufficient Solidara balance for this contribution.');
+      if (userData.olidaraBalance < amount) {
+        throw new Error('Insufficient Olidara balance for this contribution.');
       }
 
-      // Debit from Solidara, credit to Group Pool
+      // Debit from Olidara, credit to Group Pool
       transaction.update(userRef, {
-        solidaraBalance: increment(-amount),
+        olidaraBalance: increment(-amount),
         groupPoolBalance: increment(amount),
       });
 
@@ -479,7 +479,7 @@ export async function contributeToGroupPoolFromSavings(
         description: 'Contribution to Xavef Savings Pool',
         type: 'Internal Transfer',
         status: 'Completed',
-        targetAccount: 'solidara',
+        targetAccount: 'olidara',
         userEmail: userData.email,
       });
     });

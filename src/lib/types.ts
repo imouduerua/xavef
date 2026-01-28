@@ -1,5 +1,4 @@
 
-
 import type { FieldValue, Timestamp } from "firebase/firestore";
 
 export interface User {
@@ -30,7 +29,7 @@ export interface UserData {
   xavefId: string;
   referredBy: string | null;
   createdAt: any;
-  solidaraBalance: number;
+  olidaraBalance: number;
   annualBalance: number;
   groupPoolBalance: number;
   goalsInitialized?: boolean;
@@ -50,7 +49,7 @@ export interface LoanAccount {
   nextPaymentDate: string;
 }
 
-export type AccountType = 'solidara' | 'annual' | 'groupPool';
+export type AccountType = 'olidara' | 'annual' | 'groupPool';
 export type TransactionType = "Deposit" | "Withdrawal" | "Loan Payment" | "Interest" | "Group Contribution" | "Group Payout" | "Internal Transfer";
 export type TransactionStatus = "Completed" | "Pending" | "Failed";
 

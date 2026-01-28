@@ -57,9 +57,9 @@
           "format": "date-time",
           "description": "The timestamp when the user account was created."
         },
-        "solidaraBalance": {
+        "olidaraBalance": {
           "type": "number",
-          "description": "The user's balance for the Solidara savings account."
+          "description": "The user's balance for the Olidara savings account."
         },
         "annualBalance": {
           "type": "number",
@@ -147,7 +147,7 @@
         "targetAccount": {
           "type": "string",
           "enum": [
-            "solidara",
+            "olidara",
             "annual",
             "group",
             "groupPool"
