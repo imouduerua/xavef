@@ -149,8 +149,8 @@ export default function UserDetailPage() {
                         </CardHeader>
                         <CardContent className="space-y-3">
                              <div className="flex justify-between items-baseline">
-                                <span className="text-muted-foreground">Olidara Savings</span>
-                                <span className="font-bold text-lg">{formatCurrency(user.olidaraBalance)}</span>
+                                <span className="text-muted-foreground">Solidara Savings</span>
+                                <span className="font-bold text-lg">{formatCurrency(user.solidaraBalance)}</span>
                             </div>
                              <div className="flex justify-between items-baseline">
                                 <span className="text-muted-foreground">Annual Savings</span>

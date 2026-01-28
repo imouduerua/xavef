@@ -35,11 +35,11 @@ export async function updateTransactionStatusClient(
               balanceField = 'groupPoolBalance';
               break;
             default:
-              balanceField = 'olidaraBalance';
+              balanceField = 'solidaraBalance';
           }
           t.update(userRef, { [balanceField]: increment(amount) });
         } else if (txData.type === 'Withdrawal') {
-           t.update(userRef, { olidaraBalance: increment(-amount) });
+           t.update(userRef, { solidaraBalance: increment(-amount) });
         }
         t.update(transactionRef, { status: 'Completed' });
       } else if (decision === 'declined') {

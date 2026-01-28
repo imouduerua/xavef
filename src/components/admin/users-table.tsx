@@ -125,7 +125,7 @@ export function UsersTable() {
             <TableRow>
               <TableHead>User</TableHead>
               <TableHead>Xavef ID</TableHead>
-              <TableHead>Olidara Balance</TableHead>
+              <TableHead>Solidara Balance</TableHead>
               <TableHead>Annual Balance</TableHead>
               <TableHead>Pool Balance</TableHead>
               <TableHead>Date Joined</TableHead>
@@ -148,7 +148,7 @@ export function UsersTable() {
                     </div>
                 </TableCell>
                 <TableCell>{user.xavefId}</TableCell>
-                <TableCell>{formatCurrency(user.olidaraBalance)}</TableCell>
+                <TableCell>{formatCurrency(user.solidaraBalance)}</TableCell>
                 <TableCell>{formatCurrency(user.annualBalance)}</TableCell>
                 <TableCell>{formatCurrency(user.groupPoolBalance)}</TableCell>
                 <TableCell>{formatDate(user.createdAt)}</TableCell>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -113,7 +114,7 @@ export function WithdrawFundsDialog({ goal, children, disabled }: WithdrawFundsD
         <DialogHeader>
           <DialogTitle>Withdraw Funds from "{goal.name}"</DialogTitle>
           <DialogDescription>
-            Transfer money from this savings goal back to your main Olidara account.
+            Transfer money from this savings goal back to your main Solidara account.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

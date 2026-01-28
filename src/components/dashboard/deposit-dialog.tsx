@@ -48,7 +48,7 @@ type FormValues = z.infer<typeof depositSchema>;
 
 interface DepositDialogProps {
   accountName: string;
-  targetAccount: AccountType;
+  targetAccount: "solidara" | "annual" | "groupPool";
   children: React.ReactNode;
 }
 

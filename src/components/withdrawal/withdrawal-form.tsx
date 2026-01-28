@@ -32,13 +32,13 @@ import { useFirestore, useUser } from '@/firebase';
 import { Card, CardContent } from '../ui/card';
 
 interface WithdrawalFormProps {
-  olidaraBalance: number;
+  solidaraBalance: number;
   bankAccounts: BankAccount[];
 }
 
 const WITHDRAWAL_FEE_PERCENTAGE = 0.033;
 
-export function WithdrawalForm({ olidaraBalance, bankAccounts }: WithdrawalFormProps) {
+export function WithdrawalForm({ solidaraBalance, bankAccounts }: WithdrawalFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
@@ -48,7 +48,7 @@ export function WithdrawalForm({ olidaraBalance, bankAccounts }: WithdrawalFormP
       .number()
       .positive('Amount must be positive.')
       .min(100, 'Minimum withdrawal is ₦100.00')
-      .max(olidaraBalance, `Withdrawal cannot exceed your balance of ₦${olidaraBalance.toFixed(2)}`),
+      .max(solidaraBalance, `Withdrawal cannot exceed your balance of ₦${solidaraBalance.toFixed(2)}`),
     bankAccountId: z.string().min(1, 'Please select a bank account.'),
   });
 
@@ -108,7 +108,7 @@ export function WithdrawalForm({ olidaraBalance, bankAccounts }: WithdrawalFormP
         description: `Withdrawal to ${selectedAccount.bankName}`,
         type: 'Withdrawal' as const,
         status: 'Pending' as const,
-        targetAccount: 'olidara' as const,
+        targetAccount: 'solidara' as const,
         userEmail: user.email,
         destinationBankName: selectedAccount.bankName,
         destinationAccountName: selectedAccount.accountName,
@@ -161,7 +161,7 @@ export function WithdrawalForm({ olidaraBalance, bankAccounts }: WithdrawalFormP
                 </div>
               </FormControl>
               <FormDescription>
-                Available Olidara Balance: ₦{olidaraBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Available Solidara Balance: ₦{solidaraBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </FormDescription>
               <FormMessage />
             </FormItem>

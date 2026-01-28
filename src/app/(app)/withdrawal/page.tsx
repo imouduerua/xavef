@@ -79,12 +79,12 @@ export default function WithdrawalPage() {
             collection(firestore, 'users', user.uid, 'transactions'),
             where('status', '==', 'Pending'),
             where('type', '==', 'Withdrawal'),
-            where('targetAccount', '==', 'olidara')
+            where('targetAccount', '==', 'solidara')
         ) : null, [firestore, user?.uid]);
 
     const { data: pendingWithdrawals, loading: pendingWithdrawalsLoading } = useCollection<Transaction>(pendingWithdrawalQuery);
 
-    const pendingOlidaraWithdrawal = pendingWithdrawals?.[0];
+    const pendingSolidaraWithdrawal = pendingWithdrawals?.[0];
 
     if (authLoading || userDataLoading || pendingWithdrawalsLoading) {
         return <PageSkeleton />;
@@ -96,12 +96,12 @@ export default function WithdrawalPage() {
         if (!profileComplete) {
             return <CompleteProfilePrompt />;
         }
-        if (pendingOlidaraWithdrawal) {
-            return <PendingWithdrawalCard transaction={pendingOlidaraWithdrawal} />;
+        if (pendingSolidaraWithdrawal) {
+            return <PendingWithdrawalCard transaction={pendingSolidaraWithdrawal} />;
         }
         if (userData) {
              return <WithdrawalForm 
-                olidaraBalance={userData.olidaraBalance} 
+                solidaraBalance={userData.solidaraBalance} 
                 bankAccounts={userData.bankAccounts || []} 
             />;
         }
@@ -114,9 +114,9 @@ export default function WithdrawalPage() {
                 <CardHeader>
                     <CardTitle>Withdrawal</CardTitle>
                     <CardDescription>
-                       {pendingOlidaraWithdrawal 
-                            ? "You have a pending withdrawal request from your Olidara savings account."
-                            : "Request a withdrawal from your Olidara savings account. Requests are processed by an admin."
+                       {pendingSolidaraWithdrawal 
+                            ? "You have a pending withdrawal request from your Solidara savings account."
+                            : "Request a withdrawal from your Solidara savings account. Requests are processed by an admin."
                        }
                     </CardDescription>
                 </CardHeader>
