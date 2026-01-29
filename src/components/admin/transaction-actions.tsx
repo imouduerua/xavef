@@ -86,7 +86,7 @@ export function TransactionActions({ userId, transaction }: TransactionActionsPr
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="relative w-full h-96 my-4 rounded-md overflow-hidden border">
-                    <Image src={transaction.proofOfPaymentUrl!} alt="Proof of payment" layout="fill" objectFit="contain" />
+                    <Image src={transaction.proofOfPaymentUrl!} alt="Proof of payment" fill style={{ objectFit: 'contain' }} />
                 </div>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Close</AlertDialogCancel>
@@ -109,7 +109,7 @@ export function TransactionActions({ userId, transaction }: TransactionActionsPr
         </AlertDialogHeader>
         {transaction.proofOfPaymentUrl && (
           <div className="relative w-full h-64 my-4 rounded-md overflow-hidden border">
-            <Image src={transaction.proofOfPaymentUrl} alt="Proof of payment" layout="fill" objectFit="contain" />
+            <Image src={transaction.proofOfPaymentUrl} alt="Proof of payment" fill style={{ objectFit: 'contain' }} />
           </div>
         )}
         <AlertDialogFooter>
