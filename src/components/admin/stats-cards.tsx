@@ -1,9 +1,8 @@
-
 'use client';
 
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Users, Clock, Banknote, ShieldAlert, Shield } from 'lucide-react';
+import { Users, Clock, Banknote, ShieldAlert, Shield, PiggyBank } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useCollectionCount, useMemoFirebase, useCollection } from '@/firebase';
 import { collection, collectionGroup, query, where, type Query } from 'firebase/firestore';
@@ -69,9 +68,11 @@ export function StatsCards() {
 
     const usersCount = usersData?.length ?? null;
     const totalPoolBalance = usersData?.reduce((acc, user) => acc + (user.groupPoolBalance || 0), 0) ?? null;
+    const totalOlidaraBalance = usersData?.reduce((acc, user) => acc + (user.olidaraBalance || 0), 0) ?? null;
 
     const statCards: StatCardProps[] = [
         { value: usersCount, icon: Users, title: 'Total Users', href: '/admin/users' },
+        { value: totalOlidaraBalance, icon: PiggyBank, title: 'Total Olidara Savings', href: '/admin/users', formatAsCurrency: true },
         { value: totalPoolBalance, icon: Shield, title: 'Total Pool Savings', href: '/admin/pool', formatAsCurrency: true },
         { value: pendingCount, icon: Clock, title: 'Pending Transactions', href: '/admin/transactions?tab=pending' },
         { value: completedCount, icon: Banknote, title: 'Completed Transactions', href: '/admin/transactions?tab=completed' },
@@ -79,24 +80,10 @@ export function StatsCards() {
     ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat, index) => {
-            if (index === 1) { // Insert an empty div to push the pool balance to the next row for better layout
-                return <React.Fragment key="spacer"></React.Fragment>
-            }
-            if (index === 2) {
-                return (
-                     <div key="pool-card-wrapper" className="grid gap-4 md:col-span-2 lg:grid-cols-2">
-                          <StatCard {...statCards[1]} />
-                          <StatCard {...stat} />
-                     </div>
-                )
-            }
-             if (index > 2) {
-                 return <StatCard key={index} {...stat} />
-             }
-            return <StatCard key={index} {...stat} />
-        })}
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {statCards.map((stat, index) => (
+             <StatCard key={index} {...stat} />
+        ))}
     </div>
   );
 }
