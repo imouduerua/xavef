@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Users, Clock, Banknote, ShieldAlert, Shield, PiggyBank } from 'lucide-react';
+import { Users, Clock, Banknote, ShieldAlert, Shield, PiggyBank, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useCollectionCount, useMemoFirebase, useCollection } from '@/firebase';
 import { collection, collectionGroup, query, where, type Query } from 'firebase/firestore';
@@ -69,10 +69,12 @@ export function StatsCards() {
     const usersCount = usersData?.length ?? null;
     const totalPoolBalance = usersData?.reduce((acc, user) => acc + (user.groupPoolBalance || 0), 0) ?? null;
     const totalOlidaraBalance = usersData?.reduce((acc, user) => acc + (user.olidaraBalance || 0), 0) ?? null;
+    const totalAnnualBalance = usersData?.reduce((acc, user) => acc + (user.annualBalance || 0), 0) ?? null;
 
     const statCards: StatCardProps[] = [
         { value: usersCount, icon: Users, title: 'Total Users', href: '/admin/users' },
         { value: totalOlidaraBalance, icon: PiggyBank, title: 'Total Olidara Savings', href: '/admin/users', formatAsCurrency: true },
+        { value: totalAnnualBalance, icon: Calendar, title: 'Total Annual Savings', href: '/admin/users', formatAsCurrency: true },
         { value: totalPoolBalance, icon: Shield, title: 'Total Pool Savings', href: '/admin/pool', formatAsCurrency: true },
         { value: pendingCount, icon: Clock, title: 'Pending Transactions', href: '/admin/transactions?tab=pending' },
         { value: completedCount, icon: Banknote, title: 'Completed Transactions', href: '/admin/transactions?tab=completed' },
