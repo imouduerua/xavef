@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Users, Clock, Banknote, ShieldAlert, Shield, PiggyBank, Calendar } from 'lucide-react';
+import { Users, Clock, Banknote, ShieldAlert, Shield, PiggyBank, Calendar, Landmark } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useCollectionCount, useMemoFirebase, useCollection } from '@/firebase';
 import { collection, collectionGroup, query, where, type Query } from 'firebase/firestore';
@@ -13,7 +13,7 @@ interface StatCardProps {
     value: number | null;
     icon: React.ElementType;
     title: string;
-    href: string;
+    href?: string;
     formatAsCurrency?: boolean;
 }
 
@@ -26,19 +26,19 @@ function StatCard({ value, icon: Icon, title, href, formatAsCurrency = false }: 
         return value;
     }
     
-    return (
-         <Link href={href}>
-            <Card className="hover:bg-muted/50 transition-colors">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{title}</CardTitle>
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{formattedValue()}</div>
-                </CardContent>
-            </Card>
-        </Link>
-    )
+    const cardContent = (
+        <Card className="hover:bg-muted/50 transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{formattedValue()}</div>
+            </CardContent>
+        </Card>
+    );
+
+    return href ? <Link href={href}>{cardContent}</Link> : cardContent;
 }
 
 
@@ -71,8 +71,13 @@ export function StatsCards() {
     const totalOlidaraBalance = usersData?.reduce((acc, user) => acc + (user.olidaraBalance || 0), 0) ?? null;
     const totalAnnualBalance = usersData?.reduce((acc, user) => acc + (user.annualBalance || 0), 0) ?? null;
 
+    const totalInCustody = (totalOlidaraBalance !== null && totalAnnualBalance !== null && totalPoolBalance !== null)
+        ? totalOlidaraBalance + totalAnnualBalance + totalPoolBalance
+        : null;
+
     const statCards: StatCardProps[] = [
         { value: usersCount, icon: Users, title: 'Total Users', href: '/admin/users' },
+        { value: totalInCustody, icon: Landmark, title: 'Total in Custody', formatAsCurrency: true },
         { value: totalOlidaraBalance, icon: PiggyBank, title: 'Total Olidara Savings', href: '/admin/users', formatAsCurrency: true },
         { value: totalAnnualBalance, icon: Calendar, title: 'Total Annual Savings', href: '/admin/users', formatAsCurrency: true },
         { value: totalPoolBalance, icon: Shield, title: 'Total Pool Savings', href: '/admin/pool', formatAsCurrency: true },
@@ -82,7 +87,7 @@ export function StatsCards() {
     ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat, index) => (
              <StatCard key={index} {...stat} />
         ))}
