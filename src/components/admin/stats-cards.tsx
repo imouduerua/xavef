@@ -7,7 +7,7 @@ import { Users, Clock, Banknote, ShieldAlert, Shield, PiggyBank, Calendar, Landm
 import Link from 'next/link';
 import { useFirestore, useCollectionCount, useMemoFirebase, useCollection } from '@/firebase';
 import { collection, collectionGroup, query, where, type Query } from 'firebase/firestore';
-import type { UserData, TransactionWithUserDetails, SavingGoal } from '@/lib/types';
+import type { UserData, TransactionWithUserDetails, SavingGoal, Group } from '@/lib/types';
 
 
 interface StatCardProps {
@@ -54,6 +54,10 @@ export function StatsCards() {
         firestore ? (query(collectionGroup(firestore, 'goals')) as Query<SavingGoal>) : null,
     [firestore]);
 
+    const activeGroupsQuery = useMemoFirebase(() => 
+        firestore ? (query(collection(firestore, 'groups'), where('status', '==', 'active')) as Query<Group>) : null,
+    [firestore]);
+
     const pendingQuery = useMemoFirebase(() => 
         firestore ? (query(collectionGroup(firestore, 'transactions'), where('status', '==', 'Pending')) as Query<TransactionWithUserDetails>) : null,
     [firestore]);
@@ -68,6 +72,7 @@ export function StatsCards() {
 
     const { data: usersData } = useCollection<UserData>(usersQuery);
     const { data: goalsData } = useCollection<SavingGoal>(goalsQuery);
+    const { data: activeGroups } = useCollection<Group>(activeGroupsQuery);
     const { count: pendingCount } = useCollectionCount(pendingQuery);
     const { count: completedCount } = useCollectionCount(completedQuery);
     const { count: failedCount } = useCollectionCount(failedQuery);
@@ -77,6 +82,8 @@ export function StatsCards() {
     const totalOlidaraBalance = usersData?.reduce((acc, user) => acc + (user.olidaraBalance || 0), 0) ?? null;
     const totalAnnualBalance = usersData?.reduce((acc, user) => acc + (user.annualBalance || 0), 0) ?? null;
     const totalGoalsBalance = goalsData?.reduce((acc, goal) => acc + (goal.currentAmount || 0), 0) ?? null;
+    const activeGroupsCount = activeGroups?.length ?? null;
+    const totalWeeklyPurse = activeGroups?.reduce((acc, group) => acc + (group.contributionAmount * group.members.length), 0) ?? null;
 
 
     const totalInCustody = (totalOlidaraBalance !== null && totalAnnualBalance !== null && totalPoolBalance !== null && totalGoalsBalance !== null)
@@ -90,6 +97,8 @@ export function StatsCards() {
         { value: totalAnnualBalance, icon: Calendar, title: 'Total Annual Savings', formatAsCurrency: true },
         { value: totalPoolBalance, icon: Shield, title: 'Total Pool Savings', href: '/admin/pool', formatAsCurrency: true },
         { value: totalGoalsBalance, icon: Target, title: 'Total in Goals', formatAsCurrency: true },
+        { value: activeGroupsCount, icon: Users, title: 'Active P2P Groups', href: '/admin/groups' },
+        { value: totalWeeklyPurse, icon: Banknote, title: 'Total P2P Weekly Purse', formatAsCurrency: true },
         { value: pendingCount, icon: Clock, title: 'Pending Transactions', href: '/admin/transactions?tab=pending' },
         { value: completedCount, icon: Banknote, title: 'Completed Transactions', href: '/admin/transactions?tab=completed' },
         { value: failedCount, icon: ShieldAlert, title: 'Failed Transactions', href: '/admin/transactions?tab=failed' },
