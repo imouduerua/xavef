@@ -128,7 +128,7 @@ export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
                         <TableCell className={`text-right font-semibold ${tx.type === 'Deposit' || tx.type === 'Group Payout' ? 'text-green-600' : 'text-destructive'}`}>
                             {tx.type === 'Deposit' || tx.type === 'Group Payout' ? `+₦${amount.toFixed(2)}` : `-₦${Math.abs(amount).toFixed(2)}`}
                         </TableCell>
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="text-right font-semibold text-green-600">
                             {payoutAmount !== null ? `₦${payoutAmount.toFixed(2)}` : '—'}
                         </TableCell>
                         <TableCell className="text-center">
