@@ -96,17 +96,38 @@ export function TransactionActions({ userId, transaction }: TransactionActionsPr
     }
 
     const isApprove = dialogAction === 'approve';
+    const isWithdrawal = transaction.type === 'Withdrawal';
     const title = isApprove ? 'Approve Transaction?' : 'Decline Transaction?';
-    const description = isApprove
-      ? "This will credit the user's account and mark the transaction as complete. This action cannot be undone."
-      : "This will mark the transaction as failed and will not affect the user's balance. This action cannot be undone.";
+    
+    const generalDescription = isApprove
+      ? "This will update the user's balance and mark the transaction as 'Completed'. This action cannot be undone."
+      : "This will mark the transaction as 'Failed' and will not affect the user's balance. This action cannot be undone.";
     
     return (
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          <AlertDialogDescription>{generalDescription}</AlertDialogDescription>
         </AlertDialogHeader>
+
+        {isApprove && isWithdrawal && (
+            <div className="py-2 space-y-3">
+                <h4 className="font-medium text-center text-sm text-muted-foreground">Withdrawal Summary</h4>
+                <div className="flex justify-between items-center text-sm p-3 rounded-md bg-muted">
+                    <span>Amount to Debit from User Balance</span>
+                    <span className="font-bold">₦{(transaction.amount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                 <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Withdrawal Fee (3.3%)</span>
+                    <span className="text-muted-foreground">- ₦{(transaction.fee ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center text-lg font-bold p-3 rounded-md bg-primary/10 text-primary">
+                    <span>Final Payout to User</span>
+                    <span>₦{(transaction.payoutAmount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+            </div>
+        )}
+
         {transaction.proofOfPaymentUrl && (
           <div className="relative w-full h-64 my-4 rounded-md overflow-hidden border">
             <Image src={transaction.proofOfPaymentUrl} alt="Proof of payment" fill style={{ objectFit: 'contain' }} />
