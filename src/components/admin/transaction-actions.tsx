@@ -102,6 +102,14 @@ export function TransactionActions({ userId, transaction }: TransactionActionsPr
     const generalDescription = isApprove
       ? "This will update the user's balance and mark the transaction as 'Completed'. This action cannot be undone."
       : "This will mark the transaction as 'Failed' and will not affect the user's balance. This action cannot be undone.";
+
+    const WITHDRAWAL_FEE_PERCENTAGE = 0.033;
+    const withdrawalAmount = Number(transaction.amount) || 0;
+    
+    // Use stored fee/payout if available, otherwise calculate on the fly for backward compatibility.
+    // This handles old transactions that didn't have these fields saved.
+    const fee = transaction.fee ?? withdrawalAmount * WITHDRAWAL_FEE_PERCENTAGE;
+    const payoutAmount = transaction.payoutAmount ?? withdrawalAmount - fee;
     
     return (
       <AlertDialogContent>
@@ -115,15 +123,15 @@ export function TransactionActions({ userId, transaction }: TransactionActionsPr
                 <h4 className="font-medium text-center text-sm text-muted-foreground">Withdrawal Summary</h4>
                 <div className="flex justify-between items-center text-sm p-3 rounded-md bg-muted">
                     <span>Amount to Debit from User Balance</span>
-                    <span className="font-bold">₦{(transaction.amount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="font-bold">₦{withdrawalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                  <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Withdrawal Fee (3.3%)</span>
-                    <span className="text-muted-foreground">- ₦{(transaction.fee ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-muted-foreground">- ₦{fee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between items-center text-lg font-bold p-3 rounded-md bg-primary/10 text-primary">
                     <span>Final Payout to User</span>
-                    <span>₦{(transaction.payoutAmount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span>₦{payoutAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
             </div>
         )}
