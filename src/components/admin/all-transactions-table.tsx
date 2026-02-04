@@ -93,6 +93,7 @@ export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
               <TableHead>Status</TableHead>
               <TableHead>Date</TableHead>
               <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="text-right">Payout</TableHead>
               <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -100,6 +101,21 @@ export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
             {transactions.map((tx) => {
                 const amount = Number(tx.amount);
                 const userId = tx.path?.split('/')[1] || 'N/A';
+                
+                const isWithdrawal = tx.type === 'Withdrawal';
+                let payoutAmount: number | null = null;
+
+                if (isWithdrawal) {
+                    if (tx.payoutAmount !== undefined && tx.payoutAmount !== null) {
+                        payoutAmount = Number(tx.payoutAmount);
+                    } else {
+                        // Fallback calculation for older transactions
+                        const withdrawalAmount = Math.abs(Number(tx.amount)) || 0;
+                        const fee = withdrawalAmount * 0.033;
+                        payoutAmount = withdrawalAmount - fee;
+                    }
+                }
+
                 return (
                     <TableRow key={tx.id}>
                         <TableCell className="font-medium">{tx.userEmail || userId}</TableCell>
@@ -111,6 +127,9 @@ export function AllTransactionsTable({ status }: AllTransactionsTableProps) {
                         <TableCell>{formatDate(tx.date)}</TableCell>
                         <TableCell className={`text-right font-semibold ${tx.type === 'Deposit' || tx.type === 'Group Payout' ? 'text-green-600' : 'text-destructive'}`}>
                             {tx.type === 'Deposit' || tx.type === 'Group Payout' ? `+₦${amount.toFixed(2)}` : `-₦${Math.abs(amount).toFixed(2)}`}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                            {payoutAmount !== null ? `₦${payoutAmount.toFixed(2)}` : '—'}
                         </TableCell>
                         <TableCell className="text-center">
                            <TransactionActions userId={userId} transaction={tx} />
