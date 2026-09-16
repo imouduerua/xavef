@@ -1,5 +1,22 @@
-# Firebase Studio
+# Xavef
 
-This is a NextJS starter in Firebase Studio.
+A Next.js financial management platform for savings, group contributions, loans, transactions, and withdrawals.
 
-To get started, take a look at src/app/page.tsx.
+## Getting started
+
+Install dependencies and start the development server:
+
+```bash
+npm install
+npm run dev
+```
+
+The app runs locally at `http://localhost:9002`.
+
+## Tech stack
+
+- Next.js and TypeScript
+- React
+- Tailwind CSS
+- Firebase Authentication and Firestore
+- Genkit for personalized financial advice
