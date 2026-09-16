@@ -1,0 +1,394 @@
+
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "A user of the application.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's unique ID from Firebase Auth."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The user's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The user's last name."
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "format": "date",
+          "description": "The user's date of birth."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The user's phone number."
+        },
+        "address": {
+          "type": "string",
+          "description": "The user's street address."
+        },
+        "state": {
+          "type": "string",
+          "description": "The user's state or province."
+        },
+        "country": {
+          "type": "string",
+          "description": "The user's country."
+        },
+        "xavefId": {
+          "type": "string",
+          "description": "A unique 4 to 6 digit user ID, like an account number."
+        },
+        "referredBy": {
+          "type": "string",
+          "description": "The UID of the user who referred them."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the user account was created."
+        },
+        "olidaraBalance": {
+          "type": "number",
+          "description": "The user's balance for the Olidara savings account."
+        },
+        "annualBalance": {
+          "type": "number",
+          "description": "The user's balance for the Annual savings account."
+        },
+        "groupPoolBalance": {
+          "type": "number",
+          "description": "The user's balance for the Xavef Loan & Savings Pool."
+        },
+        "goalsInitialized": {
+            "type": "boolean",
+            "description": "Flag to indicate if default saving goals have been created for the user."
+        },
+        "bankAccounts": {
+            "type": "array",
+            "description": "A list of the user's bank accounts.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "bankName": {
+                        "type": "string"
+                    },
+                    "accountName": {
+                        "type": "string"
+                    },
+                    "bankAccountNumber": {
+                        "type": "string"
+                    }
+                },
+                "required": ["bankName", "accountName", "bankAccountNumber"]
+            }
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "xavefId",
+        "createdAt"
+      ]
+    },
+    "transaction": {
+      "title": "Transaction",
+      "description": "A financial transaction.",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Deposit",
+            "Withdrawal",
+            "Loan Payment",
+            "Interest",
+            "Group Contribution",
+            "Group Payout",
+            "Internal Transfer"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Completed",
+            "Pending",
+            "Failed"
+          ]
+        },
+        "amount": {
+          "type": "number",
+          "description": "For withdrawals, this is the total amount deducted from the user's balance (a negative number)."
+        },
+        "fee": {
+            "type": "number",
+            "description": "The fee charged for a transaction, like a withdrawal."
+        },
+        "payoutAmount": {
+            "type": "number",
+            "description": "The net amount sent to the user after fees (e.g., for a withdrawal)."
+        },
+        "targetAccount": {
+          "type": "string",
+          "enum": [
+            "olidara",
+            "annual",
+            "group",
+            "groupPool"
+          ],
+          "description": "The target account for the transaction, if applicable."
+        },
+        "proofOfPaymentUrl": {
+          "type": "string",
+          "description": "URL of the uploaded proof of payment image (as a data URI)."
+        },
+        "groupId": {
+          "type": "string",
+          "description": "The ID of the group for group-related transactions."
+        },
+        "destinationBankName": { "type": "string" },
+        "destinationAccountName": { "type": "string" },
+        "destinationAccountNumber": { "type": "string" }
+      },
+      "required": [
+        "date",
+        "description",
+        "type",
+        "status",
+        "amount"
+      ]
+    },
+    "referralCode": {
+      "title": "Referral Code",
+      "description": "A one-time use referral code.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "creatorUid": {
+          "type": "string"
+        },
+        "used": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "code",
+        "creatorUid",
+        "used",
+"createdAt"
+      ]
+    },
+    "admin": {
+      "title": "Admin",
+      "description": "A user with administrative privileges.",
+      "type": "object",
+      "properties": {
+        "isAdmin": {
+          "type": "boolean"
+        },
+        "email": {
+            "type": "string",
+            "description": "The admin's email address."
+        },
+        "displayName": {
+            "type": "string",
+            "description": "The admin's display name."
+        },
+        "promotedBy": {
+          "type": "string",
+          "description": "Email of the admin who granted these privileges."
+        },
+        "promotedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "isAdmin", "promotedBy", "promotedAt", "email", "displayName"
+      ]
+    },
+    "savingGoal": {
+      "title": "Saving Goal",
+      "description": "A user-defined saving goal.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this goal."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the saving goal."
+        },
+        "targetAmount": {
+          "type": "number",
+          "description": "The target amount for the goal."
+        },
+        "currentAmount": {
+          "type": "number",
+          "description": "The current amount saved towards the goal."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the goal was created."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "targetAmount",
+        "currentAmount",
+        "createdAt"
+      ]
+    },
+    "group": {
+      "title": "Group",
+      "description": "A rotating savings group (Ajo/Esusu).",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "contributionAmount": { "type": "number" },
+        "contributionFrequency": { "type": "string", "enum": ["weekly"] },
+        "numberOfMembers": { "type": "number", "description": "The total number of members the group can have." },
+        "creatorUid": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["forming", "active", "closed"], "description": "The current status of the group."},
+        "payoutOrder": { "type": "array", "items": { "type": "string" }, "description": "Shuffled list of member UIDs for weekly payout." },
+        "currentCollectionWeek": { "type": "number", "description": "The current week number for collecting contributions." },
+        "lastDistributionDate": { "type": "string", "format": "date-time", "description": "The timestamp of the last payout distribution." }
+      },
+      "required": ["name", "contributionAmount", "contributionFrequency", "numberOfMembers", "creatorUid", "members", "status"]
+    },
+    "joinRequest": {
+        "title": "Group Join Request",
+        "description": "A request from a user to join a savings group.",
+        "type": "object",
+        "properties": {
+            "groupId": { "type": "string" },
+            "groupName": { "type": "string" },
+            "groupCreatorUid": { "type": "string" },
+            "requesterUid": { "type": "string" },
+            "requesterEmail": { "type": "string" },
+            "requesterName": { "type": "string" },
+            "status": { "type": "string", "enum": ["pending", "approved", "declined"] },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["groupId", "groupName", "groupCreatorUid", "requesterUid", "requesterEmail", "requesterName", "status", "createdAt"]
+    },
+    "notification": {
+        "title": "Notification",
+        "description": "A notification for a user.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string", "description": "The ID of the user this notification is for." },
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "read": { "type": "boolean" },
+            "actionUrl": { "type": "string", "description": "A URL the user can navigate to from the notification." }
+        },
+        "required": ["userId", "title", "description", "createdAt", "read"]
+    },
+    "fcmToken": {
+      "title": "FCM Token",
+      "description": "A Firebase Cloud Messaging token for a user's device.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user this token belongs to."
+        },
+        "token": {
+          "type": "string",
+          "description": "The FCM registration token."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the token was last updated."
+        }
+      },
+      "required": ["userId", "token", "updatedAt"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "email"
+    ]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/user"
+      },
+      "description": "Stores user profile information, including their unique Xavef ID and referral details."
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": {
+        "$ref": "#/entities/transaction"
+      },
+      "description": "Stores a user's transactions."
+    },
+     "/users/{userId}/notifications/{notificationId}": {
+      "schema": {
+        "$ref": "#/entities/notification"
+      },
+      "description": "Stores notifications for a specific user."
+    },
+    "/users/{userId}/goals/{goalId}": {
+      "schema": {
+        "$ref": "#/entities/savingGoal"
+      },
+      "description": "Stores a user's saving goals."
+    },
+    "/referralCodes/{codeId}": {
+      "schema": {
+        "$ref": "#/entities/referralCode"
+      },
+      "description": "Stores one-time use referral codes."
+    },
+    "/admins/{userId}": {
+      "schema": {
+        "$ref": "#/entities/admin"
+      },
+      "description": "Stores a list of admin users. Any user in this collection is considered an admin."
+    },
+    "/groups/{groupId}": {
+        "schema": { "$ref": "#/entities/group" },
+        "description": "Stores savings group information."
+    },
+    "/joinRequests/{requestId}": {
+        "schema": { "$ref": "#/entities/joinRequest" },
+        "description": "Stores requests from users to join savings groups."
+    },
+    "/fcmTokens/{userId}": {
+      "schema": {
+        "$ref": "#/entities/fcmToken"
+      },
+      "description": "Stores FCM tokens for admin users to receive push notifications."
+    }
+  }
+}
